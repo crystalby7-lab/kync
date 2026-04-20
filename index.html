@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Kync — 연결되는 가족</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="kync-extra.css" />
+</head>
+<body>
+
+<!-- ════ 로그인 ════ -->
+<div class="page active" id="page-login">
+  <div class="login-wrap">
+    <div class="login-top">
+      <div class="brand-logo">kync</div>
+      <div class="brand-sub">말하지 않아도<br>연결되는 가족</div>
+    </div>
+    <div class="login-bottom">
+      <button class="google-btn" onclick="App.go('page-onboard')">
+        <div class="google-icon">G</div> Google로 계속하기
+      </button>
+      <button class="btn-outline" style="margin-top:12px;" onclick="App.go('page-onboard')">이메일로 시작하기</button>
+      <div class="login-terms">시작 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 역할 선택 ════ -->
+<div class="page" id="page-onboard">
+  <div class="onboard-wrap">
+    <div class="onboard-logo">kync</div>
+    <div class="onboard-sub">가족 안에서 당신의<br>역할을 선택해주세요.</div>
+    <div class="role-list">
+      <div class="role-card" onclick="App.setRole('parent')">
+        <div>
+          <div class="role-title">부모로 시작하기</div>
+          <div class="role-desc">자녀의 마음을 더 깊이 이해하고 싶어요.</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
+      <div class="role-card" onclick="App.setRole('child')">
+        <div>
+          <div class="role-title">자녀로 시작하기</div>
+          <div class="role-desc">부모님께 내 진심을 편하게 전하고 싶어요.</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 부모 앱 ════ -->
+<div class="page" id="page-parent">
+  <div class="app-wrap">
+    <header class="top-bar">
+      <div class="logo-wrapper">
+        <div class="logo-box"><div class="logo-dot"></div></div>
+        <span class="logo-text">kync</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="point-badge" id="p-points-badge">0 pt</div>
+        <div class="day-badge" id="p-day-badge">DAY 1</div>
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      <!-- 오늘 탭 -->
+      <section id="p-todayTab" class="tab-content active">
+        <div class="today-date" id="p-todayDate"></div>
+
+        <!-- 자녀 상태 카드 -->
+        <div class="status-card">
+          <div class="status-eyebrow">자녀의 상태</div>
+          <div class="status-main">
+            <div class="status-indicator ind-low" id="p-status-dot"></div>
+            <div>
+              <div class="status-name" id="p-child-name">보영</div>
+              <div class="status-desc" id="p-child-desc">오늘 자녀가 아직 체크인하지 않았어요.</div>
+            </div>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-stat"><div class="mini-label">기분</div><div class="mini-val" id="p-stat-mood">—</div></div>
+            <div class="mini-stat"><div class="mini-label">스트레스</div><div class="mini-val" id="p-stat-stress">—</div></div>
+            <div class="mini-stat"><div class="mini-label">활동</div><div class="mini-val" id="p-stat-energy">—</div></div>
+          </div>
+        </div>
+
+        <!-- 질문 카드 -->
+        <div class="question-card">
+          <div class="q-deco-line"></div>
+          <div class="eyebrow">오늘의 질문</div>
+          <div class="question-text" id="p-questionText">질문을 불러오는 중...</div>
+          <div class="lock-pill">서로 답변하면 내용이 공개됩니다</div>
+        </div>
+
+        <!-- 내 답변 -->
+        <div class="answer-wrap" id="p-answer-wrap">
+          <div class="answer-label">나의 답변</div>
+          <textarea id="p-myAnswer" maxlength="200" placeholder="솔직한 마음을 적어주세요..."></textarea>
+          <div class="char-count"><span id="p-charCount">0</span>/200</div>
+        </div>
+        <button id="p-submitAnswer" class="submit-btn">답변 올리기</button>
+
+        <!-- 상대 답변 (잠금/공개) -->
+        <div class="opponent-answer-wrap" id="p-opponent-wrap">
+          <div class="locked-box" id="p-lockedBox">
+            <div class="lock-icon-wrap">—</div>
+            <div class="locked-desc">
+              <strong>자녀 답변</strong>
+              <span>서로 답변을 완료하면 공개돼요</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 기록 탭 -->
+      <section id="p-recordTab" class="tab-content">
+        <div class="section-label" id="p-historyCount"></div>
+        <div id="p-historyList" class="history-list"></div>
+      </section>
+
+      <!-- 퀘스트 탭 -->
+      <section id="p-questTab" class="tab-content">
+        <div class="section-label">AI 맞춤 퀘스트</div>
+        <div class="notice-box" style="margin-bottom:14px;">
+          두 분 모두 동의해야 퀘스트가 시작돼요. 동시에 최대 2개까지 진행할 수 있어요.
+        </div>
+        <div id="p-quest-list"></div>
+      </section>
+
+      <!-- 연결 탭 -->
+      <section id="p-connectTab" class="tab-content">
+        <div class="profile-hero">
+          <div class="avatar-circle" id="p-avatar">P</div>
+          <div class="profile-name" id="p-username">부모님</div>
+          <div class="profile-role">부모</div>
+          <div class="days-row">
+            <div class="days-num" id="p-days">0</div>
+            <div class="days-label">일째 연결 중</div>
+          </div>
+        </div>
+        <!-- 레벨 / 포인트 -->
+        <div class="level-card" id="p-level-card"></div>
+        <div class="family-card">
+          <div class="family-label">연결된 가족</div>
+          <div id="p-familyList"></div>
+        </div>
+        <div class="code-card" style="margin-top:14px;">
+          <div class="code-hint">가족 연결 코드</div>
+          <div class="code-display">KY92</div>
+          <button class="code-btn" onclick="App.copyCode(this)">코드 복사하기</button>
+        </div>
+        <button class="btn-outline" style="margin-top:20px;" onclick="App.go('page-login')">로그아웃</button>
+      </section>
+
+    </main>
+
+    <footer class="bottom-nav">
+      <button class="tab-btn active" data-target="p-todayTab" data-page="page-parent"><div class="tab-ico">✦</div><span>오늘</span></button>
+      <button class="tab-btn" data-target="p-recordTab" data-page="page-parent"><div class="tab-ico">◈</div><span>기록</span></button>
+      <button class="tab-btn" data-target="p-questTab" data-page="page-parent"><div class="tab-ico">◌</div><span>퀘스트</span></button>
+      <button class="tab-btn" onclick="location.href='quiz.html'"><div class="tab-ico">◎</div><span>검사</span></button>
+      <button class="tab-btn" data-target="p-connectTab" data-page="page-parent"><div class="tab-ico">○</div><span>연결</span></button>
+    </footer>
+  </div>
+</div>
+
+<!-- ════ 자녀 앱 ════ -->
+<div class="page" id="page-child">
+  <div class="app-wrap">
+    <header class="top-bar">
+      <div class="logo-wrapper">
+        <div class="logo-box"><div class="logo-dot"></div></div>
+        <span class="logo-text">kync</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="point-badge" id="c-points-badge">0 pt</div>
+        <div class="day-badge" id="c-day-badge">DAY 1</div>
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      <!-- 오늘 탭 -->
+      <section id="c-todayTab" class="tab-content active">
+        <div class="today-date" id="c-todayDate"></div>
+
+        <!-- 감정 체크인 카드 (상세) -->
+        <div class="checkin-card">
+          <div class="checkin-label">오늘 내 감정을 기록해봐</div>
+
+          <!-- 8종 감정 그리드 -->
+          <div class="emotion-grid-8" id="c-emotionGrid"></div>
+
+          <!-- 강도 슬라이더 -->
+          <div class="slider-section">
+            <div class="slider-row-label">
+              <span class="slider-label">스트레스 강도</span>
+              <span class="slider-val" id="c-stress-val">5</span>
+            </div>
+            <input type="range" min="1" max="10" value="5" id="c-stressSlider"
+              oninput="document.getElementById('c-stress-val').textContent=this.value">
+          </div>
+
+          <div class="slider-section">
+            <div class="slider-row-label">
+              <span class="slider-label">에너지 수준</span>
+              <span class="slider-val" id="c-energy-val">5</span>
+            </div>
+            <input type="range" min="1" max="10" value="5" id="c-energySlider"
+              oninput="document.getElementById('c-energy-val').textContent=this.value">
+          </div>
+
+          <!-- 감정 메모 -->
+          <div class="emotion-memo-wrap">
+            <div class="emotion-memo-label">한 줄 감정 메모 (선택)</div>
+            <input type="text" id="c-emotionMemo" class="emotion-memo-input" placeholder="지금 이 감정이 드는 이유가 있어?">
+          </div>
+
+          <button class="submit-btn" style="margin-top:16px;" onclick="App.saveCheckin()">오늘 상태 저장하기</button>
+        </div>
+
+        <!-- 질문 카드 -->
+        <div class="question-card">
+          <div class="q-deco-line"></div>
+          <div class="eyebrow">오늘의 질문</div>
+          <div class="question-text" id="c-questionText">질문을 불러오는 중...</div>
+          <div class="lock-pill">부모님도 같은 질문에 답하고 있어요</div>
+        </div>
+
+        <!-- 내 답변 -->
+        <div class="answer-wrap">
+          <div class="answer-label">나의 답변</div>
+          <textarea id="c-myAnswer" maxlength="200" placeholder="부모님께 전하고 싶은 말을 적어봐..."></textarea>
+          <div class="char-count"><span id="c-charCount">0</span>/200</div>
+        </div>
+        <button id="c-submitAnswer" class="submit-btn">답변 올리기</button>
+
+        <!-- 상대 답변 (잠금/공개) -->
+        <div class="opponent-answer-wrap" id="c-opponent-wrap">
+          <div class="locked-box" id="c-lockedBox">
+            <div class="lock-icon-wrap">—</div>
+            <div class="locked-desc">
+              <strong>부모님 답변</strong>
+              <span>서로 답변을 완료하면 공개돼요</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 일기 탭 -->
+      <section id="c-diaryTab" class="tab-content">
+        <div class="section-label">나만의 감정 일기</div>
+        <div class="notice-box" style="margin-bottom:12px;">이 일기는 부모님께 공개되지 않는 나만의 공간이야.</div>
+
+        <!-- 일기용 감정 선택 -->
+        <div class="diary-emotion-row" id="c-diaryEmotionRow"></div>
+
+        <textarea id="c-diaryInput" placeholder="오늘 하루는 어땠어?" style="min-height:140px;margin-top:8px;"></textarea>
+        <button class="submit-btn" style="margin-top:12px;" onclick="App.saveDiary()">저장하기</button>
+
+        <div class="section-label" style="margin-top:24px;">이전 기록</div>
+        <div id="c-diaryList" class="history-list"></div>
+      </section>
+
+      <!-- 퀘스트 탭 -->
+      <section id="c-questTab" class="tab-content">
+        <div class="section-label">AI 맞춤 퀘스트</div>
+        <div class="notice-box" style="margin-bottom:14px;">
+          부모님과 함께 동의한 퀘스트만 시작돼요.
+        </div>
+        <div id="c-quest-list"></div>
+      </section>
+
+      <!-- 연결 탭 -->
+      <section id="c-connectTab" class="tab-content">
+        <div class="profile-hero">
+          <div class="avatar-circle" id="c-avatar">C</div>
+          <div class="profile-name" id="c-username">자녀</div>
+          <div class="profile-role">수험생</div>
+          <div class="days-row">
+            <div class="days-num" id="c-days">0</div>
+            <div class="days-label">일째 연결 중</div>
+          </div>
+        </div>
+        <div class="level-card" id="c-level-card"></div>
+        <div class="code-card">
+          <div class="code-hint">가족 연결 코드</div>
+          <div class="code-display">KY92</div>
+          <button class="code-btn" onclick="App.copyCode(this)">코드 복사하기</button>
+        </div>
+        <div class="family-card" style="margin-top:14px;">
+          <div class="family-label">연결된 가족</div>
+          <div id="c-familyList"></div>
+        </div>
+        <button class="btn-outline" style="margin-top:20px;" onclick="App.go('page-login')">로그아웃</button>
+      </section>
+
+    </main>
+
+    <footer class="bottom-nav">
+      <button class="tab-btn active" data-target="c-todayTab" data-page="page-child"><div class="tab-ico">✦</div><span>오늘</span></button>
+      <button class="tab-btn" data-target="c-diaryTab" data-page="page-child"><div class="tab-ico">◈</div><span>일기</span></button>
+      <button class="tab-btn" data-target="c-questTab" data-page="page-child"><div class="tab-ico">◌</div><span>퀘스트</span></button>
+      <button class="tab-btn" onclick="location.href='quiz.html'"><div class="tab-ico">◎</div><span>검사</span></button>
+      <button class="tab-btn" data-target="c-connectTab" data-page="page-child"><div class="tab-ico">○</div><span>연결</span></button>
+    </footer>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script src="kync-core.js"></script>
+<script>
+  // 탭 전환
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-target');
+      if (!targetId) return;
+      const parentPage = this.closest('.page');
+      parentPage.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      parentPage.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      this.classList.add('active');
+    });
+  });
+
+  // ── 퀴즈에서 돌아온 경우 처리 ──
+  (function(){
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('from') === 'quiz'){
+      const role = params.get('role') || localStorage.getItem('kync_role') || 'parent';
+      // 모든 페이지 숨기고
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      // 역할에 맞는 홈 페이지 표시
+      const targetPage = role === 'child' ? 'page-child' : 'page-parent';
+      const el = document.getElementById(targetPage);
+      if(el) el.classList.add('active');
+      // URL 정리
+      window.history.replaceState({}, '', 'index.html');
+    }
+  })();
+</script>
+</body>
+</html> 
