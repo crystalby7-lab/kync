@@ -70,14 +70,14 @@ const AI_GUIDES_CHILD = [
 
 /* 감정 8종 */
 const EMOTIONS_8 = [
-  { id:'happy',   icon:'😊', label:'평온/기쁨',   color:'#FFD700' },
-  { id:'proud',   icon:'✨', label:'뿌듯함',      color:'#FFA500' },
-  { id:'touched', icon:'💖', label:'감동/감사',   color:'#FFB6C1' },
-  { id:'tired',   icon:'🥱', label:'지침/피로',   color:'#A9A9A9' },
-  { id:'sad',     icon:'😢', label:'속상함/우울', color:'#87CEEB' },
-  { id:'angry',   icon:'🔥', label:'화남/억울',   color:'#FF4500' },
-  { id:'anxious', icon:'😰', label:'불안/걱정',   color:'#9370DB' },
-  { id:'lonely',  icon:'🍃', label:'외로움',      color:'#4682B4' },
+  { id:'happy',   icon:'', label:'평온/기쁨',   color:'#FFD700' },
+  { id:'proud',   icon:'', label:'뿌듯함',      color:'#FFA500' },
+  { id:'touched', icon:'', label:'감동/감사',   color:'#FFB6C1' },
+  { id:'tired',   icon:'', label:'지침/피로',   color:'#A9A9A9' },
+  { id:'sad',     icon:'', label:'속상함/우울', color:'#87CEEB' },
+  { id:'angry',   icon:'', label:'화남/억울',   color:'#FF4500' },
+  { id:'anxious', icon:'', label:'불안/걱정',   color:'#9370DB' },
+  { id:'lonely',  icon:'', label:'외로움',      color:'#4682B4' },
 ];
 
 /* 레벨 정의 */
