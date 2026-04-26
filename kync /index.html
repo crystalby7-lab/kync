@@ -108,6 +108,8 @@
       <!-- 오늘 탭 -->
       <section id="p-todayTab" class="tab-content active">
         <div class="today-date" id="p-todayDate"></div>
+          <div style="font-size:20px;color:rgba(255,255,255,0.3);">›</div>
+        </div>
 
         <!-- 자녀 상태 카드 -->
         <div class="status-card">
@@ -305,6 +307,8 @@
       <!-- 오늘 탭 -->
       <section id="c-todayTab" class="tab-content active">
         <div class="today-date" id="c-todayDate"></div>
+          <div style="font-size:20px;color:rgba(255,255,255,0.3);">›</div>
+        </div>
 
         <!-- 감정 체크인 -->
         <div class="checkin-card">
@@ -472,7 +476,7 @@
         <div class="profile-hero">
           <div class="avatar-circle" id="c-avatar">C</div>
           <div class="profile-name" id="c-username">자녀</div>
-          <div class="profile-role">자녀</div>
+          <div class="profile-role">수험생</div>
           <div class="days-row">
             <div class="days-num" id="c-days">0</div>
             <div class="days-label">일째 연결 중</div>
@@ -538,6 +542,7 @@
 
 <script src="firebase-system.js"></script>
 <script src="script.js"></script>
+<script src="kync-core.js"></script>
 <script src="kync-features.js"></script>
 <script src="kync-balance.js"></script>
 <script src="kync-quests.js"></script>
@@ -561,11 +566,29 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // 퀴즈에서 돌아온 경우
 (function(){
   const params = new URLSearchParams(window.location.search);
-  if(params.get('from') === 'quiz'){
-    const role = params.get('role') || localStorage.getItem('kync_role') || 'parent';
+  const role = params.get('role') || localStorage.getItem('kync_role') || 'parent';
+
+  if(params.get('from') === 'quiz' || params.get('tab')) {
+    // 페이지 전환
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const el = document.getElementById('page-' + role);
     if(el) el.classList.add('active');
+
+    // 탭 전환 (활동 탭으로)
+    const tabTarget = params.get('tab');
+    if(tabTarget) {
+      setTimeout(() => {
+        const page = document.getElementById('page-' + role);
+        if(page) {
+          page.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          page.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          const tabEl = document.getElementById(tabTarget);
+          if(tabEl) tabEl.classList.add('active');
+          const tabBtn = page.querySelector(`[data-target="${tabTarget}"]`);
+          if(tabBtn) tabBtn.classList.add('active');
+        }
+      }, 100);
+    }
     window.history.replaceState({}, '', 'index.html');
   }
 })();
