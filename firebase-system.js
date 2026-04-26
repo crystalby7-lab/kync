@@ -128,9 +128,7 @@ async function handleAuthSuccess(user) {
     } else {
       showLoader(false);
       // 역할 없으면 온보딩으로
-      if (!window.location.pathname.includes('onboarding')) {
-        window.location.href = 'onboarding.html';
-      } else {
+      navigateTo('page-onboard'); else {
         navigateTo('page-onboard');
       }
     }
