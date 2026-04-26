@@ -3,7 +3,7 @@
    축: A 직접성 / B 감정표현 / C 지향성 / D 주도성
    부모 6유형 / 자녀 6유형 / 레이더 차트 / 4축 점수 / 궁합
 ═══════════════════════════════════════════════════════════════ */
- 
+
 /* ─── 축 정의 ─── */
 const AXES = [
   { id:'A', name:'직접성',   lo:'간접적',   hi:'직접적'   },
@@ -11,7 +11,7 @@ const AXES = [
   { id:'C', name:'지향성',   lo:'공감지향', hi:'해결지향'  },
   { id:'D', name:'주도성',   lo:'수용적',   hi:'주도적'   },
 ];
- 
+
 /* ─── 부모 20문항 ─── */
 const PARENT_QS = [
   { axis:'A', tag:'직접성', q:'자녀에게 중요한 말을 전해야 할 때?',
@@ -55,7 +55,7 @@ const PARENT_QS = [
   { axis:'D', tag:'주도성', q:'자녀가 내 조언을 무시할 때?',
     opts:[{t:'왜 안 듣는지 다시 설명해요',s:4},{t:'자녀 입장에서 다시 생각해봐요',s:3},{t:'서운하지만 선택을 존중해요',s:2},{t:'괜찮아요, 자녀가 결정하는 게 맞아요',s:1}] },
 ];
- 
+
 /* ─── 자녀 20문항 ─── */
 const CHILD_QS = [
   { axis:'A', tag:'직접성', q:'부모님께 하고 싶은 말이 있을 때?',
@@ -99,7 +99,7 @@ const CHILD_QS = [
   { axis:'D', tag:'주도성', q:'가족 결정에서 내 의견이 무시됐을 때?',
     opts:[{t:'적극적으로 내 의견이 왜 필요한지 말해요',s:4},{t:'다음에 다시 한번 얘기해요',s:3},{t:'서운하지만 따라가요',s:2},{t:'원래 그런 거라 별로 신경 안 써요',s:1}] },
 ];
- 
+
 /* ─── 부모 6유형 ─── */
 function getParentType(s){
   const {A,B,C,D}=s;
@@ -164,13 +164,13 @@ function getParentType(s){
     othersView:'무난하고 편안한 부모. 가끔 부모 생각이 뭔지 알고 싶어.',myIntent:'싸우기 싫어요. 사이좋게 지내는 게 제일 중요해요.',
   };
 }
- 
+
 /* ─── 자녀 6유형 ─── */
 function getChildType(s){
   const {A,B,C,D}=s;
   if(A>=7&&B>=7) return {
     name:'솔직형',sub:'직접적 · 감정 표현 · 주체적',reliability:97,
-    summary:'생각과 감정을 솔직하게 표현하는 편이에요. 부모님과도 할 말은 하고, 감정도 티가 나요. 대화에서 숨기는 것이 별로 없어서 부모님이 나를 파악하기 비교적 쉬운 편이에요.',
+    summary:'생각과 감정을 솔직하게 표현하는 편이에요. 부모님과도 할 말은 하고, 감정도 티가 나요.',
     strengths:['부모님이 내 상태를 비교적 잘 알 수 있어요','갈등이 생겨도 빠르게 터놓고 해결해요','솔직함이 장기적으로 신뢰를 만들어요','감정을 쌓아두지 않아서 관계가 맑아요'],
     cautions:['감정이 강할 때 표현이 거칠어질 수 있어요','말하고 나서 후회할 때가 있어요','상대 감정을 고려하지 못할 때가 있어요','받아들일 준비가 됐는지 먼저 보는 연습'],
     tips:[{t:'말하기 전에 2초만 생각해봐요',e:'감정이 식은 뒤 말하면 더 잘 전달돼요'},{t:'"나는 ~했어요" 형식으로 말해봐요',e:'비난 대신 내 감정으로 전달하면 덜 싸워요'},{t:'솔직함은 강점이에요, 표현만 다듬으면 돼요',e:'내용은 그대로, 포장만 살짝 바꿔요'}],
@@ -180,7 +180,7 @@ function getChildType(s){
   };
   if(A>=7&&B<6&&C>=6) return {
     name:'논리형',sub:'직접적 · 감정 억제 · 해결 지향',reliability:95,
-    summary:'말은 직접적으로 하지만 감정보다는 사실이나 논리 위주로 표현해요. 부모님이 감정적으로 접근할 때 답답함을 느낄 수 있고, 본인도 감정을 꺼내는 게 익숙하지 않아요.',
+    summary:'말은 직접적으로 하지만 감정보다는 사실이나 논리 위주로 표현해요.',
     strengths:['말하고 싶은 것을 명확하게 전달해요','감정에 휩쓸리지 않고 이성적으로 대화','논리적 설명 능력이 뛰어나요','문제 해결에 집중해서 생산적인 대화'],
     cautions:['부모님이 "감정이 없나" 오해할 수 있어요','자신의 감정을 알아채는 연습이 필요해요','논리를 앞세울 때 관계가 멀어질 수 있어요','부모님의 감정 표현이 비효율적으로 느껴질 수 있어요'],
     tips:[{t:'이유 말고 감정도 한 마디 추가해봐요',e:'"그래서 좀 속상했어요" 한마디면 충분해요'},{t:'부모님의 감정 표현을 이상하다 여기지 마요',e:'표현 방식이 다를 뿐이에요'},{t:'감정 표현이 약점이 아니에요',e:'논리와 감정 둘 다 있어야 대화가 완성돼요'}],
@@ -190,7 +190,7 @@ function getChildType(s){
   };
   if(A<6&&B>=7) return {
     name:'감수형',sub:'간접적 · 감정 풍부 · 눈치형',reliability:96,
-    summary:'감정은 풍부하게 느끼지만, 말로 표현하기보다는 태도나 표정으로 티가 나는 편이에요. 부모님이 눈치채줬으면 하는 마음이 있지만, 직접 말하기는 어려워요.',
+    summary:'감정은 풍부하게 느끼지만, 말로 표현하기보다는 태도나 표정으로 티가 나는 편이에요.',
     strengths:['감정에 민감하고 공감 능력이 높아요','분위기를 잘 읽어요','깊이 느끼는 만큼 관계에 진심이에요','섬세한 관찰로 상대를 잘 이해해요'],
     cautions:['태도로 티를 내지만 부모님이 이유를 모를 수 있어요','"알아서 알아줘"가 갈등을 만들기도 해요','말로 표현하지 않으면 오해가 쌓여요','혼자 감당하려다 지칠 수 있어요'],
     tips:[{t:'태도 대신 말로 한 번 시도해봐요',e:'"오늘 좀 힘들었어요" 한마디가 훨씬 빨라요'},{t:'완벽한 표현이 아니어도 괜찮아요',e:'"뭐라 말하기 어려운데 힘들어요"도 충분해요'},{t:'내 감정에 이름을 붙여봐요',e:'슬픔인지, 지침인지, 외로움인지 구분해봐요'}],
@@ -200,7 +200,7 @@ function getChildType(s){
   };
   if(A<6&&B<6) return {
     name:'내향형',sub:'간접적 · 감정 억제 · 독립 지향',reliability:94,
-    summary:'감정도 말도 안으로 삭이는 편이에요. 혼자 처리하는 게 익숙하고, 부모님과의 대화가 부담스럽게 느껴질 때가 많아요. 그렇다고 관심이 없는 건 아니에요.',
+    summary:'감정도 말도 안으로 삭이는 편이에요. 혼자 처리하는 게 익숙하고, 부모님과의 대화가 부담스럽게 느껴질 때가 많아요.',
     strengths:['혼자서 감정을 정리하는 능력','신중하게 생각하고 행동해요','불필요한 갈등을 피하는 편이에요','독립적으로 문제를 해결하는 능력'],
     cautions:['부모님이 내 상태를 전혀 모를 수 있어요','혼자 감당하다 한 번에 터지기도 해요','도움이 필요할 때 표현 못 하는 경우가 생겨요','고립감이 쌓이면 관계가 더 멀어질 수 있어요'],
     tips:[{t:'한 문장짜리 체크인만 해도 충분해요',e:'"오늘 좀 지쳤어요" 그것만으로도 관계가 달라져요'},{t:'말이 아닌 다른 방식도 OK예요',e:'문자, 앱 체크인 등 간접 표현도 충분해요'},{t:'혼자 삭이는 게 미덕이 아니에요',e:'조금씩 표현할수록 마음이 가벼워져요'}],
@@ -210,7 +210,7 @@ function getChildType(s){
   };
   if(A>=6&&D>=7&&C>=6) return {
     name:'주도형',sub:'직접적 · 자기주도 · 해결 지향',reliability:95,
-    summary:'자기 의견이 명확하고 스스로 결정하고 싶은 욕구가 강해요. 부모님의 개입보다는 자율성을 원하고, 필요할 때 도움을 요청하는 방식을 선호해요.',
+    summary:'자기 의견이 명확하고 스스로 결정하고 싶은 욕구가 강해요.',
     strengths:['명확한 자기 의견과 방향','자율적으로 문제를 해결하는 능력','의존 없이 스스로 결정하는 힘','목표 지향적이고 실행력이 강해요'],
     cautions:['부모님 의견을 무시하는 것처럼 보일 수 있어요','도움이 필요할 때도 요청하기 어려워해요','고집처럼 보여 관계에 마찰이 생길 수 있어요','틀렸을 때 인정하는 것이 어렵게 느껴질 수 있어요'],
     tips:[{t:'부모님 의견도 "참고 자료"로 열어둬봐요',e:'반드시 따를 필요는 없지만 들어보는 것도 힘이에요'},{t:'도움 요청이 약함이 아니에요',e:'"도움이 필요해요"라고 말해봐요'},{t:'내 결정을 설명해줄 때 이유도 함께요',e:'부모님도 이해하면 더 지지해줄 수 있어요'}],
@@ -220,7 +220,7 @@ function getChildType(s){
   };
   return {
     name:'수용형',sub:'간접적 · 수용적 · 관계 중심',reliability:93,
-    summary:'갈등을 피하고 관계를 유지하는 것을 중요하게 생각해요. 부모님과의 마찰이 싫어서 맞춰주는 경우가 많아요. 부드럽고 유연하지만, 내 진짜 생각이 전달되지 않는 경우가 있어요.',
+    summary:'갈등을 피하고 관계를 유지하는 것을 중요하게 생각해요. 부드럽고 유연하지만, 내 진짜 생각이 전달되지 않는 경우가 있어요.',
     strengths:['갈등 없이 관계를 유지하는 능력','부모님의 말을 잘 수용하고 유연하게 반응','분위기를 잘 읽고 맞춰줄 수 있어요','평화로운 가족 분위기에 기여해요'],
     cautions:['내 진짜 생각이 전달되지 않아 오해가 생겨요','속으로 쌓여서 갑자기 터질 수 있어요','내 의견이 없어 보여 부모님도 답답할 수 있어요','맞춰주는 것이 습관이 되면 내 것을 잃을 수 있어요'],
     tips:[{t:'작은 것부터 내 의견을 말해봐요',e:'"저는 이게 더 좋아요"라고 말해도 괜찮아요'},{t:'동의와 진짜 생각을 구분해봐요',e:'맞춰주는 것과 진심 동의는 달라요'},{t:'갈등이 나쁜 게 아니에요',e:'작은 불편함을 말하면 관계가 더 진솔해져요'}],
@@ -229,21 +229,21 @@ function getChildType(s){
     othersView:'순하고 착한 아이. 가끔 진짜 뭘 원하는지 알고 싶어.',myIntent:'싸우기 싫어요. 사이좋게 지내는 게 더 중요해요.',
   };
 }
- 
+
 /* ══════════════════════════════════════════════════════
    퀴즈 엔진
 ══════════════════════════════════════════════════════ */
 let radarChart = null;
- 
+
 const Quiz = (() => {
   let qs=[]; let role=''; let cur=0; let ans={};
- 
+
   function show(id){
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     const el = document.getElementById(id);
     if(el) { el.classList.add('active'); window.scrollTo(0,0); }
   }
- 
+
   function calcScores(){
     const raw={A:0,B:0,C:0,D:0}; const cnt={A:0,B:0,C:0,D:0};
     qs.forEach((q,i)=>{ if(ans[i]!==undefined){ raw[q.axis]+=ans[i]; cnt[q.axis]++; } });
@@ -254,7 +254,7 @@ const Quiz = (() => {
     });
     return out;
   }
- 
+
   function renderQ(){
     const q=qs[cur]; const tot=qs.length;
     document.getElementById('q-prog-text').textContent=`${cur+1} / ${tot}`;
@@ -262,35 +262,47 @@ const Quiz = (() => {
     document.getElementById('q-prog-bar').style.width=`${((cur+1)/tot)*100}%`;
     document.getElementById('q-num').textContent=`질문 ${String(cur+1).padStart(2,'0')}`;
     document.getElementById('q-text').textContent=q.q;
- 
+
     document.getElementById('q-opts').innerHTML=q.opts.map((o,i)=>{
       const sel=ans[cur]===o.s?'selected':'';
       return `<button class="opt ${sel}" onclick="Quiz.select(${o.s},this)">
         <span class="opt-num">${i+1}</span><span>${o.t}</span>
       </button>`;
     }).join('');
- 
+
     document.getElementById('btn-prev').disabled=cur===0;
     document.getElementById('btn-next').disabled=ans[cur]===undefined;
     document.getElementById('btn-next').textContent=cur===tot-1?'결과 보기':'다음';
   }
- 
+
   function renderResult(){
     const scores=calcScores();
     const type=role==='parent'?getParentType(scores):getChildType(scores);
- 
-    // 결과 저장
-    const saved={role,type:type.name,sub:type.sub,scores,reliability:type.reliability,date:new Date().toLocaleDateString('ko-KR')};
-    localStorage.setItem('kync_quiz_result',JSON.stringify(saved));
- 
+
+    // ★ 결과 저장 — localStorage + Firestore
+    const saved={
+      role, type:type.name, sub:type.sub,
+      scores, reliability:type.reliability,
+      date:new Date().toLocaleDateString('ko-KR'),
+      savedAt: new Date().toISOString(),
+    };
+    // localStorage에 저장 (앱에서 활용)
+    localStorage.setItem('kync_quiz_result', JSON.stringify(saved));
+
+    // Firestore에도 저장
+    const uid = (typeof KyncAuth !== 'undefined') ? KyncAuth.current?.uid : null;
+    if (uid && typeof KyncDB !== 'undefined') {
+      KyncDB.saveQuizResult(uid, saved).catch(e => console.error('quiz save', e));
+    }
+
     document.getElementById('r-eyebrow').textContent=role==='parent'?'부모 대화 유형 분석':'수험생 대화 유형 분석';
     document.getElementById('r-type-name').textContent=type.name;
     document.getElementById('r-type-sub').textContent=type.sub;
     document.getElementById('r-reliability').textContent=`AI 신뢰도 ${type.reliability}%`;
     document.getElementById('r-summary').textContent=type.summary;
- 
+
     show('s-result');
- 
+
     /* 레이더 차트 */
     setTimeout(()=>{
       const ctx=document.getElementById('radarChart').getContext('2d');
@@ -316,7 +328,7 @@ const Quiz = (() => {
           plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw}/10점`}}},
         }
       });
- 
+
       /* 축 점수 바 */
       document.getElementById('axes-display').innerHTML=AXES.map(ax=>{
         const pct=(scores[ax.id]/10)*100;
@@ -327,7 +339,7 @@ const Quiz = (() => {
         </div>`;
       }).join('');
       setTimeout(()=>{ document.querySelectorAll('.axis-fill').forEach(el=>{ el.style.width=el.dataset.pct+'%'; }); },100);
- 
+
       /* 게이지 */
       document.getElementById('gauge-display').innerHTML=type.gauges.map(g=>`
         <div class="gauge-row">
@@ -336,7 +348,7 @@ const Quiz = (() => {
           <div class="gauge-val" style="color:${g.color}">${g.val}</div>
         </div>`).join('');
       setTimeout(()=>{ document.querySelectorAll('.gauge-fill').forEach(el=>{ el.style.width=el.dataset.val+'%'; }); },200);
- 
+
       /* 상세 */
       document.getElementById('r-detail-card').innerHTML=`
         <div class="detail-section">
@@ -355,10 +367,10 @@ const Quiz = (() => {
           <div class="detail-title">나의 진심</div>
           <div style="font-size:14px;color:var(--text2);line-height:1.7;padding:8px 0;">${type.myIntent}</div>
         </div>`;
- 
+
       /* 팁 */
       document.getElementById('r-tips').innerHTML=type.tips.map(t=>`<div class="tip-item">${t.t}<em>${t.e}</em></div>`).join('');
- 
+
       /* 궁합 */
       document.getElementById('r-compat').innerHTML=type.compat.map(c=>{
         const cls=c.badge==='good'?'badge-good':c.badge==='mid'?'badge-mid':'badge-hard';
@@ -370,7 +382,7 @@ const Quiz = (() => {
       }).join('');
     },100);
   }
- 
+
   /* 로딩 연출 */
   function runLoading(){
     show('s-loading');
@@ -379,7 +391,7 @@ const Quiz = (() => {
     const msgEl=document.getElementById('loading-msg');
     const timer=setInterval(()=>{ if(i<msgs.length){ if(msgEl) msgEl.textContent=msgs[i++]; } else { clearInterval(timer); renderResult(); } },700);
   }
- 
+
   return {
     start(r){
       role=r; qs=r==='parent'?PARENT_QS:CHILD_QS; cur=0; ans={};
@@ -398,6 +410,11 @@ const Quiz = (() => {
       else runLoading();
     },
     reset(){ show('s-role'); radarChart&&radarChart.destroy(); radarChart=null; },
-    saveAndGoHome(){ location.href='index.html'; },
+    // ★ 나가기 → 활동 탭으로 이동
+    saveAndGoHome(){
+      const role = localStorage.getItem('kync_role') || 'parent';
+      const activityTab = role === 'parent' ? 'p-activityTab' : 'c-activityTab';
+      location.href = `index.html?tab=${activityTab}&role=${role}`;
+    },
   };
-})();
+})(); 

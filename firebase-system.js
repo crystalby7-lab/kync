@@ -378,4 +378,4 @@ const KyncDB = {
       quizResult: { ...result, savedAt: firebase.firestore.FieldValue.serverTimestamp() }
     }, { merge: true });
   }
-};  
+}; 

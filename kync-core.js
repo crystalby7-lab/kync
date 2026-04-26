@@ -455,4 +455,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-window.App = App;
+window.App = App; 
