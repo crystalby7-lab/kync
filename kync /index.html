@@ -8,109 +8,31 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="kync-extra.css" />
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-             GoogleAuthProvider, onAuthStateChanged, signOut }
-      from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDZ4HFyDhUqCRnydxe6UTWqCpY7fTAgXj8",
-      authDomain: "kync-app-191a2.firebaseapp.com",
-      projectId: "kync-app-191a2",
-      storageBucket: "kync-app-191a2.firebasestorage.app",
-      messagingSenderId: "84542581161",
-      appId: "1:84542581161:web:58a94a600d84901dd2bcb8"
-    };
-
-    const app      = initializeApp(firebaseConfig);
-    const auth     = getAuth(app);
-    const provider = new GoogleAuthProvider();
-
-    // ── 구글 로그인 ──
-    window.loginWithGoogle = async () => {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        _onLoginSuccess(result.user);
-      } catch(e) {
-        if (e.code !== 'auth/popup-closed-by-user') {
-          alert('구글 로그인 실패: ' + e.message);
-        }
-      }
-    };
-
-    // ── 이메일 로그인 ──
-    window.loginWithEmail = async () => {
-      const email = document.getElementById('email-input')?.value?.trim();
-      const pw    = document.getElementById('pw-input')?.value;
-      if (!email || !pw) { alert('이메일과 비밀번호를 입력해주세요.'); return; }
-      try {
-        const result = await signInWithEmailAndPassword(auth, email, pw);
-        _onLoginSuccess(result.user);
-      } catch(e) {
-        if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-          // 없으면 회원가입
-          try {
-            const result2 = await createUserWithEmailAndPassword(auth, email, pw);
-            _onLoginSuccess(result2.user);
-          } catch(e2) {
-            alert('로그인 실패: ' + e2.message);
-          }
-        } else {
-          alert('로그인 실패: ' + e.message);
-        }
-      }
-    };
-
-    // ── 로그아웃 ──
-    window.firebaseSignOut = async () => {
-      await signOut(auth);
-      localStorage.removeItem('kync_role');
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById('page-login').classList.add('active');
-      document.getElementById('email-form').style.display = 'none';
-    };
-
-    // ── 로그인 성공 공통 처리 ──
-    function _onLoginSuccess(user) {
-      localStorage.setItem('kync_user_name',  user.displayName || user.email.split('@')[0]);
-      localStorage.setItem('kync_user_email', user.email);
-      localStorage.setItem('kync_user_photo', user.photoURL || '');
-      const role = localStorage.getItem('kync_role');
-      if (role === 'parent' || role === 'child') {
-        App.go('page-' + role);
-        App.init();
-      } else {
-        App.go('page-onboard');
-      }
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #kync-global-loader {
+      display:none; position:fixed; inset:0;
+      background:rgba(61,53,48,0.75); z-index:9999;
+      align-items:center; justify-content:center;
     }
-
-    // ── 새로고침해도 로그인 유지 ──
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        localStorage.setItem('kync_user_name',  user.displayName || user.email.split('@')[0]);
-        localStorage.setItem('kync_user_email', user.email);
-        localStorage.setItem('kync_user_photo', user.photoURL || '');
-        const role = localStorage.getItem('kync_role');
-        if (role === 'parent' || role === 'child') {
-          // 이미 역할 설정됨 → 홈으로
-          const params = new URLSearchParams(window.location.search);
-          if (!params.get('from')) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + role).classList.add('active');
-          }
-        } else {
-          // 로그인됐지만 역할 미설정 → 온보딩
-          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-          document.getElementById('page-onboard').classList.add('active');
-        }
-      }
-      // user 없으면 로그인 페이지 그대로
-    });
-  </script>
+    #kync-global-loader .spinner {
+      width:44px; height:44px;
+      border:4px solid rgba(255,255,255,0.2);
+      border-top-color:#c17f4a;
+      border-radius:50%;
+      animation:spin 0.8s linear infinite;
+    }
+    #email-form { display:none; flex-direction:column; gap:10px; margin-top:14px; }
+    #email-form input {
+      padding:14px 16px; border:1.5px solid rgba(0,0,0,0.13);
+      border-radius:14px; font-size:15px; font-family:'Nunito',sans-serif;
+      outline:none; background:#f7f5f2;
+    }
+  </style>
 </head>
 <body>
+
+<div id="kync-global-loader"><div class="spinner"></div></div>
 
 <!-- ════ 로그인 ════ -->
 <div class="page active" id="page-login">
@@ -120,35 +42,24 @@
       <div class="brand-sub">말하지 않아도<br>연결되는 가족</div>
     </div>
     <div class="login-bottom">
-      <!-- 구글 로그인 -->
       <button class="google-btn" onclick="loginWithGoogle()">
         <div class="google-icon">G</div> Google로 계속하기
       </button>
-
-      <!-- 이메일 로그인 토글 -->
       <button class="btn-outline" style="margin-top:12px;"
-        onclick="document.getElementById('email-form').style.display = document.getElementById('email-form').style.display === 'none' ? 'flex' : 'none'">
+        onclick="const f=document.getElementById('email-form');f.style.display=f.style.display==='flex'?'none':'flex'">
         이메일로 시작하기
       </button>
-
-      <!-- 이메일 입력 폼 (기본 숨김) -->
-      <div id="email-form" style="display:none; flex-direction:column; gap:10px; margin-top:14px;">
-        <input id="email-input" type="email" placeholder="이메일 주소"
-          style="padding:14px 16px; border:1.5px solid rgba(0,0,0,0.13); border-radius:14px;
-                 font-size:15px; font-family:Nunito,sans-serif; outline:none; background:#f7f5f2;">
+      <div id="email-form">
+        <input id="email-input" type="email" placeholder="이메일 주소">
         <input id="pw-input" type="password" placeholder="비밀번호 (6자 이상)"
-          style="padding:14px 16px; border:1.5px solid rgba(0,0,0,0.13); border-radius:14px;
-                 font-size:15px; font-family:Nunito,sans-serif; outline:none; background:#f7f5f2;">
+          onkeydown="if(event.key==='Enter') loginWithEmail()">
         <button onclick="loginWithEmail()"
-          style="padding:15px; background:#3d3530; color:#fff; border:none; border-radius:14px;
-                 font-size:15px; font-weight:800; cursor:pointer; font-family:Nunito,sans-serif;">
+          style="padding:15px;background:#3d3530;color:#fff;border:none;border-radius:14px;
+                 font-size:15px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">
           로그인 / 회원가입
         </button>
-        <div style="font-size:11px; color:#a09b95; text-align:center; line-height:1.6;">
-          계정이 없으면 자동으로 가입됩니다
-        </div>
+        <div style="font-size:11px;color:#a09b95;text-align:center;">계정이 없으면 자동 가입됩니다</div>
       </div>
-
       <div class="login-terms">시작 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.</div>
     </div>
   </div>
@@ -160,14 +71,14 @@
     <div class="onboard-logo">kync</div>
     <div class="onboard-sub">가족 안에서 당신의<br>역할을 선택해주세요.</div>
     <div class="role-list">
-      <div class="role-card" onclick="App.setRole('parent')">
+      <div class="role-card" onclick="setUserRole('parent')">
         <div>
           <div class="role-title">부모로 시작하기</div>
           <div class="role-desc">자녀의 마음을 더 깊이 이해하고 싶어요.</div>
         </div>
         <div class="role-arrow">›</div>
       </div>
-      <div class="role-card" onclick="App.setRole('child')">
+      <div class="role-card" onclick="setUserRole('child')">
         <div>
           <div class="role-title">자녀로 시작하기</div>
           <div class="role-desc">부모님께 내 진심을 편하게 전하고 싶어요.</div>
@@ -204,7 +115,7 @@
           <div class="status-main">
             <div class="status-indicator ind-low" id="p-status-dot"></div>
             <div>
-              <div class="status-name" id="p-child-name">보영</div>
+              <div class="status-name" id="p-child-name">자녀</div>
               <div class="status-desc" id="p-child-desc">오늘 자녀가 아직 체크인하지 않았어요.</div>
             </div>
           </div>
@@ -231,9 +142,17 @@
         </div>
         <button id="p-submitAnswer" class="submit-btn">답변 올리기</button>
 
-        <!-- 상대 답변 (잠금/공개) -->
+        <!-- 칭찬 카드 버튼 -->
+        <button onclick="KyncPraise.openSendModal('parent')"
+          style="width:100%;padding:15px;background:#fff;color:#3d3530;
+                 border:1.5px solid #e8e3da;border-radius:16px;font-size:14px;
+                 font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;margin-top:4px;">
+          자녀에게 칭찬 카드 보내기
+        </button>
+
+        <!-- 상대 답변 잠금 -->
         <div class="opponent-answer-wrap" id="p-opponent-wrap">
-          <div class="locked-box" id="p-lockedBox">
+          <div class="locked-box">
             <div class="lock-icon-wrap">—</div>
             <div class="locked-desc">
               <strong>자녀 답변</strong>
@@ -243,33 +162,93 @@
         </div>
       </section>
 
-      <!-- 기록 탭 -->
+      <!-- 기록 탭 (Kelog 스타일) -->
       <section id="p-recordTab" class="tab-content">
-        <div class="section-label" id="p-historyCount"></div>
-        <div id="p-historyList" class="history-list"></div>
+        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
+          <div class="today-date" style="margin-bottom:14px;">기록</div>
+          <div id="p-diary-container"></div>
+        </div>
+      </section>
+
+      <!-- 활동 탭 -->
+      <section id="p-activityTab" class="tab-content">
+        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:14px;">
+          <div class="today-date">활동</div>
+
+          <div onclick="location.href='quiz.html'"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#3d3530;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◎</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">대화 유형 검사</div>
+              <div style="font-size:12px;color:#a09890;">20문항 · 4축 분석 · 부모 6가지 유형</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+
+          <div onclick="KyncBalance.openGame('parent')"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#c17f4a;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◈</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">취향 맞추기</div>
+              <div style="font-size:12px;color:#a09890;">서로의 취향을 알아가는 질문 · 하루 최대 10문제</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+
+          <div onclick="KyncTogether.openQuizModal('parent')"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#5a9e6f;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◌</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">서로 맞히기 퀴즈</div>
+              <div style="font-size:12px;color:#a09890;">2단계 — 내 답 먼저, 상대방 예측 후 공개</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+
+          <div onclick="KyncTogether.openBalanceGame('parent')"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#d4cdc2;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#3d3530;flex-shrink:0;">○</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">밸런스 게임</div>
+              <div style="font-size:12px;color:#a09890;">오늘 더 힘들었던 쪽은? 각자 답하고 비교</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+        </div>
       </section>
 
       <!-- 퀘스트 탭 -->
       <section id="p-questTab" class="tab-content">
-        <div class="section-label">AI 맞춤 퀘스트</div>
-        <div class="notice-box" style="margin-bottom:14px;">
-          두 분 모두 동의해야 퀘스트가 시작돼요. 동시에 최대 2개까지 진행할 수 있어요.
+        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
+          <div class="today-date" style="margin-bottom:14px;">퀘스트</div>
+          <div id="p-quest-list"></div>
         </div>
-        <div id="p-quest-list"></div>
       </section>
 
       <!-- 연결 탭 -->
       <section id="p-connectTab" class="tab-content">
         <div class="profile-hero">
           <div class="avatar-circle" id="p-avatar">P</div>
-          <div class="profile-name" id="p-username"></div>
+          <div class="profile-name" id="p-username">부모님</div>
           <div class="profile-role">부모</div>
           <div class="days-row">
             <div class="days-num" id="p-days">0</div>
             <div class="days-label">일째 연결 중</div>
           </div>
         </div>
-        <!-- 레벨 / 포인트 -->
+        <div class="streak-card" style="margin-bottom:14px;"></div>
         <div class="level-card" id="p-level-card"></div>
         <div class="family-card">
           <div class="family-label">연결된 가족</div>
@@ -277,20 +256,32 @@
         </div>
         <div class="code-card" style="margin-top:14px;">
           <div class="code-hint">가족 연결 코드</div>
-          <div class="code-display">KY92</div>
-          <button class="code-btn" onclick="App.copyCode(this)">코드 복사하기</button>
+          <div class="code-display" id="p-family-code">—</div>
+          <button class="code-btn" onclick="generateCode()">새 코드 생성</button>
+          <button class="code-btn" style="margin-top:8px;" onclick="App.copyCode(this)">코드 복사</button>
         </div>
-        <button class="btn-outline" style="margin-top:20px;" onclick="firebaseSignOut()">로그아웃</button>
+        <button class="btn-outline" style="margin-top:20px;" onclick="logout()">로그아웃</button>
       </section>
 
     </main>
 
+    <!-- ★ 부모 탭바 — 아이콘 5개 모두 정상 -->
     <footer class="bottom-nav">
-      <button class="tab-btn active" data-target="p-todayTab" data-page="page-parent"><div class="tab-ico">✦</div><span>오늘</span></button>
-      <button class="tab-btn" data-target="p-recordTab" data-page="page-parent"><div class="tab-ico">◈</div><span>기록</span></button>
-      <button class="tab-btn" data-target="p-questTab" data-page="page-parent"><div class="tab-ico">◌</div><span>퀘스트</span></button>
-      <button class="tab-btn" onclick="location.href='quiz.html'"><div class="tab-ico">◎</div><span>검사</span></button>
-      <button class="tab-btn" data-target="p-connectTab" data-page="page-parent"><div class="tab-ico">○</div><span>연결</span></button>
+      <button class="tab-btn active" data-target="p-todayTab">
+        <div class="tab-ico">✦</div><span>오늘</span>
+      </button>
+      <button class="tab-btn" data-target="p-recordTab">
+        <div class="tab-ico">◈</div><span>기록</span>
+      </button>
+      <button class="tab-btn" data-target="p-activityTab">
+        <div class="tab-ico">◎</div><span>활동</span>
+      </button>
+      <button class="tab-btn" data-target="p-questTab">
+        <div class="tab-ico">◌</div><span>퀘스트</span>
+      </button>
+      <button class="tab-btn" data-target="p-connectTab">
+        <div class="tab-ico">○</div><span>연결</span>
+      </button>
     </footer>
   </div>
 </div>
@@ -315,14 +306,10 @@
       <section id="c-todayTab" class="tab-content active">
         <div class="today-date" id="c-todayDate"></div>
 
-        <!-- 감정 체크인 카드 (상세) -->
+        <!-- 감정 체크인 -->
         <div class="checkin-card">
           <div class="checkin-label">오늘 내 감정을 기록해봐</div>
-
-          <!-- 8종 감정 그리드 -->
           <div class="emotion-grid-8" id="c-emotionGrid"></div>
-
-          <!-- 강도 슬라이더 -->
           <div class="slider-section">
             <div class="slider-row-label">
               <span class="slider-label">스트레스 강도</span>
@@ -331,7 +318,6 @@
             <input type="range" min="1" max="10" value="5" id="c-stressSlider"
               oninput="document.getElementById('c-stress-val').textContent=this.value">
           </div>
-
           <div class="slider-section">
             <div class="slider-row-label">
               <span class="slider-label">에너지 수준</span>
@@ -340,14 +326,14 @@
             <input type="range" min="1" max="10" value="5" id="c-energySlider"
               oninput="document.getElementById('c-energy-val').textContent=this.value">
           </div>
-
-          <!-- 감정 메모 -->
           <div class="emotion-memo-wrap">
             <div class="emotion-memo-label">한 줄 감정 메모 (선택)</div>
-            <input type="text" id="c-emotionMemo" class="emotion-memo-input" placeholder="지금 이 감정이 드는 이유가 있어?">
+            <input type="text" id="c-emotionMemo" class="emotion-memo-input"
+              placeholder="지금 이 감정이 드는 이유가 있어?">
           </div>
-
-          <button class="submit-btn" style="margin-top:16px;" onclick="App.saveCheckin()">오늘 상태 저장하기</button>
+          <button class="submit-btn" style="margin-top:16px;" onclick="App.saveCheckin()">
+            오늘 상태 저장하기
+          </button>
         </div>
 
         <!-- 질문 카드 -->
@@ -366,9 +352,9 @@
         </div>
         <button id="c-submitAnswer" class="submit-btn">답변 올리기</button>
 
-        <!-- 상대 답변 (잠금/공개) -->
+        <!-- 상대 답변 잠금 -->
         <div class="opponent-answer-wrap" id="c-opponent-wrap">
-          <div class="locked-box" id="c-lockedBox">
+          <div class="locked-box">
             <div class="lock-icon-wrap">—</div>
             <div class="locked-desc">
               <strong>부모님 답변</strong>
@@ -378,97 +364,265 @@
         </div>
       </section>
 
-      <!-- 일기 탭 -->
-      <section id="c-diaryTab" class="tab-content">
-        <div class="section-label">나만의 감정 일기</div>
-        <div class="notice-box" style="margin-bottom:12px;">이 일기는 부모님께 공개되지 않는 나만의 공간이야.</div>
+      <!-- 일기 탭 (자녀) -->
+      <section id="c-praiseTab" class="tab-content">
+        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:14px;">
+          <div class="today-date">나의 일기</div>
 
-        <!-- 일기용 감정 선택 -->
-        <div class="diary-emotion-row" id="c-diaryEmotionRow"></div>
+          <div class="notice-box">이 일기는 부모님께 공개되지 않는 나만의 공간이야.</div>
 
-        <textarea id="c-diaryInput" placeholder="오늘 하루는 어땠어?" style="min-height:140px;margin-top:8px;"></textarea>
-        <button class="submit-btn" style="margin-top:12px;" onclick="App.saveDiary()">저장하기</button>
+          <!-- 감정 선택 -->
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#a09890;letter-spacing:0.08em;margin-bottom:10px;">오늘의 감정</div>
+            <div class="diary-emotion-row" id="c-diaryEmotionRow"></div>
+          </div>
 
-        <div class="section-label" style="margin-top:24px;">이전 기록</div>
-        <div id="c-diaryList" class="history-list"></div>
+          <!-- 일기 입력 -->
+          <textarea id="c-diaryInput" placeholder="오늘 하루는 어땠어?"
+            style="min-height:140px;padding:16px;border:1.5px solid #e8e3da;
+                   border-radius:16px;font-size:14px;font-family:Nunito,sans-serif;
+                   resize:none;outline:none;color:#3d3530;background:#fff;"></textarea>
+          <button class="submit-btn" onclick="App.saveDiary()">저장하기</button>
+
+          <!-- 이전 기록 -->
+          <div style="font-size:12px;font-weight:700;color:#a09890;letter-spacing:0.06em;margin-top:8px;">
+            이전 기록
+          </div>
+          <div id="c-diaryList" class="history-list"></div>
+        </div>
+      </section>
+
+      <!-- 기록 탭 (자녀, Kelog 스타일) -->
+      <section id="c-recordTab" class="tab-content">
+        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
+          <div class="today-date" style="margin-bottom:14px;">기록</div>
+          <div id="c-diary-container"></div>
+        </div>
+      </section>
+
+      <!-- 활동 탭 -->
+      <section id="c-activityTab" class="tab-content">
+        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:14px;">
+          <div class="today-date">활동</div>
+
+          <div onclick="location.href='quiz.html'"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#3d3530;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◎</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">대화 유형 검사</div>
+              <div style="font-size:12px;color:#a09890;">20문항 · 4축 분석 · 자녀 6가지 유형</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+
+          <div onclick="KyncBalance.openGame('child')"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#c17f4a;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◈</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">취향 맞추기</div>
+              <div style="font-size:12px;color:#a09890;">서로의 취향을 알아가는 질문 · 하루 최대 10문제</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+
+          <div onclick="KyncTogether.openQuizModal('child')"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#5a9e6f;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◌</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">서로 맞히기 퀴즈</div>
+              <div style="font-size:12px;color:#a09890;">2단계 — 내 답 먼저, 상대방 예측 후 공개</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+
+          <div onclick="KyncTogether.openBalanceGame('child')"
+            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
+                   cursor:pointer;display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;background:#d4cdc2;border-radius:14px;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:16px;font-weight:800;color:#3d3530;flex-shrink:0;">○</div>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">밸런스 게임</div>
+              <div style="font-size:12px;color:#a09890;">오늘 더 힘들었던 쪽은? 각자 답하고 비교</div>
+            </div>
+            <div style="font-size:20px;color:#d4cdc2;">›</div>
+          </div>
+        </div>
       </section>
 
       <!-- 퀘스트 탭 -->
       <section id="c-questTab" class="tab-content">
-        <div class="section-label">AI 맞춤 퀘스트</div>
-        <div class="notice-box" style="margin-bottom:14px;">
-          부모님과 함께 동의한 퀘스트만 시작돼요.
+        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
+          <div class="today-date" style="margin-bottom:14px;">퀘스트</div>
+          <div id="c-quest-list"></div>
         </div>
-        <div id="c-quest-list"></div>
       </section>
 
       <!-- 연결 탭 -->
       <section id="c-connectTab" class="tab-content">
         <div class="profile-hero">
           <div class="avatar-circle" id="c-avatar">C</div>
-          <div class="profile-name" id="c-username"></div>
+          <div class="profile-name" id="c-username">자녀</div>
           <div class="profile-role">자녀</div>
           <div class="days-row">
             <div class="days-num" id="c-days">0</div>
             <div class="days-label">일째 연결 중</div>
           </div>
         </div>
+        <div class="streak-card" style="margin-bottom:14px;"></div>
         <div class="level-card" id="c-level-card"></div>
         <div class="code-card">
-          <div class="code-hint">가족 연결 코드</div>
-          <div class="code-display">KY92</div>
-          <button class="code-btn" onclick="App.copyCode(this)">코드 복사하기</button>
+          <div class="code-hint">가족 연결 코드 입력</div>
+          <input id="c-code-input" maxlength="6" placeholder="KY + 4자리"
+            style="width:100%;padding:14px;border:2px solid #e8e5e0;border-radius:12px;
+                   font-size:22px;font-weight:800;text-align:center;letter-spacing:6px;
+                   text-transform:uppercase;font-family:Nunito,sans-serif;margin:10px 0;
+                   outline:none;box-sizing:border-box;">
+          <button class="code-btn" onclick="joinCode()">가족과 연결하기</button>
+          <div class="code-display" id="c-family-code" style="margin-top:8px;font-size:20px;"></div>
         </div>
         <div class="family-card" style="margin-top:14px;">
           <div class="family-label">연결된 가족</div>
           <div id="c-familyList"></div>
         </div>
-        <button class="btn-outline" style="margin-top:20px;" onclick="firebaseSignOut()">로그아웃</button>
+        <button class="btn-outline" style="margin-top:20px;" onclick="logout()">로그아웃</button>
       </section>
 
     </main>
 
+    <!-- 자녀 탭바 -->
     <footer class="bottom-nav">
-      <button class="tab-btn active" data-target="c-todayTab" data-page="page-child"><div class="tab-ico">✦</div><span>오늘</span></button>
-      <button class="tab-btn" data-target="c-diaryTab" data-page="page-child"><div class="tab-ico">◈</div><span>일기</span></button>
-      <button class="tab-btn" data-target="c-questTab" data-page="page-child"><div class="tab-ico">◌</div><span>퀘스트</span></button>
-      <button class="tab-btn" onclick="location.href='quiz.html'"><div class="tab-ico">◎</div><span>검사</span></button>
-      <button class="tab-btn" data-target="c-connectTab" data-page="page-child"><div class="tab-ico">○</div><span>연결</span></button>
+      <button class="tab-btn active" data-target="c-todayTab">
+        <div class="tab-ico">✦</div><span>오늘</span>
+      </button>
+      <button class="tab-btn" data-target="c-recordTab">
+        <div class="tab-ico">◈</div><span>기록</span>
+      </button>
+      <button class="tab-btn" data-target="c-activityTab">
+        <div class="tab-ico">◎</div><span>활동</span>
+      </button>
+      <button class="tab-btn" data-target="c-questTab">
+        <div class="tab-ico">◌</div><span>퀘스트</span>
+      </button>
+      <button class="tab-btn" data-target="c-connectTab">
+        <div class="tab-ico">○</div><span>연결</span>
+      </button>
     </footer>
   </div>
 </div>
 
-<script src="script.js"></script>
-<script src="kync-core.js"></script>
-<script>
-  // 탭 전환
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const targetId = this.getAttribute('data-target');
-      if (!targetId) return;
-      const parentPage = this.closest('.page');
-      parentPage.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      parentPage.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(targetId).classList.add('active');
-      this.classList.add('active');
-    });
-  });
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  // ── 퀴즈에서 돌아온 경우 처리 ──
+<script>
   (function(){
+    const role = localStorage.getItem('kync_role');
+    const name = localStorage.getItem('kync_user_name');
     const params = new URLSearchParams(window.location.search);
-    if(params.get('from') === 'quiz'){
-      const role = params.get('role') || localStorage.getItem('kync_role') || 'parent';
-      // 모든 페이지 숨기고
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      // 역할에 맞는 홈 페이지 표시
-      const targetPage = role === 'child' ? 'page-child' : 'page-parent';
-      const el = document.getElementById(targetPage);
-      if(el) el.classList.add('active');
-      // URL 정리
-      window.history.replaceState({}, '', 'index.html');
+    if (!params.get('from') && (!role || !name)) {
+      window._needOnboarding = true;
     }
   })();
+</script>
+
+<script src="firebase-system.js"></script>
+<script src="script.js"></script>
+<script src="kync-features.js"></script>
+<script src="kync-balance.js"></script>
+<script src="kync-quests.js"></script>
+<script src="kync-diary.js"></script>
+<script src="kync-quests2.js"></script>
+
+<script>
+// 탭 전환
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const targetId = this.getAttribute('data-target');
+    if (!targetId) return;
+    const parentPage = this.closest('.page');
+    parentPage.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    parentPage.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(targetId).classList.add('active');
+    this.classList.add('active');
+  });
+});
+
+// 퀴즈에서 돌아온 경우
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('from') === 'quiz'){
+    const role = params.get('role') || localStorage.getItem('kync_role') || 'parent';
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const el = document.getElementById('page-' + role);
+    if(el) el.classList.add('active');
+    window.history.replaceState({}, '', 'index.html');
+  }
+})();
+
+// 가족 코드 생성 (부모)
+async function generateCode() {
+  const user = KyncAuth.current;
+  if (!user) return;
+  const name = localStorage.getItem('kync_user_name') || '부모';
+  try {
+    const code = await KyncDB.createFamily(user.uid, name, 'parent');
+    document.getElementById('p-family-code').textContent = code;
+    alert('코드가 생성됐어요: ' + code + '\n자녀에게 공유해주세요!');
+  } catch(e) { alert('코드 생성 실패: ' + e.message); }
+}
+
+// 가족 코드 입력 (자녀)
+async function joinCode() {
+  const input = document.getElementById('c-code-input');
+  const code  = input?.value?.trim().toUpperCase();
+  if (!code || code.length < 6) { alert('코드를 입력해주세요.'); return; }
+  const user = KyncAuth.current;
+  if (!user) return;
+  const name = localStorage.getItem('kync_user_name') || '자녀';
+  try {
+    await KyncDB.joinFamily(user.uid, code, name, 'child');
+    document.getElementById('c-family-code').textContent = '연결됨: ' + code;
+    alert('가족과 연결됐어요!');
+  } catch(e) { alert(e.message); }
+}
+
+// 기능 초기화
+window.addEventListener('load', function() {
+  const uid = localStorage.getItem('kync_user_uid') || KyncAuth?.current?.uid;
+  if (uid && typeof KyncStreak !== 'undefined') KyncStreak.init(uid);
+
+  const role = localStorage.getItem('kync_role');
+  const familyCode = localStorage.getItem('kync_family_code');
+
+  // 퀘스트 초기화
+  if (role && typeof KyncQuests2 !== 'undefined') {
+    KyncQuests2.init(role==='parent'?'p-quest-list':'c-quest-list', role);
+  }
+
+  // 다이어리 초기화
+  if (role && typeof KyncDiary !== 'undefined') {
+    if (role === 'parent') KyncDiary.render('p-diary-container', 'parent');
+    else KyncDiary.render('c-diary-container', 'child');
+  }
+
+  // 칭찬 카드 실시간 감지
+  if (familyCode && role && typeof KyncPraise !== 'undefined') {
+    KyncPraise.listenForCards(familyCode, role);
+    const listId = role === 'parent' ? 'p-praise-list' : 'c-praise-list';
+    KyncPraise.renderReceivedCards(listId, role);
+  }
+});
 </script>
 </body>
 </html> 

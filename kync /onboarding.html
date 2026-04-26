@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Kync — 시작하기</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --dark:#3d3530; --amber:#c17f4a; --amber-l:#fdf1eb;
+  --cream:#f5f2ed; --warm:#e8e3da; --sand:#d4cdc2;
+  --text:#1a1714; --t2:#6b6560; --t3:#a09890;
+  --green:#4a8c63;
+}
+html,body{height:100%;background:var(--cream);font-family:'Nunito',sans-serif;overflow:hidden;}
+
+/* ── 전체 래퍼 ── */
+.ob-wrap{
+  max-width:430px;margin:0 auto;height:100dvh;
+  background:#fff;display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+}
+
+/* ── 진행 바 ── */
+.progress-bar{
+  display:flex;gap:5px;padding:52px 28px 0;
+}
+.pb-seg{
+  flex:1;height:3px;border-radius:2px;
+  background:var(--warm);transition:background 0.4s;
+}
+.pb-seg.done{background:var(--dark);}
+.pb-seg.active{background:var(--amber);}
+
+/* ── 슬라이드 컨테이너 ── */
+.slides-wrap{
+  flex:1;display:flex;overflow:hidden;position:relative;
+}
+.slide{
+  min-width:100%;padding:36px 28px 20px;
+  display:flex;flex-direction:column;
+  transition:transform 0.45s cubic-bezier(0.4,0,0.2,1);
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  overflow-y:auto;
+}
+
+/* ── 공통 ── */
+.ob-emoji{font-size:52px;margin-bottom:20px;line-height:1;}
+.ob-title{font-size:26px;font-weight:900;color:var(--dark);line-height:1.3;margin-bottom:12px;}
+.ob-title em{font-style:normal;color:var(--amber);}
+.ob-sub{font-size:15px;color:var(--t2);font-weight:600;line-height:1.75;}
+
+/* ── 기능 카드 ── */
+.feat-list{display:flex;flex-direction:column;gap:12px;margin-top:24px;}
+.feat-item{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:16px;background:var(--cream);border-radius:16px;
+}
+.feat-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.fi-dark{background:var(--dark);color:#fff;}
+.fi-amber{background:var(--amber-l);color:var(--amber);}
+.fi-green{background:#e2eed9;color:var(--green);}
+.feat-item-title{font-size:14px;font-weight:800;color:var(--dark);margin-bottom:3px;}
+.feat-item-desc{font-size:12px;color:var(--t2);line-height:1.6;}
+
+/* ── 역할 선택 ── */
+.role-cards{display:flex;flex-direction:column;gap:12px;margin-top:24px;}
+.role-card{
+  padding:22px 20px;border-radius:20px;
+  border:2px solid var(--warm);cursor:pointer;
+  transition:all 0.2s;background:#fff;
+  display:flex;align-items:center;gap:16px;
+}
+.role-card:hover{border-color:var(--amber);background:var(--amber-l);}
+.role-card.selected{border-color:var(--dark);background:var(--dark);}
+.role-card-icon{font-size:32px;flex-shrink:0;}
+.role-card-title{font-size:16px;font-weight:800;color:var(--dark);margin-bottom:4px;}
+.role-card.selected .role-card-title{color:#fff;}
+.role-card-desc{font-size:12px;color:var(--t2);font-weight:600;line-height:1.5;}
+.role-card.selected .role-card-desc{color:rgba(255,255,255,0.6);}
+
+/* ── 연결 화면 ── */
+.connect-section{margin-top:24px;}
+.connect-tab-btns{display:flex;gap:8px;margin-bottom:20px;}
+.ctab{
+  flex:1;padding:12px;border-radius:12px;
+  border:1.5px solid var(--warm);cursor:pointer;
+  font-size:13px;font-weight:800;color:var(--t2);
+  background:#fff;font-family:'Nunito',sans-serif;
+  transition:all 0.15s;
+}
+.ctab.on{background:var(--dark);color:#fff;border-color:var(--dark);}
+
+.code-display-big{
+  font-size:46px;font-weight:900;letter-spacing:12px;
+  color:var(--dark);background:var(--cream);
+  padding:20px;border-radius:16px;text-align:center;
+  margin-bottom:14px;text-indent:12px;
+  border:2px dashed var(--sand);
+}
+.code-copy-btn{
+  width:100%;padding:15px;background:var(--amber);
+  color:#fff;border:none;border-radius:14px;
+  font-size:15px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;margin-bottom:10px;
+  transition:all 0.2s;
+}
+.code-copy-btn:hover{background:#b36e3a;}
+.code-copy-btn.copied{background:var(--green);}
+
+.code-input-big{
+  width:100%;padding:18px 20px;
+  border:2px solid var(--warm);border-radius:16px;
+  font-size:28px;font-weight:900;text-align:center;
+  letter-spacing:10px;text-transform:uppercase;
+  color:var(--dark);font-family:'Nunito',sans-serif;
+  outline:none;background:var(--cream);
+  transition:border-color 0.2s;margin-bottom:14px;
+}
+.code-input-big:focus{border-color:var(--amber);}
+.code-input-big::placeholder{color:var(--sand);font-size:18px;letter-spacing:4px;}
+.code-join-btn{
+  width:100%;padding:15px;background:var(--dark);
+  color:#fff;border:none;border-radius:14px;
+  font-size:15px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;transition:all 0.2s;
+}
+.code-join-btn:hover{background:var(--amber);}
+
+.skip-link{
+  text-align:center;padding:12px;
+  font-size:13px;color:var(--t3);cursor:pointer;
+  font-weight:700;text-decoration:underline;
+}
+
+.connect-status{
+  display:none;padding:20px;border-radius:16px;
+  background:#e2eed9;border:1.5px solid rgba(74,140,99,0.25);
+  text-align:center;margin-bottom:14px;
+}
+.connect-status.show{display:block;}
+.connect-status-icon{font-size:28px;margin-bottom:8px;}
+.connect-status-title{font-size:16px;font-weight:800;color:var(--green);}
+.connect-status-sub{font-size:12px;color:var(--t2);margin-top:4px;}
+
+/* ── 하단 버튼 ── */
+.ob-footer{
+  padding:16px 28px 32px;flex-shrink:0;
+}
+.ob-next-btn{
+  width:100%;padding:18px;background:var(--dark);
+  color:#fff;border:none;border-radius:16px;
+  font-size:16px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;
+  transition:all 0.2s;
+  box-shadow:0 6px 20px rgba(61,53,48,0.18);
+}
+.ob-next-btn:hover{background:var(--amber);transform:translateY(-1px);}
+.ob-next-btn:disabled{background:var(--warm);color:var(--t3);transform:none;box-shadow:none;cursor:default;}
+.ob-back-btn{
+  background:none;border:none;font-size:13px;
+  color:var(--t3);cursor:pointer;font-family:'Nunito',sans-serif;
+  font-weight:700;text-align:center;width:100%;padding:10px;
+  margin-top:6px;
+}
+
+/* ── 완료 화면 ── */
+.done-wrap{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:28px;text-align:center;
+}
+.done-circle{
+  width:90px;height:90px;border-radius:50%;
+  background:var(--dark);display:flex;align-items:center;
+  justify-content:center;font-size:36px;
+  margin-bottom:24px;
+  animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes popIn{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+.done-title{font-size:26px;font-weight:900;color:var(--dark);margin-bottom:10px;}
+.done-sub{font-size:14px;color:var(--t2);line-height:1.75;margin-bottom:32px;}
+.done-start-btn{
+  width:100%;max-width:300px;padding:18px;
+  background:var(--dark);color:#fff;border:none;border-radius:16px;
+  font-size:16px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;
+  box-shadow:0 8px 24px rgba(61,53,48,0.2);
+  transition:all 0.2s;
+}
+.done-start-btn:hover{background:var(--amber);transform:translateY(-1px);}
+
+/* ── 초기화 버튼 ── */
+.reset-btn{
+  position:absolute;top:52px;right:20px;
+  background:none;border:none;font-size:11px;
+  color:var(--t3);cursor:pointer;font-family:'Nunito',sans-serif;
+  font-weight:700;padding:4px 8px;
+}
+</style>
+</head>
+<body>
+<div class="ob-wrap">
+
+  <!-- 진행 바 -->
+  <div class="progress-bar" id="progress-bar">
+    <div class="pb-seg active" id="seg-0"></div>
+    <div class="pb-seg" id="seg-1"></div>
+    <div class="pb-seg" id="seg-2"></div>
+    <div class="pb-seg" id="seg-3"></div>
+  </div>
+
+  <!-- 초기화 버튼 (개발용) -->
+  <button class="reset-btn" onclick="resetAll()">초기화</button>
+
+  <!-- 슬라이드 영역 -->
+  <div class="slides-wrap" id="slides-wrap">
+
+    <!-- SLIDE 0: 환영 -->
+    <div class="slide" id="slide-0" style="transform:translateX(0%)">
+      <div style="width:56px;height:56px;border-radius:18px;background:#f0eeeb;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#3d3530;margin-bottom:20px;">✦</div>
+      <div class="ob-title">말하지 않아도<br><em>연결되는</em> 가족</div>
+      <div class="ob-sub">
+        자녀는 판단이 무서워 입을 닫고,<br>
+        부모는 몰라서 상처 주는 말을 해요.<br><br>
+        Kync가 둘 사이의 간극을 조용히 채워드릴게요.
+      </div>
+      <div class="feat-list">
+        <div class="feat-item">
+          <div class="feat-icon fi-dark">✦</div>
+          <div>
+            <div class="feat-item-title">오늘의 한마디</div>
+            <div class="feat-item-desc">같은 질문에 각자 답하면, 둘 다 완료했을 때만 상대 답변이 공개돼요.</div>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon fi-amber">◌</div>
+          <div>
+            <div class="feat-item-title">AI 감정 번역</div>
+            <div class="feat-item-desc">자녀의 체크인을 AI가 분석해 부모에게 오늘 상태를 전달해요.</div>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon fi-green">◈</div>
+          <div>
+            <div class="feat-item-title">쌍방 합의 퀘스트</div>
+            <div class="feat-item-desc">AI가 소통 계획을 제안하고, 부모·자녀 모두 동의해야 시작돼요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 1: 역할 선택 -->
+    <div class="slide" id="slide-1" style="transform:translateX(100%)">
+      <div style="width:56px;height:56px;border-radius:18px;background:#f0eeeb;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#3d3530;margin-bottom:20px;">✦</div>
+      <div class="ob-title">가족 안에서<br>역할을 선택해주세요</div>
+      <div class="ob-sub">역할에 따라 화면이 달라져요.</div>
+      <div class="role-cards">
+        <div class="role-card" id="role-parent" onclick="selectRole('parent')">
+          <div class="role-card-icon" style="width:44px;height:44px;border-radius:14px;background:#f0eeeb;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#6b6560;">‍‍</div>
+          <div>
+            <div class="role-card-title">부모로 시작하기</div>
+            <div class="role-card-desc">자녀의 마음을 더 깊이 이해하고 싶어요.<br>자녀 상태 카드와 AI 가이드를 받아요.</div>
+          </div>
+        </div>
+        <div class="role-card" id="role-child" onclick="selectRole('child')">
+          <div class="role-card-icon" style="width:44px;height:44px;border-radius:14px;background:#f0eeeb;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#6b6560;">‍</div>
+          <div>
+            <div class="role-card-title">자녀로 시작하기</div>
+            <div class="role-card-desc">부모님께 내 진심을 편하게 전하고 싶어요.<br>나만의 감정 일기와 체크인을 사용해요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: 이름 입력 -->
+    <div class="slide" id="slide-2" style="transform:translateX(200%)">
+      <div style="width:56px;height:56px;border-radius:18px;background:#f0eeeb;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#3d3530;margin-bottom:20px;">✦</div>
+      <div class="ob-title">뭐라고 불러드릴까요?</div>
+      <div class="ob-sub">가족에게 표시될 이름을 입력해주세요.</div>
+      <div style="margin-top:24px;display:flex;flex-direction:column;gap:12px;">
+        <input id="name-input" type="text" maxlength="10" placeholder="이름 또는 닉네임"
+          style="padding:18px 20px;border:2px solid var(--warm);border-radius:16px;
+                 font-size:18px;font-weight:700;color:var(--dark);
+                 font-family:'Nunito',sans-serif;outline:none;background:var(--cream);
+                 transition:border-color 0.2s;"
+          oninput="checkNameInput()"
+          onfocus="this.style.borderColor='var(--amber)'"
+          onblur="this.style.borderColor='var(--warm)'">
+        <div style="font-size:12px;color:var(--t3);padding:0 4px;">최대 10자, 가족에게만 공개돼요</div>
+
+        <!-- 이름 미리보기 -->
+        <div id="name-preview" style="display:none;padding:16px;background:var(--cream);border-radius:14px;text-align:center;">
+          <div style="font-size:48px;font-weight:900;width:64px;height:64px;border-radius:50%;
+                      background:var(--dark);color:#fff;display:flex;align-items:center;
+                      justify-content:center;margin:0 auto 10px;font-size:24px;" id="name-avatar">?</div>
+          <div style="font-size:16px;font-weight:800;color:var(--dark);" id="name-display">이름</div>
+          <div style="font-size:12px;color:var(--t3);margin-top:4px;" id="role-display-mini">역할</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: 가족 연결 -->
+    <div class="slide" id="slide-3" style="transform:translateX(300%)">
+      <div style="width:56px;height:56px;border-radius:18px;background:#f0eeeb;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#3d3530;margin-bottom:20px;">✦</div>
+      <div class="ob-title" id="connect-title">가족과 연결해요</div>
+      <div class="ob-sub" id="connect-sub">연결 코드를 통해 부모님과 자녀가 이어져요.</div>
+
+      <div class="connect-section">
+        <!-- 연결 성공 표시 -->
+        <div class="connect-status" id="connect-status">
+          <div class="connect-status-icon" style="font-size:24px;font-weight:800;color:#4a8c63;margin-bottom:8px;">✓</div>
+          <div class="connect-status-title" id="connect-status-title">연결 완료!</div>
+          <div class="connect-status-sub" id="connect-status-sub">가족과 연결됐어요.</div>
+        </div>
+
+        <!-- 탭 (부모: 코드 생성 / 자녀: 코드 입력) -->
+        <div class="connect-tab-btns" id="connect-tabs">
+          <button class="ctab on" id="tab-create" onclick="switchTab('create')">코드 생성</button>
+          <button class="ctab" id="tab-join" onclick="switchTab('join')">코드 입력</button>
+        </div>
+
+        <!-- 코드 생성 패널 (부모) -->
+        <div id="panel-create">
+          <div style="font-size:13px;color:var(--t2);margin-bottom:12px;font-weight:600;">
+            아래 코드를 자녀에게 공유해주세요
+          </div>
+          <div class="code-display-big" id="gen-code-display">— — —</div>
+          <button class="code-copy-btn" id="copy-btn" onclick="copyCode()">코드 생성 및 복사</button>
+          <div style="font-size:11px;color:var(--t3);text-align:center;">
+            자녀가 이 코드를 입력하면 자동으로 연결돼요
+          </div>
+        </div>
+
+        <!-- 코드 입력 패널 (자녀) -->
+        <div id="panel-join" style="display:none;">
+          <div style="font-size:13px;color:var(--t2);margin-bottom:12px;font-weight:600;">
+            부모님께 받은 6자리 코드를 입력해주세요
+          </div>
+          <input class="code-input-big" id="join-code-input" maxlength="6"
+            placeholder="KY·····" oninput="this.value=this.value.toUpperCase()">
+          <button class="code-join-btn" onclick="doJoinCode()">연결하기</button>
+        </div>
+
+        <div class="skip-link" onclick="skipConnect()">나중에 연결하기</div>
+      </div>
+    </div>
+
+  </div><!-- /slides-wrap -->
+
+  <!-- 완료 화면 (별도) -->
+  <div id="done-screen" style="display:none;flex:1;flex-direction:column;">
+    <div class="done-wrap">
+      <div class="done-circle">✓</div>
+      <div class="done-title">준비 완료!</div>
+      <div class="done-sub" id="done-msg">
+        Kync를 시작할 준비가 됐어요.<br>
+        오늘의 첫 번째 질문이 기다리고 있어요.
+      </div>
+      <button class="done-start-btn" onclick="goToApp()">시작하기</button>
+    </div>
+  </div>
+
+  <!-- 하단 버튼 -->
+  <div class="ob-footer" id="ob-footer">
+    <button class="ob-next-btn" id="ob-next" onclick="nextSlide()">다음</button>
+    <button class="ob-back-btn" id="ob-back" style="display:none;" onclick="prevSlide()">← 이전</button>
+  </div>
+
+</div><!-- /ob-wrap -->
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-system.js"></script>
+
+<script>
+let currentSlide = 0;
+let selectedRole = null;
+let generatedCode = null;
+const TOTAL_SLIDES = 4;
+
+// ── 슬라이드 이동 ──
+function goToSlide(n) {
+  document.querySelectorAll('.slide').forEach((s, i) => {
+    s.style.transform = `translateX(${(i - n) * 100}%)`;
+  });
+
+  // 진행 바
+  for (let i = 0; i < TOTAL_SLIDES; i++) {
+    const seg = document.getElementById('seg-' + i);
+    if (!seg) continue;
+    seg.className = 'pb-seg ' + (i < n ? 'done' : i === n ? 'active' : '');
+  }
+
+  // 버튼 상태
+  const backBtn = document.getElementById('ob-back');
+  const nextBtn = document.getElementById('ob-next');
+  backBtn.style.display = n > 0 ? 'block' : 'none';
+
+  // 슬라이드별 버튼 텍스트
+  const labels = ['시작하기', '다음', '다음', '완료'];
+  nextBtn.textContent = labels[n] || '다음';
+
+  // 슬라이드별 버튼 비활성화
+  if (n === 1) nextBtn.disabled = !selectedRole;
+  else if (n === 2) nextBtn.disabled = !document.getElementById('name-input').value.trim();
+  else nextBtn.disabled = false;
+
+  currentSlide = n;
+
+  // 가족 연결 슬라이드 진입 시 역할 맞게 UI 세팅
+  if (n === 3) setupConnectSlide();
+}
+
+function nextSlide() {
+  if (currentSlide === 2) {
+    saveName();
+  }
+  if (currentSlide < TOTAL_SLIDES - 1) {
+    goToSlide(currentSlide + 1);
+  } else {
+    showDone();
+  }
+}
+
+function prevSlide() {
+  if (currentSlide > 0) goToSlide(currentSlide - 1);
+}
+
+// ── 역할 선택 ──
+function selectRole(role) {
+  selectedRole = role;
+  document.getElementById('role-parent').className = 'role-card' + (role==='parent'?' selected':'');
+  document.getElementById('role-child').className  = 'role-card' + (role==='child'?' selected':'');
+  document.getElementById('ob-next').disabled = false;
+  localStorage.setItem('kync_role', role);
+}
+
+// ── 이름 입력 ──
+function checkNameInput() {
+  const name = document.getElementById('name-input').value.trim();
+  document.getElementById('ob-next').disabled = !name;
+  const preview = document.getElementById('name-preview');
+  if (name) {
+    preview.style.display = 'block';
+    document.getElementById('name-avatar').textContent = name[0];
+    document.getElementById('name-display').textContent = name;
+    document.getElementById('role-display-mini').textContent = selectedRole === 'parent' ? '부모' : '자녀';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+async function saveName() {
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) return;
+  localStorage.setItem('kync_user_name', name);
+  const user = KyncAuth?.current;
+  if (user && typeof KyncDB !== 'undefined') {
+    try {
+      await KyncDB.updateUser(user.uid, { name, role: selectedRole });
+    } catch(e) { console.warn(e); }
+  }
+}
+
+// ── 가족 연결 슬라이드 설정 ──
+function setupConnectSlide() {
+  if (selectedRole === 'parent') {
+    document.getElementById('connect-title').textContent = '자녀와 연결해요';
+    document.getElementById('connect-sub').textContent = '코드를 생성해서 자녀에게 공유해주세요.';
+    document.getElementById('tab-create').textContent = '연결 코드 생성';
+    document.getElementById('tab-join').textContent = '코드 직접 입력';
+    switchTab('create');
+    // 자동 코드 생성
+    autoGenerateCode();
+  } else {
+    document.getElementById('connect-title').textContent = '부모님과 연결해요';
+    document.getElementById('connect-sub').textContent = '부모님께 받은 6자리 코드를 입력해주세요.';
+    document.getElementById('tab-create').textContent = '코드 직접 입력';
+    document.getElementById('tab-join').textContent = '코드 생성';
+    switchTab('join');
+  }
+}
+
+function switchTab(tab) {
+  const isCreate = tab === 'create';
+  document.getElementById('tab-create').className = 'ctab' + (isCreate ? ' on' : '');
+  document.getElementById('tab-join').className   = 'ctab' + (!isCreate ? ' on' : '');
+  document.getElementById('panel-create').style.display = isCreate ? 'block' : 'none';
+  document.getElementById('panel-join').style.display   = !isCreate ? 'block' : 'none';
+}
+
+// ── 코드 자동 생성 ──
+async function autoGenerateCode() {
+  const user = KyncAuth?.current;
+  if (!user) return;
+
+  // 이미 코드 있으면 재사용
+  const existing = localStorage.getItem('kync_family_code');
+  if (existing) {
+    generatedCode = existing;
+    document.getElementById('gen-code-display').textContent = existing;
+    return;
+  }
+
+  try {
+    const name = localStorage.getItem('kync_user_name') || '부모';
+    const code = await KyncDB.createFamily(user.uid, name, 'parent');
+    generatedCode = code;
+    document.getElementById('gen-code-display').textContent = code;
+    localStorage.setItem('kync_family_code', code);
+  } catch(e) {
+    // Firebase 없으면 임시 코드 생성
+    const tmpCode = 'KY' + Math.random().toString(36).substring(2,6).toUpperCase();
+    generatedCode = tmpCode;
+    document.getElementById('gen-code-display').textContent = tmpCode;
+    console.warn('Firebase 없음, 임시 코드:', tmpCode);
+  }
+}
+
+function copyCode() {
+  if (!generatedCode || generatedCode === '— — —') {
+    autoGenerateCode().then(() => {
+      if (generatedCode) doCopy();
+    });
+    return;
+  }
+  doCopy();
+}
+
+function doCopy() {
+  navigator.clipboard.writeText(generatedCode).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = ' 복사됐어요!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '코드 복사하기';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    alert('코드: ' + generatedCode);
+  });
+}
+
+// ── 코드 입력 연결 ──
+async function doJoinCode() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (!code || code.length < 6) { alert('6자리 코드를 입력해주세요.'); return; }
+
+  const joinBtn = document.querySelector('.code-join-btn');
+  joinBtn.textContent = '연결 중...';
+  joinBtn.disabled = true;
+
+  try {
+    const user = KyncAuth?.current;
+    const name = localStorage.getItem('kync_user_name') || '자녀';
+    if (user && typeof KyncDB !== 'undefined') {
+      await KyncDB.joinFamily(user.uid, code, name, 'child');
+    }
+    localStorage.setItem('kync_family_code', code);
+    showConnectSuccess('연결 완료! ', '부모님과 연결됐어요. 이제 함께 시작해요.');
+  } catch(e) {
+    joinBtn.textContent = '연결하기';
+    joinBtn.disabled = false;
+    alert(e.message || '코드를 확인해주세요.');
+  }
+}
+
+function showConnectSuccess(title, sub) {
+  document.getElementById('connect-status').classList.add('show');
+  document.getElementById('connect-status-title').textContent = title;
+  document.getElementById('connect-status-sub').textContent = sub;
+  document.getElementById('ob-next').textContent = '완료';
+  document.getElementById('connect-tabs').style.opacity = '0.3';
+}
+
+function skipConnect() {
+  showDone();
+}
+
+// ── 완료 화면 ──
+function showDone() {
+  document.getElementById('slides-wrap').style.display = 'none';
+  document.getElementById('ob-footer').style.display = 'none';
+  document.getElementById('progress-bar').style.display = 'none';
+  document.getElementById('done-screen').style.display = 'flex';
+
+  const role = selectedRole || localStorage.getItem('kync_role') || 'child';
+  const name = document.getElementById('name-input')?.value?.trim() ||
+                localStorage.getItem('kync_user_name') || '';
+  const msg = role === 'parent'
+    ? `${name ? name+'님, ' : ''}오늘 자녀가 무슨 생각을 하는지\n처음으로 들어볼 수 있어요.`
+    : `${name ? name+'아, ' : ''}부모님이 얼마나 걱정하고 있는지\n처음으로 들어볼 수 있어요.`;
+  document.getElementById('done-msg').textContent = msg;
+}
+
+async function goToApp() {
+  const role = selectedRole || localStorage.getItem('kync_role') || 'parent';
+
+  // Firebase에 역할 저장
+  const user = KyncAuth?.current;
+  if (user && typeof KyncDB !== 'undefined') {
+    try { await KyncDB.updateUser(user.uid, { role }); } catch(e) {}
+  }
+  localStorage.setItem('kync_role', role);
+
+  // 메인 앱으로 이동
+  window.location.href = 'index.html';
+}
+
+// ── 초기화 ──
+function resetAll() {
+  if (!confirm('모든 데이터를 초기화하고 처음부터 시작할까요?')) return;
+  const keysToRemove = ['kync_role','kync_user_name','kync_family_code','kync_user_uid'];
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+
+  // Firebase 로그아웃
+  if (typeof KyncAuth !== 'undefined') {
+    KyncAuth.signOut().then(() => location.reload()).catch(() => location.reload());
+  } else {
+    location.reload();
+  }
+}
+
+// ── 초기 진입 처리 ──
+window.addEventListener('DOMContentLoaded', () => {
+  // 이미 온보딩 완료했으면 바로 앱으로
+  const role = localStorage.getItem('kync_role');
+  const name = localStorage.getItem('kync_user_name');
+
+  if (role && name) {
+    // 이미 설정 완료 → index.html로
+    window.location.href = 'index.html';
+    return;
+  }
+
+  goToSlide(0);
+
+  // 엔터키로 다음 이동
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const nextBtn = document.getElementById('ob-next');
+      if (!nextBtn.disabled) nextSlide();
+    }
+  });
+});
+</script>
+</body>
+</html>
