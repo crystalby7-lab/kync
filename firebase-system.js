@@ -27,13 +27,11 @@ function generateFamilyCode() {
   return c;
 }
 
-/* ── 로더 표시/숨기기 ── */
 function showLoader(on) {
   const el = document.getElementById('kync-global-loader');
   if (el) el.style.display = on ? 'flex' : 'none';
 }
 
-/* ── 페이지 이동 ── */
 function navigateTo(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const el = document.getElementById(pageId);
@@ -72,9 +70,7 @@ const KyncAuth = {
   get current() { return auth.currentUser; }
 };
 
-/* ── 로그인 후 공통 처리 ──
-   재진입/중복 호출 방지: 동일 uid가 처리 중이거나 이미 처리되었으면 스킵.
-   onAuthStateChanged 한 곳에서만 호출되도록 통일.                       */
+/* ── 중복 처리 방지 ── */
 let _authProcessing = false;
 let _lastProcessedUid = null;
 
@@ -88,7 +84,6 @@ async function handleAuthSuccess(user) {
     let profile = await KyncDB.getUser(user.uid);
 
     if (!profile) {
-      // 신규 사용자 — 프로필 생성
       profile = {
         uid:      user.uid,
         name:     user.displayName || user.email.split('@')[0],
@@ -100,12 +95,10 @@ async function handleAuthSuccess(user) {
       await KyncDB.setUser(user.uid, profile);
     }
 
-    // localStorage 동기화
     localStorage.setItem('kync_user_name', profile.name || user.displayName || '');
     localStorage.setItem('kync_user_uid',  user.uid);
     if (profile.familyCode) localStorage.setItem('kync_family_code', profile.familyCode);
 
-    // KyncState 동기화 (script.js의 App.init이 KyncState.uid를 필요로 함)
     if (typeof KyncState !== 'undefined') {
       KyncState.uid        = user.uid;
       KyncState.userName   = profile.name || user.displayName || '나';
@@ -115,26 +108,22 @@ async function handleAuthSuccess(user) {
     }
 
     _lastProcessedUid = user.uid;
+    showLoader(false);
 
     const role = profile.role;
     if (role === 'parent' || role === 'child') {
       localStorage.setItem('kync_role', role);
       navigateTo('page-' + role);
-      showLoader(false);
-      // App.init은 자체 로더를 사용 — 백그라운드 로드 (await 안 함)
       if (typeof App !== 'undefined' && typeof App.init === 'function') {
         App.init().catch(e => console.error('App.init', e));
       }
     } else {
-      showLoader(false);
-      // 역할 없으면 온보딩으로
-      navigateTo('page-onboard'); else {
-        navigateTo('page-onboard');
-      }
+      navigateTo('page-onboard');
     }
   } catch(e) {
     console.error('handleAuthSuccess error:', e);
     showLoader(false);
+    navigateTo('page-onboard');
   } finally {
     _authProcessing = false;
   }
@@ -149,32 +138,27 @@ window.setUserRole = async function(role) {
   try {
     await KyncDB.updateUser(user.uid, { role });
   } catch(e) {
-    console.warn('역할 저장 실패(계속 진행):', e);
+    console.warn('역할 저장 실패:', e);
   }
   localStorage.setItem('kync_role', role);
+  _lastProcessedUid = null; // 재처리 허용
   showLoader(false);
-  // onboarding.html에서 호출된 경우 index.html로 이동
-  if (window.location.pathname.includes('onboarding')) {
-    window.location.href = 'index.html';
-    return;
-  }
   navigateTo('page-' + role);
   if (typeof App !== 'undefined') App.init();
 };
 
-/* ── 구글 로그인 버튼 ── */
+/* ── 구글 로그인 ── */
 window.loginWithGoogle = async function() {
   try {
     showLoader(true);
     await KyncAuth.signInWithGoogle();
-    // 이후 처리는 onAuthStateChanged → handleAuthSuccess 단일 경로에서 수행
   } catch(e) {
     showLoader(false);
     if (e.code !== 'auth/popup-closed-by-user') alert('구글 로그인 실패: ' + e.message);
   }
 };
 
-/* ── 이메일 로그인 버튼 ── */
+/* ── 이메일 로그인 ── */
 window.loginWithEmail = async function() {
   const email = document.getElementById('email-input')?.value?.trim();
   const pw    = document.getElementById('pw-input')?.value;
@@ -182,7 +166,6 @@ window.loginWithEmail = async function() {
   try {
     showLoader(true);
     await KyncAuth.signInWithEmail(email, pw);
-    // 이후 처리는 onAuthStateChanged → handleAuthSuccess 단일 경로에서 수행
   } catch(e) {
     showLoader(false);
     alert('로그인 실패: ' + e.message);
@@ -191,23 +174,20 @@ window.loginWithEmail = async function() {
 
 /* ── 로그아웃 ── */
 window.logout = async function() {
+  _lastProcessedUid = null;
+  _authProcessing = false;
   await KyncAuth.signOut();
 };
 
-/* ── 인증 상태 단일 핸들러 (로그인/새로고침 모두 여기서 처리) ── */
+/* ── 인증 상태 핸들러 ── */
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
-    // 로그아웃 시 가드 초기화
     _lastProcessedUid = null;
     _authProcessing = false;
     showLoader(false);
     return;
   }
 
-  // 온보딩 페이지는 자체 슬라이드 플로우로 처리 — 중복 작업/네트워크 호출 방지
-  if (window.location.pathname.includes('onboarding')) return;
-
-  // 이미 올바른 페이지에 있으면 중복 처리 방지
   const activePage = document.querySelector('.page.active');
   if (activePage && (activePage.id === 'page-parent' || activePage.id === 'page-child')) return;
 
@@ -230,7 +210,6 @@ const KyncDB = {
     try {
       await db.collection('users').doc(uid).update(data);
     } catch(e) {
-      // 문서 없으면 set으로 대체
       await db.collection('users').doc(uid).set(data, { merge: true });
     }
   },
@@ -290,7 +269,6 @@ const KyncDB = {
       );
   },
 
-  // 실시간 오늘 기록 감시 → 잠금 해제 처리
   listenTodayRecord(familyCode, callback) {
     if (!familyCode) return () => {};
     return db.collection('families').doc(familyCode)
@@ -324,6 +302,7 @@ const KyncDB = {
     snap.forEach(doc => out.push({ id: doc.id, ...doc.data() }));
     return out;
   },
+
   async saveDiaryEntry(uid, entry) {
     await db.collection('diary').doc(uid).collection('entries').add({
       ...entry,
