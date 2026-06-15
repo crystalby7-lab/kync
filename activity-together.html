@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Kync — 밸런스 게임</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0eeeb; --card: #ffffff; --card2: #f7f5f2;
+      --border: rgba(0,0,0,0.07); --border2: rgba(0,0,0,0.13);
+      --text: #1a1814; --text2: #6b6560; --text3: #a09b95;
+      --accent: #3d3530; --accent2: #c17f4a; --green: #5a9e6f;
+    }
+    html, body { height: 100%; background: var(--bg); font-family: 'Nunito', sans-serif; }
+    .wrap { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: var(--bg); display: flex; flex-direction: column; }
+
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 14px; background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .logo-wrapper { display: flex; align-items: center; gap: 8px; }
+    .logo-box { width: 30px; height: 30px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+    .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+    .logo-text { font-size: 20px; font-weight: 800; color: var(--accent); }
+    .back-btn { font-size: 13px; font-weight: 700; color: var(--text2); padding: 6px 14px; background: var(--card2); border: none; border-radius: 20px; cursor: pointer; font-family: 'Nunito', sans-serif; }
+
+    .content { flex: 1; padding: 20px 20px 60px; display: flex; flex-direction: column; gap: 14px; }
+
+    .page-header {
+      background: var(--accent2); border-radius: 24px; padding: 28px 24px;
+      position: relative; overflow: hidden;
+    }
+    .page-header::before {
+      content: ''; position: absolute; top: -30px; right: -30px;
+      width: 140px; height: 140px; border-radius: 50%;
+      border: 28px solid rgba(255,255,255,0.07);
+    }
+    .header-icon {
+      width: 52px; height: 52px; border-radius: 16px;
+      background: rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 16px;
+    }
+    .header-title { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .header-sub { font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 600; line-height: 1.6; }
+
+    /* 질문 카드 */
+    .q-card {
+      background: var(--card); border-radius: 24px; padding: 28px 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08); text-align: center;
+    }
+    .q-label { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 0.1em; margin-bottom: 14px; }
+    .q-text { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.45; }
+
+    /* 선택 버튼 */
+    .opts { display: flex; gap: 12px; }
+    .opt-btn {
+      flex: 1; padding: 24px 16px; background: var(--card);
+      border: 2px solid var(--border2); border-radius: 20px;
+      cursor: pointer; font-family: 'Nunito', sans-serif;
+      transition: all 0.2s; text-align: center;
+    }
+    .opt-btn:hover { border-color: var(--accent2); background: #fffdf9; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(193,127,74,0.15); }
+    .opt-emoji { font-size: 32px; margin-bottom: 10px; }
+    .opt-text { font-size: 15px; font-weight: 800; color: var(--text); }
+
+    /* 결과 카드 */
+    .result-card {
+      background: var(--card); border-radius: 20px; padding: 22px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    }
+    .result-label { font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: 0.08em; margin-bottom: 6px; }
+    .result-val { font-size: 18px; font-weight: 800; color: var(--text); }
+
+    .their-card {
+      background: var(--accent); border-radius: 20px; padding: 22px;
+    }
+    .their-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; margin-bottom: 6px; }
+    .their-val { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 12px; }
+    .verdict {
+      padding: 12px 16px; border-radius: 12px;
+      font-size: 14px; font-weight: 800; text-align: center;
+    }
+    .verdict-same { background: rgba(90,158,111,0.2); color: #4a8c63; }
+    .verdict-diff { background: rgba(193,127,74,0.2); color: var(--accent2); }
+
+    .pending-card {
+      background: rgba(193,127,74,0.08); border-radius: 16px; padding: 20px;
+      text-align: center; border: 1.5px dashed rgba(193,127,74,0.3);
+    }
+    .pending-text { font-size: 13px; color: var(--accent2); font-weight: 700; line-height: 1.6; }
+
+    /* 날짜 변경 안내 */
+    .info-card {
+      background: var(--card2); border-radius: 16px; padding: 16px 18px;
+      font-size: 12px; color: var(--text3); font-weight: 600; line-height: 1.65;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-bar">
+    <div class="logo-wrapper">
+      <div class="logo-box"><div class="logo-dot"></div></div>
+      <span class="logo-text">kync</span>
+    </div>
+    <button class="back-btn" onclick="goBack()">← 돌아가기</button>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <div class="header-icon">○</div>
+      <div class="header-title">밸런스 게임</div>
+      <div class="header-sub">오늘 더 힘들었던 쪽은?<br>각자 답하고 서로 비교해봐요</div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-label">오늘의 질문</div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+
+    <div id="game-ui"></div>
+
+    <div class="info-card">
+      질문은 매일 바뀌어요. 오늘 답하면 내일 새 질문이 기다려요!
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-system.js"></script>
+<script src="kync-features.js"></script>
+
+<script>
+  const myRole = localStorage.getItem('kync_role') || 'parent';
+  const familyCode = localStorage.getItem('kync_family_code') || 'local';
+  const todayKey = new Date().toLocaleDateString('ko-KR');
+  const storageKey = `kync_balance_${familyCode}_${todayKey}`;
+  const q = KyncTogether.BALANCE_Q[Math.floor(Date.now() / 86400000) % KyncTogether.BALANCE_Q.length];
+  const theirRole = myRole === 'parent' ? 'child' : 'parent';
+  const theirLabel = myRole === 'parent' ? '자녀' : '부모님';
+
+  function goBack() {
+    const tab = myRole === 'parent' ? 'p-activityTab' : 'c-activityTab';
+    location.href = `index.html?tab=${tab}&role=${myRole}`;
+  }
+
+  function getSaved() {
+    return JSON.parse(localStorage.getItem(storageKey) || '{}');
+  }
+
+  function render() {
+    document.getElementById('q-text').textContent = q.q;
+    const saved = getSaved();
+    const myAnswer = saved[myRole];
+    const theirAnswer = saved[theirRole];
+    const ui = document.getElementById('game-ui');
+
+    if (!myAnswer) {
+      // 아직 답 안 함
+      ui.innerHTML = `
+        <div class="opts">
+          ${q.opts.map(opt => `
+            <button class="opt-btn" onclick="answer('${opt}')">
+              <div class="opt-emoji">${opt === '부모님' ? '👨‍👩‍👧' : '🧑‍💻'}</div>
+              <div class="opt-text">${opt}</div>
+            </button>
+          `).join('')}
+        </div>`;
+    } else {
+      // 내 답 있음
+      ui.innerHTML = `
+        <div class="result-card">
+          <div class="result-label">나의 답변</div>
+          <div class="result-val">${myAnswer}</div>
+        </div>
+        ${theirAnswer ? `
+          <div class="their-card">
+            <div class="their-label">${theirLabel}의 답변</div>
+            <div class="their-val">${theirAnswer}</div>
+            <div class="verdict ${myAnswer === theirAnswer ? 'verdict-same' : 'verdict-diff'}">
+              ${myAnswer === theirAnswer ? '😮 같은 생각이에요!' : '🤔 서로 다르게 생각했네요'}
+            </div>
+          </div>
+        ` : `
+          <div class="pending-card">
+            <div class="pending-text">
+              ${theirLabel}이 아직 답하지 않았어요.<br>
+              ${theirLabel}이 답하면 결과가 공개돼요!
+            </div>
+          </div>
+        `}`;
+
+      // 실시간으로 상대 답변 감지
+      if (!theirAnswer && typeof db !== 'undefined' && familyCode !== 'local') {
+        db.collection('families').doc(familyCode)
+          .collection('balance').doc(todayKey)
+          .onSnapshot(snap => {
+            if (snap.exists) {
+              const data = snap.data();
+              if (data[theirRole]) {
+                const s = getSaved();
+                s[theirRole] = data[theirRole];
+                localStorage.setItem(storageKey, JSON.stringify(s));
+                render();
+              }
+            }
+          });
+      }
+    }
+  }
+
+  async function answer(opt) {
+    const saved = getSaved();
+    saved[myRole] = opt;
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+
+    // Firestore 저장
+    if (familyCode !== 'local' && typeof db !== 'undefined') {
+      try {
+        await db.collection('families').doc(familyCode)
+          .collection('balance').doc(todayKey)
+          .set({ [myRole]: opt }, { merge: true });
+      } catch(e) { console.warn(e); }
+    }
+
+    if (typeof KyncDB !== 'undefined' && typeof KyncAuth !== 'undefined' && KyncAuth.current) {
+      await KyncDB.addPoints(KyncAuth.current.uid, 20).catch(() => {});
+    }
+
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html> 

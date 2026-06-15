@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Kync — 서로 맞히기 퀴즈</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0eeeb; --card: #ffffff; --card2: #f7f5f2;
+      --border: rgba(0,0,0,0.07); --border2: rgba(0,0,0,0.13);
+      --text: #1a1814; --text2: #6b6560; --text3: #a09b95;
+      --accent: #3d3530; --accent2: #c17f4a; --green: #5a9e6f;
+    }
+    html, body { height: 100%; background: var(--bg); font-family: 'Nunito', sans-serif; }
+    .wrap { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: var(--bg); display: flex; flex-direction: column; }
+
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 14px; background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .logo-wrapper { display: flex; align-items: center; gap: 8px; }
+    .logo-box { width: 30px; height: 30px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+    .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+    .logo-text { font-size: 20px; font-weight: 800; color: var(--accent); }
+    .back-btn { font-size: 13px; font-weight: 700; color: var(--text2); padding: 6px 14px; background: var(--card2); border: none; border-radius: 20px; cursor: pointer; font-family: 'Nunito', sans-serif; }
+
+    .content { flex: 1; padding: 20px 20px 60px; display: flex; flex-direction: column; gap: 14px; }
+
+    .page-header {
+      background: var(--green); border-radius: 24px; padding: 28px 24px;
+      position: relative; overflow: hidden;
+    }
+    .page-header::before {
+      content: ''; position: absolute; top: -30px; right: -30px;
+      width: 140px; height: 140px; border-radius: 50%;
+      border: 28px solid rgba(255,255,255,0.07);
+    }
+    .header-icon {
+      width: 52px; height: 52px; border-radius: 16px;
+      background: rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 16px;
+    }
+    .header-title { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .header-sub { font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 600; line-height: 1.6; }
+
+    /* 스텝 인디케이터 */
+    .step-card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+    .step-row { display: flex; align-items: center; gap: 8px; }
+    .step-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; flex-shrink: 0;
+    }
+    .step-dot.done { background: var(--green); color: #fff; }
+    .step-dot.active { background: var(--accent); color: #fff; }
+    .step-dot.todo { background: var(--bg); color: var(--text3); }
+    .step-line { flex: 1; height: 2px; background: var(--bg); border-radius: 1px; }
+    .step-line.done { background: var(--green); }
+    .step-labels { display: flex; justify-content: space-between; margin-top: 8px; }
+    .step-label { font-size: 10px; font-weight: 700; color: var(--text3); text-align: center; flex: 1; }
+
+    /* 질문 카드 */
+    .q-card {
+      background: var(--card); border-radius: 20px; padding: 22px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    }
+    .q-eyebrow { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 0.1em; margin-bottom: 10px; }
+    .q-text { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
+    .q-sub { font-size: 13px; color: var(--text3); font-weight: 600; }
+
+    /* 답변 영역 */
+    .answer-section { display: flex; flex-direction: column; gap: 10px; }
+    .answer-label { font-size: 12px; font-weight: 700; color: var(--text3); letter-spacing: 0.06em; }
+    .opts { display: flex; flex-direction: column; gap: 8px; }
+    .opt-btn {
+      width: 100%; padding: 15px 18px; background: var(--card);
+      border: 1.5px solid var(--border2); border-radius: 14px;
+      font-size: 14px; font-weight: 700; color: var(--text);
+      text-align: left; cursor: pointer; font-family: 'Nunito', sans-serif;
+      transition: all 0.15s;
+    }
+    .opt-btn:hover { border-color: var(--green); background: #f0faf4; }
+    .text-input {
+      width: 100%; padding: 16px; border: 1.5px solid var(--border2);
+      border-radius: 14px; font-size: 15px; font-family: 'Nunito', sans-serif;
+      color: var(--text); outline: none; transition: border-color 0.2s;
+    }
+    .text-input:focus { border-color: var(--green); }
+    .submit-btn {
+      width: 100%; padding: 16px; background: var(--accent);
+      border: none; border-radius: 14px; font-size: 15px; font-weight: 800;
+      color: #fff; cursor: pointer; font-family: 'Nunito', sans-serif;
+      transition: all 0.2s; box-shadow: 0 6px 20px rgba(61,53,48,0.2);
+    }
+    .submit-btn:hover { transform: translateY(-1px); }
+
+    /* 저장된 답변 표시 */
+    .saved-box {
+      background: var(--card2); border-radius: 14px; padding: 14px 16px;
+    }
+    .saved-label { font-size: 11px; color: var(--text3); font-weight: 700; margin-bottom: 4px; }
+    .saved-val { font-size: 15px; font-weight: 800; color: var(--text); }
+
+    /* 결과 */
+    .result-box {
+      background: var(--accent); border-radius: 16px; padding: 18px;
+    }
+    .result-label { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 6px; font-weight: 700; }
+    .result-val { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .result-verdict {
+      padding: 10px 14px; border-radius: 10px;
+      font-size: 13px; font-weight: 800; text-align: center;
+    }
+    .verdict-correct { background: rgba(90,158,111,0.2); color: #4a8c63; }
+    .verdict-wrong { background: rgba(193,127,74,0.2); color: var(--accent2); }
+
+    .pending-box {
+      background: rgba(193,127,74,0.08); border-radius: 14px; padding: 14px;
+      text-align: center; font-size: 13px; color: var(--accent2); font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-bar">
+    <div class="logo-wrapper">
+      <div class="logo-box"><div class="logo-dot"></div></div>
+      <span class="logo-text">kync</span>
+    </div>
+    <button class="back-btn" onclick="goBack()">← 돌아가기</button>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <div class="header-icon">◌</div>
+      <div class="header-title">서로 맞히기 퀴즈</div>
+      <div class="header-sub">내 답 먼저, 그 다음 상대방 예측<br>둘 다 완료하면 결과 공개!</div>
+    </div>
+
+    <!-- 스텝 -->
+    <div class="step-card">
+      <div class="step-row">
+        <div class="step-dot" id="step1-dot">1</div>
+        <div class="step-line" id="step1-line"></div>
+        <div class="step-dot" id="step2-dot">2</div>
+        <div class="step-line" id="step2-line"></div>
+        <div class="step-dot" id="step3-dot">3</div>
+      </div>
+      <div class="step-labels">
+        <div class="step-label">내 답변</div>
+        <div class="step-label">상대 예측</div>
+        <div class="step-label">결과 공개</div>
+      </div>
+    </div>
+
+    <!-- 질문 -->
+    <div class="q-card">
+      <div class="q-eyebrow">이번 주 질문</div>
+      <div class="q-text" id="q-text"></div>
+      <div class="q-sub" id="q-sub"></div>
+    </div>
+
+    <!-- 단계별 UI -->
+    <div id="step-ui"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-system.js"></script>
+<script src="kync-features.js"></script>
+
+<script>
+  const myRole = localStorage.getItem('kync_role') || 'parent';
+  const familyCode = localStorage.getItem('kync_family_code') || 'local';
+  const weekKey = `w${Math.floor(Date.now() / (86400000 * 7))}`;
+  const qIdx = Math.floor(Date.now() / (86400000 * 3)) % KyncTogether.QUIZ_Q.length;
+  const q = KyncTogether.QUIZ_Q[qIdx];
+  const storageKey = `kync_quiz_${familyCode}_${weekKey}_${qIdx}`;
+
+  function goBack() {
+    const tab = myRole === 'parent' ? 'p-activityTab' : 'c-activityTab';
+    location.href = `index.html?tab=${tab}&role=${myRole}`;
+  }
+
+  function getSaved() {
+    return JSON.parse(localStorage.getItem(storageKey) || '{}');
+  }
+
+  async function saveToFirestore(data) {
+    if (familyCode === 'local' || typeof db === 'undefined') return;
+    try {
+      await db.collection('families').doc(familyCode)
+        .collection('together_quiz').doc(storageKey)
+        .set(data, { merge: true });
+    } catch(e) { console.warn(e); }
+  }
+
+  function renderStepDots(step) {
+    ['step1-dot','step2-dot','step3-dot'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.className = 'step-dot ' + (i + 1 < step ? 'done' : i + 1 === step ? 'active' : 'todo');
+      el.textContent = i + 1 < step ? '✓' : i + 1;
+    });
+    ['step1-line','step2-line'].forEach((id, i) => {
+      document.getElementById(id).className = 'step-line ' + (i + 1 < step ? 'done' : '');
+    });
+  }
+
+  function render() {
+    const saved = getSaved();
+    const myKey = `${myRole}_self`;
+    const guessKey = `${myRole}_guess`;
+    const theirKey = `${myRole === 'parent' ? 'child' : 'parent'}_self`;
+    const theirLabel = myRole === 'parent' ? '자녀' : '부모님';
+
+    document.getElementById('q-text').textContent = q.q;
+
+    const ui = document.getElementById('step-ui');
+
+    if (!saved[myKey]) {
+      // STEP 1
+      renderStepDots(1);
+      document.getElementById('q-sub').textContent = '먼저 나에 대한 질문에 답해봐요';
+      ui.innerHTML = `
+        <div class="answer-section">
+          <div class="answer-label">나의 답변</div>
+          ${q.opts ? `
+            <div class="opts">
+              ${q.opts.map(opt => `<button class="opt-btn" onclick="answerSelf('${opt}')">${opt}</button>`).join('')}
+            </div>
+          ` : `
+            <input id="self-input" class="text-input" type="text" maxlength="20" placeholder="솔직하게 답해봐요...">
+            <button class="submit-btn" onclick="answerSelf(document.getElementById('self-input').value)">내 답변 저장</button>
+          `}
+        </div>`;
+    } else if (!saved[guessKey]) {
+      // STEP 2
+      renderStepDots(2);
+      document.getElementById('q-sub').textContent = `이번엔 ${theirLabel}을 맞혀봐요`;
+      ui.innerHTML = `
+        <div class="saved-box" style="margin-bottom:4px;">
+          <div class="saved-label">내 답변 (저장됨)</div>
+          <div class="saved-val">${saved[myKey]}</div>
+        </div>
+        <div class="answer-section">
+          <div class="answer-label">${theirLabel}의 답을 예측해봐요</div>
+          ${q.opts ? `
+            <div class="opts">
+              ${q.opts.map(opt => `<button class="opt-btn" onclick="answerGuess('${opt}')">${opt}</button>`).join('')}
+            </div>
+          ` : `
+            <input id="guess-input" class="text-input" type="text" maxlength="20" placeholder="${theirLabel}의 답을 예측해봐요...">
+            <button class="submit-btn" onclick="answerGuess(document.getElementById('guess-input').value)">예측 저장</button>
+          `}
+        </div>`;
+    } else {
+      // STEP 3
+      renderStepDots(3);
+      document.getElementById('q-sub').textContent = '결과를 확인해봐요';
+      const theirSelf = saved[theirKey];
+      ui.innerHTML = `
+        <div class="saved-box">
+          <div class="saved-label">나의 답변</div>
+          <div class="saved-val">${saved[myKey]}</div>
+        </div>
+        <div class="saved-box">
+          <div class="saved-label">내가 예측한 ${theirLabel}의 답</div>
+          <div class="saved-val">${saved[guessKey]}</div>
+        </div>
+        ${theirSelf ? `
+          <div class="result-box">
+            <div class="result-label">${theirLabel}의 실제 답</div>
+            <div class="result-val">${theirSelf}</div>
+            <div class="result-verdict ${saved[guessKey] === theirSelf ? 'verdict-correct' : 'verdict-wrong'}">
+              ${saved[guessKey] === theirSelf ? '🎯 정답! 잘 알고 있었네요' : '💭 오답이지만, 서로를 더 알아가는 중'}
+            </div>
+          </div>
+        ` : `
+          <div class="pending-box">
+            ${theirLabel}이 답하면 결과가 공개돼요
+          </div>
+        `}`;
+    }
+  }
+
+  async function answerSelf(answer) {
+    if (!answer?.trim()) { alert('답변을 입력해주세요.'); return; }
+    const saved = getSaved();
+    saved[`${myRole}_self`] = answer.trim();
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+    await saveToFirestore(saved);
+    render();
+  }
+
+  async function answerGuess(answer) {
+    if (!answer?.trim()) { alert('예측을 입력해주세요.'); return; }
+    const saved = getSaved();
+    saved[`${myRole}_guess`] = answer.trim();
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+    await saveToFirestore(saved);
+    if (typeof KyncDB !== 'undefined' && typeof KyncAuth !== 'undefined' && KyncAuth.current) {
+      await KyncDB.addPoints(KyncAuth.current.uid, 30).catch(() => {});
+    }
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html> 
