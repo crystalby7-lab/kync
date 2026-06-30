@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    kync-diary.js  —  Kelog 스타일 공유 기록 피드
    부모 + 자녀가 함께 쌓아가는 일상 기록
+   ★ 업데이트: 캘린더 뷰 토글 + 기록 삭제 기능 추가
 ═══════════════════════════════════════════════════════════ */
 
 const KyncDiary = {
@@ -18,13 +19,21 @@ const KyncDiary = {
 
   _sel: null,   // 선택된 감정
   _img: null,   // base64 이미지
+  _view: 'feed', // 'feed' | 'calendar'
+  _calMonth: new Date(),       // 캘린더에 표시 중인 달
+  _selectedDate: null,         // 캘린더에서 선택한 날짜 (YYYY-MM-DD)
 
   /* ── 메인 렌더 ── */
   async render(containerId, myRole) {
+    this._containerId = containerId;
+    this._myRole = myRole;
     const el = document.getElementById(containerId);
     if (!el) return;
-    el.innerHTML = this._writeForm(myRole) + '<div id="kd-feed"></div>';
-    await this.renderFeed(myRole);
+
+    el.innerHTML = this._writeForm(myRole) + this._viewToggle() +
+      '<div id="kd-view-area"></div>';
+
+    this._renderViewArea();
   },
 
   /* ── 작성 폼 ── */
@@ -76,7 +85,7 @@ const KyncDiary = {
           style="width:100%;padding:13px 16px;background:#f5f2ed;
                  border:none;border-radius:14px;font-size:14px;
                  font-family:Nunito,sans-serif;color:#3d3530;outline:none;">
-        <button onclick="KyncDiary.save('${myRole}')"
+        <button onclick="KyncDiary.save('${this._myRole}')"
           style="width:100%;padding:14px;background:#3d3530;color:#fff;border:none;
                  border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;
                  font-family:Nunito,sans-serif;margin-top:10px;transition:all 0.2s;">
@@ -84,6 +93,44 @@ const KyncDiary = {
         </button>
       </div>
     </div>`;
+  },
+
+  /* ── 피드/캘린더 전환 토글 ── */
+  _viewToggle() {
+    return `
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="kd-tab-feed" onclick="KyncDiary.switchView('feed')"
+        style="flex:1;padding:11px;border-radius:12px;border:none;
+               background:${this._view==='feed'?'#3d3530':'#fff'};
+               color:${this._view==='feed'?'#fff':'#6b6560'};
+               border:${this._view==='feed'?'none':'1.5px solid #e8e3da'};
+               font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">
+        피드
+      </button>
+      <button id="kd-tab-calendar" onclick="KyncDiary.switchView('calendar')"
+        style="flex:1;padding:11px;border-radius:12px;border:none;
+               background:${this._view==='calendar'?'#3d3530':'#fff'};
+               color:${this._view==='calendar'?'#fff':'#6b6560'};
+               border:${this._view==='calendar'?'none':'1.5px solid #e8e3da'};
+               font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">
+        캘린더
+      </button>
+    </div>`;
+  },
+
+  switchView(view) {
+    this._view = view;
+    this._selectedDate = null;
+    const el = document.getElementById(this._containerId);
+    if (!el) return;
+    el.innerHTML = this._writeForm(this._myRole) + this._viewToggle() +
+      '<div id="kd-view-area"></div>';
+    this._renderViewArea();
+  },
+
+  _renderViewArea() {
+    if (this._view === 'calendar') this._renderCalendar();
+    else this.renderFeed(this._myRole);
   },
 
   /* ── 사진 선택 ── */
@@ -131,6 +178,7 @@ const KyncDiary = {
     }
 
     const entry = {
+      id:        'd_' + Date.now(),
       role:      myRole,
       img:       this._img || null,
       emotion:   this._sel || null,
@@ -140,7 +188,6 @@ const KyncDiary = {
       name:      localStorage.getItem('kync_user_name') || (myRole==='parent'?'부모님':'자녀'),
     };
 
-    // localStorage
     const fc  = localStorage.getItem('kync_family_code') || 'local';
     const key = `kync_diary_${fc}`;
     const arr = JSON.parse(localStorage.getItem(key) || '[]');
@@ -148,10 +195,9 @@ const KyncDiary = {
     if (arr.length > 100) arr.length = 100;
     localStorage.setItem(key, JSON.stringify(arr));
 
-    // Firestore (이미지 제외 — 용량 문제)
     if (fc !== 'local' && typeof db !== 'undefined') {
       try {
-        await db.collection('families').doc(fc).collection('diary').add({
+        await db.collection('families').doc(fc).collection('diary').doc(entry.id).set({
           role: entry.role, emotion: entry.emotion,
           memo: entry.memo, savedAt: firebase.firestore.FieldValue.serverTimestamp(),
           uid: entry.uid, name: entry.name,
@@ -159,7 +205,6 @@ const KyncDiary = {
       } catch(e) { console.warn('Firestore diary:', e); }
     }
 
-    // 포인트
     if (typeof KyncDB !== 'undefined' && KyncAuth?.current) {
       await KyncDB.addPoints(KyncAuth.current.uid, 15).catch(()=>{});
     }
@@ -170,23 +215,47 @@ const KyncDiary = {
     const ph = document.getElementById('kd-photo-placeholder');
     if (preview) { preview.style.display='none'; preview.src=''; }
     if (ph) ph.style.display = 'flex';
-    document.getElementById('kd-memo').value = '';
+    const memoInput = document.getElementById('kd-memo');
+    if (memoInput) memoInput.value = '';
     this.EMOTIONS.forEach(e => {
       const btn = document.getElementById(`kd-emo-${e.id}`);
       if (btn) { btn.style.background='#fff'; btn.style.borderColor='#e8e3da'; btn.style.color='#6b6560'; }
     });
 
-    await this.renderFeed(myRole);
+    this._renderViewArea();
+  },
+
+  /* ── 삭제 ── */
+  async deleteEntry(entryId, myRole) {
+    if (!confirm('이 기록을 삭제할까요?')) return;
+
+    const fc  = localStorage.getItem('kync_family_code') || 'local';
+    const key = `kync_diary_${fc}`;
+    let arr   = JSON.parse(localStorage.getItem(key) || '[]');
+    arr = arr.filter(e => e.id !== entryId);
+    localStorage.setItem(key, JSON.stringify(arr));
+
+    if (fc !== 'local' && typeof db !== 'undefined') {
+      try {
+        await db.collection('families').doc(fc).collection('diary').doc(entryId).delete();
+      } catch(e) { console.warn(e); }
+    }
+
+    this._renderViewArea();
   },
 
   /* ── 피드 렌더 ── */
-  async renderFeed(myRole) {
-    const feed = document.getElementById('kd-feed');
+  async renderFeed(myRole, filterDate) {
+    const feed = document.getElementById('kd-view-area');
     if (!feed) return;
 
     const fc  = localStorage.getItem('kync_family_code') || 'local';
     const key = `kync_diary_${fc}`;
-    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    let arr   = JSON.parse(localStorage.getItem(key) || '[]');
+
+    if (filterDate) {
+      arr = arr.filter(e => e.savedAt && e.savedAt.slice(0, 10) === filterDate);
+    }
 
     if (arr.length === 0) {
       feed.innerHTML = `
@@ -194,8 +263,10 @@ const KyncDiary = {
           <div style="width:56px;height:56px;border-radius:18px;background:#f5f2ed;
                       display:flex;align-items:center;justify-content:center;
                       margin:0 auto 14px;font-size:22px;font-weight:800;color:#d4cdc2;">◌</div>
-          <div style="font-size:14px;font-weight:700;margin-bottom:4px;">아직 기록이 없어요</div>
-          <div style="font-size:12px;">오늘 첫 번째 장면을 남겨봐요</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:4px;">
+            ${filterDate ? '이 날은 기록이 없어요' : '아직 기록이 없어요'}
+          </div>
+          <div style="font-size:12px;">${filterDate ? '' : '오늘 첫 번째 장면을 남겨봐요'}</div>
         </div>`;
       return;
     }
@@ -204,10 +275,20 @@ const KyncDiary = {
       const emo  = this.EMOTIONS.find(x=>x.id===e.emotion);
       const time = e.savedAt ? new Date(e.savedAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric'}) : '';
       const isMe = e.role === myRole;
+      const entryId = e.id || '';
 
       return `
         <div style="background:#fff;border-radius:20px;overflow:hidden;
-                    border:1.5px solid #e8e3da;margin-bottom:12px;">
+                    border:1.5px solid #e8e3da;margin-bottom:12px;position:relative;">
+
+          ${isMe ? `
+            <button onclick="KyncDiary.deleteEntry('${entryId}','${myRole}')"
+              style="position:absolute;top:10px;right:10px;z-index:2;
+                     width:28px;height:28px;border-radius:50%;
+                     background:rgba(0,0,0,0.4);border:none;cursor:pointer;
+                     color:#fff;font-size:14px;display:flex;align-items:center;
+                     justify-content:center;font-family:Nunito,sans-serif;">×</button>
+          ` : ''}
 
           ${e.img ? `
             <div style="width:100%;aspect-ratio:4/3;overflow:hidden;">
@@ -239,6 +320,109 @@ const KyncDiary = {
           </div>
         </div>`;
     }).join('');
+  },
+
+  /* ── 캘린더 렌더 ── */
+  _renderCalendar() {
+    const area = document.getElementById('kd-view-area');
+    if (!area) return;
+
+    const fc  = localStorage.getItem('kync_family_code') || 'local';
+    const key = `kync_diary_${fc}`;
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+
+    // 날짜별 기록 개수 맵
+    const countMap = {};
+    arr.forEach(e => {
+      if (!e.savedAt) return;
+      const d = e.savedAt.slice(0, 10);
+      countMap[d] = (countMap[d] || 0) + 1;
+    });
+
+    const year  = this._calMonth.getFullYear();
+    const month = this._calMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay  = new Date(year, month + 1, 0);
+    const startWeekday = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    let cells = '';
+    for (let i = 0; i < startWeekday; i++) {
+      cells += `<div></div>`;
+    }
+    for (let d = 1; d <= totalDays; d++) {
+      const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const hasEntry = !!countMap[dateStr];
+      const isToday = dateStr === todayStr;
+      const isSelected = dateStr === this._selectedDate;
+      cells += `
+        <div onclick="KyncDiary.selectDate('${dateStr}')"
+          style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;
+                 justify-content:center;border-radius:12px;cursor:pointer;
+                 background:${isSelected ? '#3d3530' : 'transparent'};
+                 border:${isToday && !isSelected ? '1.5px solid #c17f4a' : 'none'};">
+          <div style="font-size:13px;font-weight:700;
+                      color:${isSelected ? '#fff' : '#3d3530'};">${d}</div>
+          ${hasEntry ? `<div style="width:5px;height:5px;border-radius:50%;
+                        background:${isSelected ? '#fff' : '#c17f4a'};margin-top:2px;"></div>` : ''}
+        </div>`;
+    }
+
+    area.innerHTML = `
+      <div style="background:#fff;border-radius:20px;padding:18px;border:1.5px solid #e8e3da;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <button onclick="KyncDiary.changeMonth(-1)"
+            style="width:32px;height:32px;border-radius:50%;border:none;background:#f5f2ed;
+                   cursor:pointer;font-size:14px;color:#3d3530;">‹</button>
+          <div style="font-size:15px;font-weight:800;color:#3d3530;">${year}년 ${month + 1}월</div>
+          <button onclick="KyncDiary.changeMonth(1)"
+            style="width:32px;height:32px;border-radius:50%;border:none;background:#f5f2ed;
+                   cursor:pointer;font-size:14px;color:#3d3530;">›</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px;">
+          ${['일','월','화','수','목','금','토'].map(d => `
+            <div style="text-align:center;font-size:11px;font-weight:700;color:#a09890;">${d}</div>
+          `).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">
+          ${cells}
+        </div>
+      </div>
+      <div id="kd-calendar-feed"></div>`;
+
+    if (this._selectedDate) {
+      this._renderCalendarFeed();
+    } else {
+      document.getElementById('kd-calendar-feed').innerHTML = `
+        <div style="text-align:center;padding:24px;color:#a09890;font-size:13px;">
+          날짜를 선택하면 그 날의 기록을 볼 수 있어요
+        </div>`;
+    }
+  },
+
+  changeMonth(delta) {
+    this._calMonth = new Date(this._calMonth.getFullYear(), this._calMonth.getMonth() + delta, 1);
+    this._renderCalendar();
+  },
+
+  selectDate(dateStr) {
+    this._selectedDate = this._selectedDate === dateStr ? null : dateStr;
+    this._renderCalendar();
+  },
+
+  _renderCalendarFeed() {
+    const feedArea = document.getElementById('kd-calendar-feed');
+    if (!feedArea) return;
+    feedArea.id = 'kd-view-area-temp';
+    // renderFeed가 kd-view-area를 타겟하므로 임시로 전환
+    const original = document.getElementById('kd-view-area');
+    const temp = document.createElement('div');
+    temp.id = 'kd-view-area';
+    feedArea.replaceWith(temp);
+    this.renderFeed(this._myRole, this._selectedDate).then(() => {
+      temp.id = 'kd-calendar-feed';
+    });
   },
 
   /* ── 이미지 전체화면 ── */
