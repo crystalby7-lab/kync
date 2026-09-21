@@ -2,6 +2,13 @@
    kync-diary.js  —  Kelog 스타일 공유 기록 피드
    부모 + 자녀가 함께 쌓아가는 일상 기록
    ★ 업데이트: 캘린더 뷰 토글 + 기록 삭제 기능 추가
+   ★ 버그 수정:
+     - Firebase를 기준으로 저장·불러오기 (상대 기록도 보임, 새로고침해도 유지)
+     - 사진 압축 후 Firestore에 저장 (localStorage 용량 초과 해결)
+     - 기존 브라우저에 쌓인 기록 → Firebase로 1회 자동 이전
+     - 저장/삭제 에러 처리, 중복 저장 방지
+     - 날짜를 한국(기기) 시간 기준으로 통일
+     - 캘린더 날짜 선택 시 피드 렌더링 안정화
 ═══════════════════════════════════════════════════════════ */
 
 const KyncDiary = {
@@ -23,6 +30,185 @@ const KyncDiary = {
   _calMonth: new Date(),       // 캘린더에 표시 중인 달
   _selectedDate: null,         // 캘린더에서 선택한 날짜 (YYYY-MM-DD)
 
+  // [수정] Firebase에서 불러온 기록 보관
+  _entries: null,
+  _entriesFc: null,
+  _unsub: null,
+  _listenFc: null,
+  _saving: false,
+
+  /* ════════════════════════════════════════
+     [추가] 공통 헬퍼
+  ════════════════════════════════════════ */
+  _fc() {
+    return localStorage.getItem('kync_family_code') || 'local';
+  },
+
+  _hasDB() {
+    return typeof db !== 'undefined' && typeof firebase !== 'undefined';
+  },
+
+  _cacheKey(fc) {
+    return `kync_diary_${fc}`;
+  },
+
+  _pad(n) {
+    return String(n).padStart(2, '0');
+  },
+
+  // 기기(한국) 시간 기준 YYYY-MM-DD
+  _localDate(d) {
+    return `${d.getFullYear()}-${this._pad(d.getMonth()+1)}-${this._pad(d.getDate())}`;
+  },
+
+  _entryDate(e) {
+    if (!e) return '';
+    if (e.dateKey) return e.dateKey;
+    if (!e.savedAt) return '';
+    const d = new Date(e.savedAt);
+    return isNaN(d) ? '' : this._localDate(d);
+  },
+
+  _esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  },
+
+  _readCache(fc) {
+    try { return JSON.parse(localStorage.getItem(this._cacheKey(fc)) || '[]'); }
+    catch(e) { return []; }
+  },
+
+  // 가족 연결 상태면 사진은 캐시에 안 넣음 (localStorage 용량 보호)
+  _writeCache(fc, arr, keepImg) {
+    const key  = this._cacheKey(fc);
+    const list = (arr || []).slice(0, 100);
+    const lite = list.map(x => ({ ...x, img: null }));
+    if (keepImg) {
+      try { localStorage.setItem(key, JSON.stringify(list)); return; } catch(e) {}
+    }
+    try { localStorage.setItem(key, JSON.stringify(lite)); return; } catch(e) {}
+    try { localStorage.removeItem(key); } catch(e) {}
+  },
+
+  _getEntries() {
+    const fc = this._fc();
+    if (Array.isArray(this._entries) && this._entriesFc === fc) return this._entries;
+    return this._readCache(fc);
+  },
+
+  // 사진 압축 (Firestore 문서 1MB 제한 대비 700KB 이하)
+  _compressImage(dataUrl, maxSize = 800, maxBytes = 700000) {
+    return new Promise(resolve => {
+      if (!dataUrl) return resolve(null);
+      const img = new Image();
+      img.onload = () => {
+        let size = maxSize, quality = 0.75, out = '';
+        for (let i = 0; i < 8; i++) {
+          const scale = Math.min(1, size / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          out = canvas.toDataURL('image/jpeg', quality);
+          if (out.length <= maxBytes) break;
+          if (quality > 0.45) quality -= 0.1;
+          else size = Math.round(size * 0.8);
+        }
+        resolve(out && out.length <= maxBytes ? out : null);
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  },
+
+  // Firestore 문서 → 화면용 기록
+  _fromDoc(doc) {
+    const x = doc.data({ serverTimestamps: 'estimate' }) || {};
+    let iso = x.clientSavedAt || '';
+    if (x.savedAt && typeof x.savedAt.toDate === 'function') {
+      iso = x.savedAt.toDate().toISOString();
+    }
+    const entry = {
+      id:      doc.id,
+      role:    x.role || '',
+      img:     x.img || null,
+      emotion: x.emotion || null,
+      memo:    x.memo || '',
+      savedAt: iso,
+      uid:     x.uid || '',
+      name:    x.name || '',
+    };
+    entry.dateKey = x.dateKey || this._entryDate(entry);
+    return entry;
+  },
+
+  // 기존에 브라우저에만 있던 기록 → Firebase로 1회 이전
+  async _migrateLocal() {
+    const fc = this._fc();
+    if (fc === 'local' || !this._hasDB()) return;
+    const flag = `kync_diary_migrated_${fc}`;
+    try { if (localStorage.getItem(flag)) return; } catch(e) {}
+
+    const old  = [...this._readCache('local'), ...this._readCache(fc)];
+    const seen = new Set();
+
+    try {
+      for (const e of old) {
+        if (!e || !e.id || seen.has(e.id)) continue;
+        seen.add(e.id);
+        const d = e.savedAt && !isNaN(new Date(e.savedAt)) ? new Date(e.savedAt) : new Date();
+        const data = {
+          role:          e.role || '',
+          emotion:       e.emotion || null,
+          memo:          e.memo || '',
+          uid:           e.uid || '',
+          name:          e.name || '',
+          savedAt:       firebase.firestore.Timestamp.fromDate(d),
+          clientSavedAt: d.toISOString(),
+          dateKey:       this._localDate(d),
+        };
+        if (e.img) {
+          const small = await this._compressImage(e.img);
+          if (small) data.img = small;
+        }
+        await db.collection('families').doc(fc)
+          .collection('diary').doc(e.id).set(data, { merge: true });
+      }
+      try { localStorage.removeItem(this._cacheKey('local')); } catch(e) {}
+      this._writeCache(fc, old, false); // 사진 빼고 캐시 → 용량 확보
+      try { localStorage.setItem(flag, '1'); } catch(e) {}
+    } catch(e) {
+      console.warn('diary migrate:', e);
+    }
+  },
+
+  // Firebase 실시간 불러오기 (상대 기록 포함)
+  _startListening() {
+    const fc = this._fc();
+    if (fc === 'local' || !this._hasDB()) return;
+    if (this._unsub && this._listenFc === fc) return;
+    if (this._unsub) { try { this._unsub(); } catch(e) {} this._unsub = null; }
+
+    this._listenFc = fc;
+    this._unsub = db.collection('families').doc(fc).collection('diary')
+      .orderBy('savedAt', 'desc')
+      .limit(100)
+      .onSnapshot(snap => {
+        this._entries   = snap.docs.map(d => this._fromDoc(d));
+        this._entriesFc = fc;
+        this._writeCache(fc, this._entries, false);
+        this._renderViewArea();
+      }, err => {
+        console.warn('diary listen:', err);
+      });
+  },
+
   /* ── 메인 렌더 ── */
   async render(containerId, myRole) {
     this._containerId = containerId;
@@ -34,6 +220,9 @@ const KyncDiary = {
       '<div id="kd-view-area"></div>';
 
     this._renderViewArea();
+
+    // [수정] 기존 기록 이전 → Firebase 실시간 불러오기
+    this._migrateLocal().finally(() => this._startListening());
   },
 
   /* ── 작성 폼 ── */
@@ -85,7 +274,7 @@ const KyncDiary = {
           style="width:100%;padding:13px 16px;background:#f5f2ed;
                  border:none;border-radius:14px;font-size:14px;
                  font-family:Nunito,sans-serif;color:#3d3530;outline:none;">
-        <button onclick="KyncDiary.save('${this._myRole}')"
+        <button id="kd-save-btn" onclick="KyncDiary.save('${this._myRole}')"
           style="width:100%;padding:14px;background:#3d3530;color:#fff;border:none;
                  border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;
                  font-family:Nunito,sans-serif;margin-top:10px;transition:all 0.2s;">
@@ -129,6 +318,7 @@ const KyncDiary = {
   },
 
   _renderViewArea() {
+    if (!document.getElementById('kd-view-area')) return;
     if (this._view === 'calendar') this._renderCalendar();
     else this.renderFeed(this._myRole);
   },
@@ -150,6 +340,7 @@ const KyncDiary = {
       if (placeholder) placeholder.style.display = 'none';
     };
     reader.readAsDataURL(file);
+    input.value = ''; // [수정] 같은 사진 다시 선택 가능
   },
 
   /* ── 감정 선택 ── */
@@ -172,89 +363,124 @@ const KyncDiary = {
 
   /* ── 저장 ── */
   async save(myRole) {
+    if (this._saving) return; // [수정] 중복 저장 방지
     const memo = document.getElementById('kd-memo')?.value?.trim();
     if (!this._img && !memo) {
       alert('사진이나 메모를 추가해주세요.'); return;
     }
 
-    const entry = {
-      id:        'd_' + Date.now(),
-      role:      myRole,
-      img:       this._img || null,
-      emotion:   this._sel || null,
-      memo:      memo || '',
-      savedAt:   new Date().toISOString(),
-      uid:       KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid') || '',
-      name:      localStorage.getItem('kync_user_name') || (myRole==='parent'?'부모님':'자녀'),
-    };
+    this._saving = true;
+    const btn = document.getElementById('kd-save-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
 
-    const fc  = localStorage.getItem('kync_family_code') || 'local';
-    const key = `kync_diary_${fc}`;
-    const arr = JSON.parse(localStorage.getItem(key) || '[]');
-    arr.unshift(entry);
-    if (arr.length > 100) arr.length = 100;
-    localStorage.setItem(key, JSON.stringify(arr));
+    try {
+      // [수정] 사진 압축
+      let img = null;
+      if (this._img) {
+        img = await this._compressImage(this._img);
+        if (!img) {
+          if (!memo) { alert('사진을 불러오지 못했어요. 다른 사진을 골라주세요.'); return; }
+          alert('사진 용량이 커서 메모만 저장돼요.');
+        }
+      }
 
-    if (fc !== 'local' && typeof db !== 'undefined') {
-      try {
-        await db.collection('families').doc(fc).collection('diary').doc(entry.id).set({
-          role: entry.role, emotion: entry.emotion,
-          memo: entry.memo, savedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          uid: entry.uid, name: entry.name,
-        });
-      } catch(e) { console.warn('Firestore diary:', e); }
+      const now = new Date();
+      const entry = {
+        id:        'd_' + Date.now(),
+        role:      myRole,
+        img:       img,
+        emotion:   this._sel || null,
+        memo:      memo || '',
+        savedAt:   now.toISOString(),
+        dateKey:   this._localDate(now),
+        uid:       KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid') || '',
+        name:      localStorage.getItem('kync_user_name') || (myRole==='parent'?'부모님':'자녀'),
+      };
+
+      const fc = this._fc();
+
+      // [수정] Firebase에 먼저 저장 (사진 포함)
+      if (fc !== 'local' && this._hasDB()) {
+        const data = {
+          role:          entry.role,
+          emotion:       entry.emotion,
+          memo:          entry.memo,
+          uid:           entry.uid,
+          name:          entry.name,
+          clientSavedAt: entry.savedAt,
+          dateKey:       entry.dateKey,
+          savedAt:       firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        if (img) data.img = img;
+        await db.collection('families').doc(fc).collection('diary').doc(entry.id).set(data);
+      }
+
+      // 화면·캐시 반영
+      const next = [entry, ...this._getEntries().filter(x => x.id !== entry.id)].slice(0, 100);
+      this._entries = next;
+      this._entriesFc = fc;
+      this._writeCache(fc, next, fc === 'local');
+
+      if (typeof KyncDB !== 'undefined' && KyncAuth?.current) {
+        await KyncDB.addPoints(KyncAuth.current.uid, 15).catch(()=>{});
+      }
+
+      // 리셋
+      this._img = null; this._sel = null;
+      const preview = document.getElementById('kd-preview');
+      const ph = document.getElementById('kd-photo-placeholder');
+      if (preview) { preview.style.display='none'; preview.src=''; }
+      if (ph) ph.style.display = ''; // [수정] 원래 배치 유지
+      const memoInput = document.getElementById('kd-memo');
+      if (memoInput) memoInput.value = '';
+      this.EMOTIONS.forEach(e => {
+        const b = document.getElementById(`kd-emo-${e.id}`);
+        if (b) { b.style.background='#fff'; b.style.borderColor='#e8e3da'; b.style.color='#6b6560'; }
+      });
+
+      this._renderViewArea();
+    } catch(e) {
+      console.warn('diary save:', e);
+      alert('저장에 실패했어요. 인터넷 연결을 확인하고 다시 시도해주세요.');
+    } finally {
+      this._saving = false;
+      if (btn) { btn.disabled = false; btn.textContent = '기록하기'; }
     }
-
-    if (typeof KyncDB !== 'undefined' && KyncAuth?.current) {
-      await KyncDB.addPoints(KyncAuth.current.uid, 15).catch(()=>{});
-    }
-
-    // 리셋
-    this._img = null; this._sel = null;
-    const preview = document.getElementById('kd-preview');
-    const ph = document.getElementById('kd-photo-placeholder');
-    if (preview) { preview.style.display='none'; preview.src=''; }
-    if (ph) ph.style.display = 'flex';
-    const memoInput = document.getElementById('kd-memo');
-    if (memoInput) memoInput.value = '';
-    this.EMOTIONS.forEach(e => {
-      const btn = document.getElementById(`kd-emo-${e.id}`);
-      if (btn) { btn.style.background='#fff'; btn.style.borderColor='#e8e3da'; btn.style.color='#6b6560'; }
-    });
-
-    this._renderViewArea();
   },
 
   /* ── 삭제 ── */
   async deleteEntry(entryId, myRole) {
     if (!confirm('이 기록을 삭제할까요?')) return;
 
-    const fc  = localStorage.getItem('kync_family_code') || 'local';
-    const key = `kync_diary_${fc}`;
-    let arr   = JSON.parse(localStorage.getItem(key) || '[]');
-    arr = arr.filter(e => e.id !== entryId);
-    localStorage.setItem(key, JSON.stringify(arr));
+    const fc = this._fc();
 
-    if (fc !== 'local' && typeof db !== 'undefined') {
+    if (fc !== 'local' && this._hasDB()) {
       try {
         await db.collection('families').doc(fc).collection('diary').doc(entryId).delete();
-      } catch(e) { console.warn(e); }
+      } catch(e) {
+        console.warn('diary delete:', e);
+        alert('삭제에 실패했어요. 다시 시도해주세요.');
+        return;
+      }
     }
+
+    const next = this._getEntries().filter(e => e.id !== entryId);
+    this._entries = next;
+    this._entriesFc = fc;
+    this._writeCache(fc, next, fc === 'local');
 
     this._renderViewArea();
   },
 
   /* ── 피드 렌더 ── */
-  async renderFeed(myRole, filterDate) {
-    const feed = document.getElementById('kd-view-area');
+  async renderFeed(myRole, filterDate, targetId = 'kd-view-area') {
+    const feed = document.getElementById(targetId);
     if (!feed) return;
 
-    const fc  = localStorage.getItem('kync_family_code') || 'local';
-    const key = `kync_diary_${fc}`;
-    let arr   = JSON.parse(localStorage.getItem(key) || '[]');
+    let arr = this._getEntries().slice();
 
     if (filterDate) {
-      arr = arr.filter(e => e.savedAt && e.savedAt.slice(0, 10) === filterDate);
+      arr = arr.filter(e => this._entryDate(e) === filterDate);
     }
 
     if (arr.length === 0) {
@@ -275,7 +501,9 @@ const KyncDiary = {
       const emo  = this.EMOTIONS.find(x=>x.id===e.emotion);
       const time = e.savedAt ? new Date(e.savedAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric'}) : '';
       const isMe = e.role === myRole;
-      const entryId = e.id || '';
+      const entryId = this._esc(e.id || '');
+      const name = this._esc(e.name || '');
+      const memo = this._esc(e.memo || '');
 
       return `
         <div style="background:#fff;border-radius:20px;overflow:hidden;
@@ -293,7 +521,7 @@ const KyncDiary = {
           ${e.img ? `
             <div style="width:100%;aspect-ratio:4/3;overflow:hidden;">
               <img src="${e.img}" style="width:100%;height:100%;object-fit:cover;"
-                   onclick="KyncDiary.openImg('${e.img}')">
+                   onclick="KyncDiary.openImgById('${entryId}')">
             </div>
           ` : ''}
 
@@ -304,10 +532,10 @@ const KyncDiary = {
                           display:flex;align-items:center;justify-content:center;
                           font-size:11px;font-weight:800;
                           color:${isMe?'#fff':'#6b6560'};flex-shrink:0;">
-                ${(e.name||'?')[0]}
+                ${this._esc((e.name||'?')[0])}
               </div>
               <div style="flex:1;">
-                <span style="font-size:13px;font-weight:700;color:#3d3530;">${e.name||''}</span>
+                <span style="font-size:13px;font-weight:700;color:#3d3530;">${name}</span>
                 ${emo ? `<span style="margin-left:7px;padding:3px 9px;border-radius:20px;
                    background:${emo.bg};font-size:11px;font-weight:700;color:#6b6560;">
                    <span style="display:inline-block;width:5px;height:5px;border-radius:50%;
@@ -316,7 +544,7 @@ const KyncDiary = {
               </div>
               <div style="font-size:11px;color:#d4cdc2;flex-shrink:0;">${time}</div>
             </div>
-            ${e.memo ? `<div style="font-size:14px;color:#3d3530;line-height:1.65;font-weight:500;">${e.memo}</div>` : ''}
+            ${e.memo ? `<div style="font-size:14px;color:#3d3530;line-height:1.65;font-weight:500;">${memo}</div>` : ''}
           </div>
         </div>`;
     }).join('');
@@ -327,15 +555,13 @@ const KyncDiary = {
     const area = document.getElementById('kd-view-area');
     if (!area) return;
 
-    const fc  = localStorage.getItem('kync_family_code') || 'local';
-    const key = `kync_diary_${fc}`;
-    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    const arr = this._getEntries();
 
-    // 날짜별 기록 개수 맵
+    // 날짜별 기록 개수 맵 (기기 시간 기준)
     const countMap = {};
     arr.forEach(e => {
-      if (!e.savedAt) return;
-      const d = e.savedAt.slice(0, 10);
+      const d = this._entryDate(e);
+      if (!d) return;
       countMap[d] = (countMap[d] || 0) + 1;
     });
 
@@ -345,7 +571,7 @@ const KyncDiary = {
     const lastDay  = new Date(year, month + 1, 0);
     const startWeekday = firstDay.getDay();
     const totalDays = lastDay.getDate();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = this._localDate(new Date()); // [수정] UTC → 기기 시간
 
     let cells = '';
     for (let i = 0; i < startWeekday; i++) {
@@ -411,18 +637,9 @@ const KyncDiary = {
     this._renderCalendar();
   },
 
+  // [수정] 요소 바꿔치기 없이 캘린더 아래 영역에 바로 렌더
   _renderCalendarFeed() {
-    const feedArea = document.getElementById('kd-calendar-feed');
-    if (!feedArea) return;
-    feedArea.id = 'kd-view-area-temp';
-    // renderFeed가 kd-view-area를 타겟하므로 임시로 전환
-    const original = document.getElementById('kd-view-area');
-    const temp = document.createElement('div');
-    temp.id = 'kd-view-area';
-    feedArea.replaceWith(temp);
-    this.renderFeed(this._myRole, this._selectedDate).then(() => {
-      temp.id = 'kd-calendar-feed';
-    });
+    this.renderFeed(this._myRole, this._selectedDate, 'kd-calendar-feed');
   },
 
   /* ── 이미지 전체화면 ── */
@@ -434,6 +651,12 @@ const KyncDiary = {
     modal.onclick = () => modal.remove();
     document.body.appendChild(modal);
   },
+
+  // [추가] 긴 사진 데이터를 onclick에 넣지 않도록 id로 열기
+  openImgById(id) {
+    const e = this._getEntries().find(x => x.id === id);
+    if (e && e.img) this.openImg(e.img);
+  },
 };
 
-window.KyncDiary = KyncDiary;
+window.KyncDiary = KyncDiary; 
