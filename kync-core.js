@@ -1,6 +1,12 @@
 /* ═══════════════════════════════════════════════════════════
    kync-core.js — Kync 앱 핵심 엔진
    화면 초기화, 질문 표시, 답변 제출, 체크인 등
+   ★ 버그 수정:
+     - 새로고침 시 자녀 화면에 오늘 체크인(기분·스트레스·활동·메모) 다시 불러오기
+     - 부모 화면에 감정이 영어 id 대신 한글로 표시
+     - init이 여러 번 호출돼도 버튼 이벤트·실시간 감시 중복 안 되게
+     - 가족 연결 안 된 상태에서 저장하면 안내 (저장된 척하고 사라지는 문제)
+     - 역할 정보 없을 때 에러로 멈추지 않게
 ═══════════════════════════════════════════════════════════ */
 
 const App = {
@@ -62,12 +68,27 @@ const App = {
 
   _selectedEmotion: null,
 
+  // [추가] 중복 방지용
+  _listenersReady: false,
+  _todayUnsub: null,
+
+  // [추가] 글자 안전하게 표시
+  _esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  },
+
   /* ── 초기화 ── */
   async init() {
     this._setDates();
     this._setQuestion();
-    this._setupCharCounters();
-    this._setupSubmitButtons();
+    // [수정] init이 여러 번 불려도 버튼 이벤트가 중복으로 붙지 않게
+    if (!this._listenersReady) {
+      this._setupCharCounters();
+      this._setupSubmitButtons();
+      this._listenersReady = true;
+    }
     this._setupEmotionGrids();
     this._loadUserData();
     await this._loadTodayData();
@@ -152,8 +173,9 @@ const App = {
     // 자녀 홈 감정 체크인
     const grid = document.getElementById('c-emotionGrid');
     if (grid) {
+      // [수정] data-id 추가 → 새로고침 후 선택 상태 복원용
       grid.innerHTML = this.EMOTIONS_CHILD.map(e => `
-        <button onclick="App._selectEmotion('${e.id}', this)"
+        <button data-id="${e.id}" onclick="App._selectEmotion('${e.id}', this)"
           style="padding:10px 6px;background:#f5f2ed;border:2px solid transparent;
                  border-radius:12px;cursor:pointer;font-family:Nunito,sans-serif;
                  transition:all 0.15s;display:flex;flex-direction:column;
@@ -229,7 +251,14 @@ const App = {
   async _loadTodayData() {
     const fc   = localStorage.getItem('kync_family_code');
     const role = localStorage.getItem('kync_role');
-    if (!fc) return;
+    // [수정] 역할 정보 없으면 멈추지 않고 종료
+    if (!fc || (role !== 'parent' && role !== 'child')) return;
+
+    // [수정] 이전 실시간 감시 해제 (중복 방지)
+    if (this._todayUnsub) {
+      try { this._todayUnsub(); } catch(e) {}
+      this._todayUnsub = null;
+    }
 
     try {
       if (typeof KyncDB !== 'undefined') {
@@ -238,14 +267,13 @@ const App = {
 
         // 실시간 감시
         if (typeof db !== 'undefined') {
-          const todayKey = new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','');
           const d = new Date();
           const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          db.collection('families').doc(fc)
+          this._todayUnsub = db.collection('families').doc(fc)
             .collection('records').doc(key)
             .onSnapshot(snap => {
               if (snap.exists) this._applyTodayRecord(snap.data(), role);
-            });
+            }, err => console.warn('today listen:', err)); // [수정] 에러 처리
         }
       }
     } catch(e) { console.warn('loadTodayData:', e); }
@@ -253,6 +281,7 @@ const App = {
 
   _applyTodayRecord(record, role) {
     if (!record) return;
+    if (role !== 'parent' && role !== 'child') return; // [수정]
 
     // 내 답변 이미 제출했으면 텍스트 표시
     const myData = record[role];
@@ -277,7 +306,7 @@ const App = {
             ${role==='parent'?'자녀':'부모님'} 답변
           </div>
           <div style="font-size:15px;color:#3d3530;font-weight:600;line-height:1.7;">
-            ${theirData.content}
+            ${this._esc(theirData.content)}
           </div>
         </div>`;
     }
@@ -289,8 +318,10 @@ const App = {
       const mood = document.getElementById('p-stat-mood');
       const stress = document.getElementById('p-stat-stress');
       const energy = document.getElementById('p-stat-energy');
+      // [수정] 감정 id → 한글 라벨
+      const emoLabel = this.EMOTIONS_CHILD.find(e => e.id === ci.emotion)?.label || ci.emotion || '—';
       if (desc) desc.textContent = ci.memo || '오늘 체크인 완료했어요.';
-      if (mood) mood.textContent = ci.emotion || '—';
+      if (mood) mood.textContent = emoLabel;
       if (stress) stress.textContent = ci.stress ? `${ci.stress}/10` : '—';
       if (energy) energy.textContent = ci.energy ? `${ci.energy}/10` : '—';
 
@@ -299,6 +330,35 @@ const App = {
         const s = parseInt(ci.stress) || 5;
         dot.className = `status-indicator ${s>=7?'ind-high':s>=4?'ind-mid':'ind-low'}`;
       }
+    }
+
+    // [추가] 자녀 화면: 새로고침해도 오늘 체크인 복원
+    if (role === 'child' && record.checkin) {
+      const ci = record.checkin;
+
+      if (ci.emotion) {
+        const emoBtn = document.querySelector(`#c-emotionGrid button[data-id="${ci.emotion}"]`);
+        if (emoBtn) this._selectEmotion(ci.emotion, emoBtn);
+        else this._selectedEmotion = ci.emotion;
+      }
+
+      const stressEl = document.getElementById('c-stressSlider');
+      if (stressEl && ci.stress != null) {
+        stressEl.value = ci.stress;
+        stressEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      const energyEl = document.getElementById('c-energySlider');
+      if (energyEl && ci.energy != null) {
+        energyEl.value = ci.energy;
+        energyEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      const memoEl = document.getElementById('c-emotionMemo');
+      if (memoEl && ci.memo) memoEl.value = ci.memo;
+
+      const ciBtn = document.querySelector('[onclick="App.saveCheckin()"]');
+      if (ciBtn) { ciBtn.textContent = '✓ 저장됐어요'; ciBtn.disabled = true; ciBtn.style.opacity = '0.6'; }
     }
   },
 
@@ -310,6 +370,10 @@ const App = {
     const content  = textarea?.value?.trim();
 
     if (!content) { alert('답변을 입력해주세요.'); return; }
+
+    // [수정] 가족 연결 안 됐으면 저장 안 된 채 완료처럼 보이지 않게
+    const fcCheck = localStorage.getItem('kync_family_code');
+    if (!fcCheck) { alert('먼저 가족과 연결해주세요. (연결 탭)'); return; }
 
     btn.textContent = '저장 중...';
     btn.disabled = true;
@@ -339,7 +403,7 @@ const App = {
       // 스트릭
       if (typeof KyncStreak !== 'undefined') {
         const uid = KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid');
-        if (uid) await KyncStreak.onCheckin(uid);
+        if (uid) await KyncStreak.onCheckin(uid).catch?.(()=>{});
       }
 
     } catch(e) {
@@ -356,7 +420,18 @@ const App = {
     const energy  = document.getElementById('c-energySlider')?.value || '5';
     const memo    = document.getElementById('c-emotionMemo')?.value?.trim() || '';
 
+    // [수정] 기분 선택 안 하면 안내
+    if (!emotion) { alert('오늘 기분을 선택해주세요.'); return; }
+
+    // [수정] 가족 연결 안 됐으면 안내
+    const fcCheck = localStorage.getItem('kync_family_code');
+    if (!fcCheck) { alert('먼저 가족과 연결해주세요. (연결 탭)'); return; }
+
     const checkin = { emotion, stress: parseInt(stress), energy: parseInt(energy), memo };
+
+    const btn = document.querySelector('[onclick="App.saveCheckin()"]');
+    const btnText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; } // [수정] 중복 저장 방지
 
     try {
       const fc = localStorage.getItem('kync_family_code');
@@ -367,18 +442,20 @@ const App = {
       // 스트릭
       if (typeof KyncStreak !== 'undefined') {
         const uid = KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid');
-        if (uid) await KyncStreak.onCheckin(uid);
+        if (uid) await KyncStreak.onCheckin(uid).catch?.(()=>{});
       }
 
       // 포인트
       const cur = parseInt(localStorage.getItem('kync_points') || '0') + 20;
       localStorage.setItem('kync_points', cur);
 
-      const btn = document.querySelector('[onclick="App.saveCheckin()"]');
       if (btn) { btn.textContent = '✓ 저장됐어요'; btn.disabled = true; btn.style.opacity = '0.6'; }
 
       alert('오늘 상태가 저장됐어요!');
-    } catch(e) { alert('저장 실패: ' + e.message); }
+    } catch(e) {
+      if (btn) { btn.disabled = false; btn.textContent = btnText; }
+      alert('저장 실패: ' + e.message);
+    }
   },
 
   /* ── 일기 저장 ── */
@@ -397,7 +474,7 @@ const App = {
     // localStorage
     const arr = JSON.parse(localStorage.getItem('kync_diary_entries') || '[]');
     arr.unshift(entry);
-    localStorage.setItem('kync_diary_entries', JSON.stringify(arr.slice(0, 100)));
+    try { localStorage.setItem('kync_diary_entries', JSON.stringify(arr.slice(0, 100))); } catch(e) {} // [수정] 용량 초과 시 멈춤 방지
 
     // Firestore
     if (typeof KyncDB !== 'undefined' && KyncAuth?.current) {
@@ -419,8 +496,8 @@ const App = {
     if (!arr.length) { list.innerHTML = '<div style="text-align:center;color:#a09890;font-size:13px;padding:16px;">아직 일기가 없어요</div>'; return; }
     list.innerHTML = arr.slice(0,20).map(e => `
       <div style="background:#f5f2ed;border-radius:14px;padding:14px 16px;margin-bottom:8px;">
-        <div style="font-size:11px;color:#a09890;margin-bottom:6px;">${e.date}</div>
-        <div style="font-size:14px;color:#3d3530;line-height:1.65;">${e.text}</div>
+        <div style="font-size:11px;color:#a09890;margin-bottom:6px;">${this._esc(e.date)}</div>
+        <div style="font-size:14px;color:#3d3530;line-height:1.65;">${this._esc(e.text)}</div>
       </div>`).join('');
   },
 
@@ -455,4 +532,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-window.App = App; 
+window.App = App;
