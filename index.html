@@ -28,6 +28,16 @@
       border-radius:14px; font-size:15px; font-family:'Nunito',sans-serif;
       outline:none; background:#f7f5f2;
     }
+    .email-tabs { display:flex; gap:6px; background:#efebe6; padding:4px; border-radius:14px; }
+    .email-tab {
+      flex:1; padding:10px; border:none; border-radius:10px; background:transparent;
+      font-size:14px; font-weight:700; color:#a09b95; cursor:pointer; font-family:'Nunito',sans-serif;
+    }
+    .email-tab.on { background:#fff; color:#3d3530; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .email-link {
+      background:none; border:none; font-size:12px; color:#a09b95; cursor:pointer;
+      text-decoration:underline; font-family:'Nunito',sans-serif;
+    }
   </style>
 </head>
 <body>
@@ -49,16 +59,23 @@
         onclick="const f=document.getElementById('email-form');f.style.display=f.style.display==='flex'?'none':'flex'">
         이메일로 시작하기
       </button>
-      <div id="email-form">
-        <input id="email-input" type="email" placeholder="이메일 주소">
-        <input id="pw-input" type="password" placeholder="비밀번호 (6자 이상)"
-          onkeydown="if(event.key==='Enter') loginWithEmail()">
-        <button onclick="loginWithEmail()"
+      <div id="email-form" data-mode="login">
+        <div class="email-tabs">
+          <button type="button" id="tab-login" class="email-tab on" onclick="switchEmailMode('login')">로그인</button>
+          <button type="button" id="tab-signup" class="email-tab" onclick="switchEmailMode('signup')">회원가입</button>
+        </div>
+        <input id="signup-name-input" class="signup-only" type="text" placeholder="이름" style="display:none;">
+        <input id="email-input" type="email" placeholder="이메일 주소" autocomplete="email">
+        <input id="pw-input" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') submitEmailForm()">
+        <input id="pw2-input" class="signup-only" type="password" placeholder="비밀번호 확인" style="display:none;"
+          autocomplete="new-password" onkeydown="if(event.key==='Enter') submitEmailForm()">
+        <button id="email-submit" onclick="submitEmailForm()"
           style="padding:15px;background:#3d3530;color:#fff;border:none;border-radius:14px;
                  font-size:15px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">
-          로그인 / 회원가입
+          로그인
         </button>
-        <div style="font-size:11px;color:#a09b95;text-align:center;">계정이 없으면 자동 가입됩니다</div>
+        <button type="button" id="reset-link" class="email-link" onclick="resetPassword()">비밀번호를 잊으셨나요?</button>
       </div>
       <div class="login-terms">시작 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.</div>
     </div>

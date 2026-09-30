@@ -49,16 +49,17 @@ const KyncAuth = {
     return user;
   },
   async signInWithEmail(email, password) {
-    try {
-      const { user } = await auth.signInWithEmailAndPassword(email, password);
-      return user;
-    } catch (e) {
-      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-        const { user } = await auth.createUserWithEmailAndPassword(email, password);
-        return user;
-      }
-      throw e;
-    }
+    const { user } = await auth.signInWithEmailAndPassword(email, password);
+    return user;
+  },
+  async signUpWithEmail(name, email, password) {
+    _pendingSignupName = name;
+    const { user } = await auth.createUserWithEmailAndPassword(email, password);
+    await user.updateProfile({ displayName: name });
+    return user;
+  },
+  async resetPassword(email) {
+    await auth.sendPasswordResetEmail(email);
   },
   async signOut() {
     await auth.signOut();
@@ -73,6 +74,22 @@ const KyncAuth = {
 /* ── 중복 처리 방지 ── */
 let _authProcessing = false;
 let _lastProcessedUid = null;
+let _pendingSignupName = null; // 회원가입 직후 displayName 반영 전 이름
+
+/* ── Firebase 인증 에러 → 한국어 메시지 ── */
+function authErrorMessage(e) {
+  const map = {
+    'auth/invalid-email':          '이메일 형식이 올바르지 않아요.',
+    'auth/user-not-found':         '가입되지 않은 이메일이에요. 회원가입을 먼저 해주세요.',
+    'auth/wrong-password':         '이메일 또는 비밀번호가 맞지 않아요.',
+    'auth/invalid-credential':     '이메일 또는 비밀번호가 맞지 않아요.',
+    'auth/email-already-in-use':   '이미 가입된 이메일이에요. 로그인해주세요.',
+    'auth/weak-password':          '비밀번호는 6자 이상이어야 해요.',
+    'auth/too-many-requests':      '시도가 너무 많아요. 잠시 후 다시 시도해주세요.',
+    'auth/network-request-failed': '네트워크 연결을 확인해주세요.'
+  };
+  return map[e.code] || e.message;
+}
 
 async function handleAuthSuccess(user) {
   if (_authProcessing) return;
@@ -86,7 +103,7 @@ async function handleAuthSuccess(user) {
     if (!profile) {
       profile = {
         uid:      user.uid,
-        name:     user.displayName || user.email.split('@')[0],
+        name:     _pendingSignupName || user.displayName || user.email.split('@')[0],
         email:    user.email,
         photoURL: user.photoURL || '',
         points:   0,
@@ -94,6 +111,7 @@ async function handleAuthSuccess(user) {
       };
       await KyncDB.setUser(user.uid, profile);
     }
+    _pendingSignupName = null;
 
     localStorage.setItem('kync_user_name', profile.name || user.displayName || '');
     localStorage.setItem('kync_user_uid',  user.uid);
@@ -158,7 +176,22 @@ window.loginWithGoogle = async function() {
   }
 };
 
-/* ── 이메일 로그인 ── */
+/* ── 이메일 로그인 / 회원가입 ── */
+window.switchEmailMode = function(mode) {
+  const isSignup = mode === 'signup';
+  document.getElementById('tab-login').classList.toggle('on', !isSignup);
+  document.getElementById('tab-signup').classList.toggle('on', isSignup);
+  document.querySelectorAll('.signup-only').forEach(el => el.style.display = isSignup ? 'block' : 'none');
+  document.getElementById('email-submit').textContent = isSignup ? '회원가입' : '로그인';
+  document.getElementById('reset-link').style.display = isSignup ? 'none' : 'block';
+  document.getElementById('email-form').dataset.mode = mode;
+};
+
+window.submitEmailForm = function() {
+  const mode = document.getElementById('email-form').dataset.mode || 'login';
+  return mode === 'signup' ? signupWithEmail() : loginWithEmail();
+};
+
 window.loginWithEmail = async function() {
   const email = document.getElementById('email-input')?.value?.trim();
   const pw    = document.getElementById('pw-input')?.value;
@@ -168,7 +201,37 @@ window.loginWithEmail = async function() {
     await KyncAuth.signInWithEmail(email, pw);
   } catch(e) {
     showLoader(false);
-    alert('로그인 실패: ' + e.message);
+    alert('로그인 실패: ' + authErrorMessage(e));
+  }
+};
+
+window.signupWithEmail = async function() {
+  const name  = document.getElementById('signup-name-input')?.value?.trim();
+  const email = document.getElementById('email-input')?.value?.trim();
+  const pw    = document.getElementById('pw-input')?.value;
+  const pw2   = document.getElementById('pw2-input')?.value;
+  if (!name)           { alert('이름을 입력해주세요.'); return; }
+  if (!email || !pw)   { alert('이메일과 비밀번호를 입력해주세요.'); return; }
+  if (pw.length < 6)   { alert('비밀번호는 6자 이상이어야 해요.'); return; }
+  if (pw !== pw2)      { alert('비밀번호가 서로 달라요.'); return; }
+  try {
+    showLoader(true);
+    await KyncAuth.signUpWithEmail(name, email, pw);
+  } catch(e) {
+    _pendingSignupName = null;
+    showLoader(false);
+    alert('회원가입 실패: ' + authErrorMessage(e));
+  }
+};
+
+window.resetPassword = async function() {
+  const email = document.getElementById('email-input')?.value?.trim();
+  if (!email) { alert('비밀번호를 찾을 이메일을 먼저 입력해주세요.'); return; }
+  try {
+    await KyncAuth.resetPassword(email);
+    alert('비밀번호 재설정 메일을 보냈어요. 메일함을 확인해주세요.');
+  } catch(e) {
+    alert(authErrorMessage(e));
   }
 };
 
