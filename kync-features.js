@@ -7,6 +7,13 @@
 ════════════════════════════════════════ */
 const KyncPraise = {
 
+  // [추가] 입력값을 화면에 안전하게 표시
+  _esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  },
+
   TEMPLATES: [
     { emoji:'—', text:'오늘도 버텨줘서 고마워' },
     { emoji:'·', text:'네가 자랑스러워' },
@@ -50,7 +57,7 @@ const KyncPraise = {
           <button onclick="KyncPraise.selectTemplate(${i})" id="praise-t-${i}"
             style="padding:12px;background:#f5f2ed;border:2px solid transparent;
                    border-radius:14px;cursor:pointer;text-align:left;
-                   font-family:Nunito,sans-serif;transition:all 0.15s;">
+                   font-family:SUIT,sans-serif;transition:all 0.15s;">
             <div style="width:28px;height:28px;border-radius:50%;background:#3d3530;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;margin-bottom:6px;">${t.emoji}</div>
             <div style="font-size:12px;font-weight:700;color:#3d3530;">${t.text}</div>
           </button>
@@ -62,7 +69,7 @@ const KyncPraise = {
         <div style="font-size:12px;font-weight:700;color:#a09890;margin-bottom:8px;">직접 입력</div>
         <textarea id="praise-custom-input" maxlength="60" placeholder="직접 써도 돼요..."
           style="width:100%;padding:14px;border:1.5px solid #e8e3da;border-radius:14px;
-                 font-size:14px;font-family:Nunito,sans-serif;resize:none;
+                 font-size:14px;font-family:SUIT,sans-serif;resize:none;
                  height:70px;outline:none;color:#3d3530;background:#f5f2ed;"
           oninput="KyncPraise.onCustomInput(this)"></textarea>
       </div>
@@ -71,12 +78,12 @@ const KyncPraise = {
       <button id="praise-send-btn" onclick="KyncPraise.sendCard('${fromRole}')"
         style="width:100%;padding:16px;background:#c17f4a;color:#fff;
                border:none;border-radius:14px;font-size:16px;font-weight:800;
-               cursor:pointer;font-family:Nunito,sans-serif;transition:all 0.2s;">
+               cursor:pointer;font-family:SUIT,sans-serif;transition:all 0.2s;">
         카드 보내기
       </button>
       <button onclick="document.getElementById('praise-send-modal').remove()"
         style="width:100%;padding:12px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:Nunito,sans-serif;
+               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;
                margin-top:8px;">취소</button>
     `;
 
@@ -150,6 +157,7 @@ const KyncPraise = {
       console.error(e);
       btn.textContent = '카드 보내기';
       btn.disabled = false;
+      alert('전송 실패: ' + e.message);
     }
   },
 
@@ -165,11 +173,11 @@ const KyncPraise = {
       position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
       background:#3d3530;color:#fff;padding:14px 24px;border-radius:20px;
       font-size:14px;font-weight:700;z-index:9999;
-      font-family:Nunito,sans-serif;text-align:center;
+      font-family:SUIT,sans-serif;text-align:center;
       animation:popUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
       white-space:nowrap;
     `;
-    el.innerHTML = `${emoji} "${text}" 전달됐어요!`;
+    el.textContent = `"${text}" 전달됐어요!`;
     document.body.appendChild(el);
     setTimeout(() => el.style.opacity='0', 2400);
     setTimeout(() => el.remove(), 2800);
@@ -191,13 +199,13 @@ const KyncPraise = {
     `;
     popup.innerHTML = `
       <div style="display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;">${card.emoji}</div>
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;">${this._esc(card.emoji)}</div>
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,0.5);
                       font-weight:700;letter-spacing:0.1em;margin-bottom:4px;">
-            ${card.from==='parent'?'부모님':'자녀'}이 카드를 보냈어요
+            ${card.from==='parent'?'부모님이':'자녀가'} 카드를 보냈어요
           </div>
-          <div style="font-size:17px;font-weight:800;color:#fff;">${card.text}</div>
+          <div style="font-size:17px;font-weight:800;color:#fff;">${this._esc(card.text)}</div>
         </div>
       </div>
     `;
@@ -219,16 +227,19 @@ const KyncPraise = {
       .where('to', '==', myRole)
       .where('read', '==', false)
       .onSnapshot(snap => {
+        let got = false;
         snap.docChanges().forEach(change => {
           if (change.type === 'added') {
             const card = change.doc.data();
-            if (card.sentAt) { // 방금 온 것만
-              this.showReceivedCard(card);
-              change.doc.ref.update({ read: true });
-            }
+            // [수정] 안 읽은 카드는 앱을 켰을 때도 보여줌 (전에는 놓치면 못 봄)
+            this.showReceivedCard(card);
+            change.doc.ref.update({ read: true }).catch(()=>{});
+            got = true;
           }
         });
-      });
+        // [추가] 받은 카드 목록도 바로 갱신
+        if (got) this.renderReceivedCards(`${myRole==='parent'?'p':'c'}-praise-list`, myRole).catch(()=>{});
+      }, err => console.warn('praise listen:', err));
   },
 
   // 받은 카드 목록 렌더링
@@ -240,7 +251,7 @@ const KyncPraise = {
       .collection('praise')
       .where('to', '==', myRole)
       .orderBy('sentAt','desc')
-      .limit(20)
+      .limit(5)
       .get();
 
     const container = document.getElementById(containerId);
@@ -248,7 +259,7 @@ const KyncPraise = {
 
     if (snap.empty) {
       container.innerHTML = `<div style="text-align:center;color:#a09890;
-        font-size:13px;padding:24px;">아직 받은 카드가 없어요</div>`;
+        font-size:13px;padding:12px;">아직 받은 카드가 없어요</div>`;
       return;
     }
 
@@ -258,9 +269,9 @@ const KyncPraise = {
       return `
         <div style="display:flex;align-items:center;gap:14px;
                     padding:14px;background:#f5f2ed;border-radius:14px;margin-bottom:8px;">
-          <div style="width:36px;height:36px;border-radius:50%;background:#3d3530;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${c.emoji}</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#3d3530;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${this._esc(c.emoji)}</div>
           <div style="flex:1;">
-            <div style="font-size:15px;font-weight:700;color:#3d3530;">${c.text}</div>
+            <div style="font-size:15px;font-weight:700;color:#3d3530;">${this._esc(c.text)}</div>
             <div style="font-size:11px;color:#a09890;margin-top:3px;">
               ${c.from==='parent'?'부모님':'자녀'} · ${time}
             </div>
@@ -348,7 +359,7 @@ const KyncStreak = {
         <button onclick="this.closest('[style*=fixed]').remove()"
           style="padding:14px 32px;background:#3d3530;color:#fff;
                  border:none;border-radius:14px;font-size:15px;font-weight:800;
-                 cursor:pointer;font-family:Nunito,sans-serif;">
+                 cursor:pointer;font-family:SUIT,sans-serif;">
           계속하기
         </button>
       </div>
@@ -427,7 +438,7 @@ const KyncTogether = {
   ],
 
   openBalanceGame(myRole) {
-    const q = this.BALANCE_Q[Math.floor(Date.now()/86400000) % this.BALANCE_Q.length];
+    const q = this.BALANCE_Q[localDayNum() % this.BALANCE_Q.length];
     const familyCode = localStorage.getItem('kync_family_code');
     const todayKey   = new Date().toLocaleDateString('ko-KR');
     const storageKey = `kync_balance_${familyCode}_${todayKey}`;
@@ -480,7 +491,7 @@ const KyncTogether = {
             <button onclick="KyncTogether.answerBalance('${opt}','${myRole}','${storageKey}')"
               style="flex:1;padding:18px;background:#f5f2ed;border:2px solid transparent;
                      border-radius:16px;font-size:15px;font-weight:800;color:#3d3530;
-                     cursor:pointer;font-family:Nunito,sans-serif;transition:all 0.2s;"
+                     cursor:pointer;font-family:SUIT,sans-serif;transition:all 0.2s;"
               onmouseover="this.style.borderColor='#c17f4a'"
               onmouseout="this.style.borderColor='transparent'">
               ${opt==='부모님'?'👨‍👩‍👧':'🧑‍💻'} ${opt}
@@ -490,7 +501,7 @@ const KyncTogether = {
       `}
       <button onclick="this.closest('[style*=fixed]').remove()"
         style="width:100%;padding:12px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:Nunito,sans-serif;">
+               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;">
         닫기
       </button>
     `;
@@ -593,7 +604,7 @@ const KyncTogether = {
 
       <button onclick="this.closest('[style*=fixed]').remove()"
         style="width:100%;padding:12px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:Nunito,sans-serif;">
+               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;">
         닫기
       </button>
     `;
@@ -636,8 +647,8 @@ const KyncTogether = {
 
   openQuizModal(myRole) {
     const familyCode = localStorage.getItem('kync_family_code');
-    const weekKey    = `w${Math.floor(Date.now()/(86400000*7))}`;
-    const qIdx       = Math.floor(Date.now()/(86400000*3)) % this.QUIZ_Q.length;
+    const weekKey    = `w${Math.floor(localDayNum()/7)}`;
+    const qIdx       = Math.floor(localDayNum()/3) % this.QUIZ_Q.length;
     const q          = this.QUIZ_Q[qIdx];
     const storageKey = `kync_quiz_${familyCode}_${weekKey}_${qIdx}`;
     const saved      = JSON.parse(localStorage.getItem(storageKey)||'{}');
@@ -673,7 +684,7 @@ const KyncTogether = {
               <button onclick="KyncTogether.answerQuizSelf('${opt}','${myRole}','${storageKey}')"
                 style="padding:14px;background:#f5f2ed;border:2px solid transparent;
                        border-radius:14px;font-size:14px;font-weight:700;color:#3d3530;
-                       cursor:pointer;font-family:Nunito,sans-serif;text-align:left;
+                       cursor:pointer;font-family:SUIT,sans-serif;text-align:left;
                        transition:all 0.15s;"
                 onmouseover="this.style.borderColor='#c17f4a'"
                 onmouseout="this.style.borderColor='transparent'">
@@ -684,14 +695,14 @@ const KyncTogether = {
         ` : `
           <input id="quiz-self-input" type="text" maxlength="20" placeholder="답변을 입력해요..."
             style="width:100%;padding:16px;border:2px solid #e8e3da;border-radius:14px;
-                   font-size:15px;font-family:Nunito,sans-serif;outline:none;
+                   font-size:15px;font-family:SUIT,sans-serif;outline:none;
                    margin-bottom:14px;color:#3d3530;"
             onfocus="this.style.borderColor='#c17f4a'"
             onblur="this.style.borderColor='#e8e3da'">
           <button onclick="KyncTogether.answerQuizSelf(document.getElementById('quiz-self-input').value,'${myRole}','${storageKey}')"
             style="width:100%;padding:15px;background:#3d3530;color:#fff;border:none;
                    border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;
-                   font-family:Nunito,sans-serif;margin-bottom:14px;">
+                   font-family:SUIT,sans-serif;margin-bottom:14px;">
             내 답변 저장
           </button>
         `}
@@ -711,7 +722,7 @@ const KyncTogether = {
               <button onclick="KyncTogether.answerQuizGuess('${opt}','${myRole}','${storageKey}')"
                 style="padding:14px;background:#f5f2ed;border:2px solid transparent;
                        border-radius:14px;font-size:14px;font-weight:700;color:#3d3530;
-                       cursor:pointer;font-family:Nunito,sans-serif;text-align:left;
+                       cursor:pointer;font-family:SUIT,sans-serif;text-align:left;
                        transition:all 0.15s;"
                 onmouseover="this.style.borderColor='#c17f4a'"
                 onmouseout="this.style.borderColor='transparent'">
@@ -723,14 +734,14 @@ const KyncTogether = {
           <input id="quiz-guess-input" type="text" maxlength="20"
             placeholder="${myRole==='parent'?'자녀':'부모님'}의 답을 예측해봐요..."
             style="width:100%;padding:16px;border:2px solid #e8e3da;border-radius:14px;
-                   font-size:15px;font-family:Nunito,sans-serif;outline:none;
+                   font-size:15px;font-family:SUIT,sans-serif;outline:none;
                    margin-bottom:14px;color:#3d3530;"
             onfocus="this.style.borderColor='#c17f4a'"
             onblur="this.style.borderColor='#e8e3da'">
           <button onclick="KyncTogether.answerQuizGuess(document.getElementById('quiz-guess-input').value,'${myRole}','${storageKey}')"
             style="width:100%;padding:15px;background:#3d3530;color:#fff;border:none;
                    border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;
-                   font-family:Nunito,sans-serif;margin-bottom:14px;">
+                   font-family:SUIT,sans-serif;margin-bottom:14px;">
             예측 저장
           </button>
         `}
@@ -776,7 +787,7 @@ const KyncTogether = {
 
       <button onclick="this.closest('[style*=fixed]').remove()"
         style="width:100%;padding:12px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:Nunito,sans-serif;">
+               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;">
         닫기
       </button>
     `;

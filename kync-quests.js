@@ -345,7 +345,7 @@ const KyncQuests = {
             <button onclick="KyncQuests.agree('${q.id}','${role}')"
               style="width:100%;padding:14px;background:#3d3530;color:#fff;border:none;
                      border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;
-                     font-family:Nunito,sans-serif;transition:all 0.2s;">
+                     font-family:SUIT,sans-serif;transition:all 0.2s;">
               동의하고 시작하기
             </button>
           `}
@@ -358,7 +358,7 @@ const KyncQuests = {
       <button onclick="KyncQuests.refresh('${containerId}','${role}')"
         style="width:100%;padding:13px;background:transparent;border:1.5px solid #e8e3da;
                border-radius:14px;font-size:13px;font-weight:700;color:#a09890;
-               cursor:pointer;font-family:Nunito,sans-serif;margin-top:4px;">
+               cursor:pointer;font-family:SUIT,sans-serif;margin-top:4px;">
         다른 퀘스트 보기
       </button>`;
   },
@@ -424,7 +424,7 @@ const KyncQuests = {
         <button onclick="this.closest('[style*=fixed]').remove()"
           style="padding:14px 32px;background:#3d3530;color:#fff;border:none;
                  border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;
-                 font-family:Nunito,sans-serif;">
+                 font-family:SUIT,sans-serif;">
           시작하기
         </button>
       </div>`;

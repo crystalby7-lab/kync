@@ -15,9 +15,28 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
+// [추가] 첫 로그인 상태 확인이 끝났을 때 풀리는 약속 (로그인 전에 DB 읽다 실패하는 문제 방지)
+const _authReady = new Promise(resolve => {
+  const off = auth.onAuthStateChanged(u => { off(); resolve(u); });
+});
+
+// [추가] 계정별로 기기에 저장되는 값 — 계정이 바뀌거나 로그아웃하면 비움
+const ACCOUNT_KEYS = [
+  'kync_role', 'kync_family_code', 'kync_user_name', 'kync_user_uid',
+  'kync_points', 'kync_quiz_result', 'kync_join_date', 'kync_diary_entries'
+];
+function clearAccountCache() {
+  ACCOUNT_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
+}
+
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// [추가] 한국 시간 기준 '오늘 몇 번째 날' (자정에 바뀜) — 오늘의 질문 등 날짜별 선택에 사용
+function localDayNum(d = new Date()) {
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
 }
 
 function generateFamilyCode() {
@@ -63,10 +82,10 @@ const KyncAuth = {
   },
   async signOut() {
     await auth.signOut();
-    localStorage.removeItem('kync_role');
-    localStorage.removeItem('kync_family_code');
+    clearAccountCache(); // [수정] 다음 계정에 이전 계정 정보가 섞이지 않게
     navigateTo('page-login');
   },
+  ready() { return _authReady; }, // [추가]
   onAuthChange(cb) { return auth.onAuthStateChanged(cb); },
   get current() { return auth.currentUser; }
 };
@@ -112,6 +131,15 @@ async function handleAuthSuccess(user) {
       await KyncDB.setUser(user.uid, profile);
     }
     _pendingSignupName = null;
+
+    // [추가] 같은 기기에서 다른 계정으로 로그인하면 이전 계정 값 비우기
+    const prevUid = localStorage.getItem('kync_user_uid');
+    if (prevUid && prevUid !== user.uid) clearAccountCache();
+
+    // [추가] 포인트·대화유형 결과는 서버 값을 기준으로 맞춤
+    localStorage.setItem('kync_points', String(profile.points || 0));
+    if (profile.quizResult) localStorage.setItem('kync_quiz_result', JSON.stringify(profile.quizResult));
+    else localStorage.removeItem('kync_quiz_result');
 
     localStorage.setItem('kync_user_name', profile.name || user.displayName || '');
     localStorage.setItem('kync_user_uid',  user.uid);
@@ -356,6 +384,8 @@ window.logout = async function() {
 
 /* ── 인증 상태 핸들러 ── */
 auth.onAuthStateChanged(async (user) => {
+  // [수정] 로그인 화면이 있는 index.html에서만 화면 이동 처리 (활동 페이지에서 오류 방지)
+  if (!document.getElementById('page-login')) return;
   if (!user) {
     _lastProcessedUid = null;
     _authProcessing = false;
@@ -405,6 +435,9 @@ const KyncDB = {
     const ref  = db.collection('families').doc(code);
     const snap = await ref.get();
     if (!snap.exists) throw new Error('존재하지 않는 코드예요.');
+    // [추가] 이미 다른 가족과 연결돼 있으면 막기
+    const me = await KyncDB.getUser(uid);
+    if (me?.familyCode && me.familyCode !== code) throw new Error('이미 다른 가족과 연결돼 있어요.');
     await ref.update({ [`members.${uid}`]: { name: userName, role } });
     await KyncDB.updateUser(uid, { familyCode: code });
     localStorage.setItem('kync_family_code', code);
@@ -519,9 +552,16 @@ const KyncDB = {
 
   async addPoints(uid, amount) {
     if (!uid) return;
-    await db.collection('users').doc(uid).update({
+    await db.collection('users').doc(uid).set({
       points: firebase.firestore.FieldValue.increment(amount)
-    });
+    }, { merge: true });
+  },
+
+  // [추가] 가족 정보 (멤버 + 연결 시작일)
+  async getFamily(code) {
+    if (!code) return null;
+    const snap = await db.collection('families').doc(code).get();
+    return snap.exists ? snap.data() : null;
   },
 
   async saveQuizResult(uid, result) {

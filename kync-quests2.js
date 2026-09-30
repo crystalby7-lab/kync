@@ -32,11 +32,11 @@ const KyncQuests2 = {
         <button onclick="KyncQuests2._tab('direct','${containerId}','${myRole}')" id="qt-direct"
           style="flex:1;padding:11px;border-radius:12px;border:none;
                  background:#3d3530;color:#fff;font-size:13px;font-weight:800;
-                 cursor:pointer;font-family:Nunito,sans-serif;">직접 추가</button>
+                 cursor:pointer;font-family:SUIT,sans-serif;">직접 추가</button>
         <button onclick="KyncQuests2._tab('ai','${containerId}','${myRole}')" id="qt-ai"
           style="flex:1;padding:11px;border-radius:12px;border:1.5px solid #e8e3da;
                  background:#fff;color:#6b6560;font-size:13px;font-weight:800;
-                 cursor:pointer;font-family:Nunito,sans-serif;">AI 생성</button>
+                 cursor:pointer;font-family:SUIT,sans-serif;">AI 생성</button>
       </div>
 
       <!-- 패널 -->
@@ -70,7 +70,7 @@ const KyncQuests2 = {
             <button onclick="KyncQuests2.addFromTemplate('${t.id}','${myRole}')"
               style="padding:14px 16px;background:#fff;border:1.5px solid #e8e3da;
                      border-radius:14px;text-align:left;cursor:pointer;
-                     font-family:Nunito,sans-serif;transition:all 0.15s;"
+                     font-family:SUIT,sans-serif;transition:all 0.15s;"
               onmouseover="this.style.borderColor='#3d3530'"
               onmouseout="this.style.borderColor='#e8e3da'">
               <div style="font-size:14px;font-weight:800;color:#3d3530;margin-bottom:3px;">${t.title}</div>
@@ -81,20 +81,20 @@ const KyncQuests2 = {
         <div style="font-size:12px;color:#a09890;margin-bottom:8px;font-weight:600;">직접 입력</div>
         <input id="qt-custom-title" placeholder="퀘스트 제목"
           style="width:100%;padding:13px 16px;border:1.5px solid #e8e3da;border-radius:12px;
-                 font-size:14px;font-family:Nunito,sans-serif;outline:none;
+                 font-size:14px;font-family:SUIT,sans-serif;outline:none;
                  margin-bottom:8px;color:#3d3530;box-sizing:border-box;">
         <textarea id="qt-custom-desc" placeholder="어떻게 할 건지 설명..."
           style="width:100%;padding:13px 16px;border:1.5px solid #e8e3da;border-radius:12px;
-                 font-size:13px;font-family:Nunito,sans-serif;outline:none;resize:none;
+                 font-size:13px;font-family:SUIT,sans-serif;outline:none;resize:none;
                  height:70px;margin-bottom:8px;color:#3d3530;box-sizing:border-box;"></textarea>
         <div style="display:flex;gap:8px;margin-bottom:14px;">
           <input id="qt-custom-days" type="number" min="1" max="30" value="7" placeholder="기간(일)"
             style="width:90px;padding:13px;border:1.5px solid #e8e3da;border-radius:12px;
-                   font-size:14px;font-family:Nunito,sans-serif;outline:none;text-align:center;">
+                   font-size:14px;font-family:SUIT,sans-serif;outline:none;text-align:center;">
           <button onclick="KyncQuests2.addCustom('${myRole}')"
             style="flex:1;padding:13px;background:#c17f4a;color:#fff;border:none;
                    border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;
-                   font-family:Nunito,sans-serif;">추가하기</button>
+                   font-family:SUIT,sans-serif;">추가하기</button>
         </div>`;
     } else {
       panel.innerHTML = `
@@ -105,7 +105,7 @@ const KyncQuests2 = {
           <button onclick="KyncQuests2.generateAI('${myRole}')" id="qt-ai-btn"
             style="padding:14px 28px;background:#3d3530;color:#fff;border:none;
                    border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;
-                   font-family:Nunito,sans-serif;">
+                   font-family:SUIT,sans-serif;">
             AI 퀘스트 만들기
           </button>
         </div>
@@ -189,7 +189,7 @@ const KyncQuests2 = {
             <button onclick="KyncQuests2._addQuest({title:'${q.title.replace(/'/g,"\\'")}',desc:'${(q.desc||'').replace(/'/g,"\\'")}',days:${q.days}},'${myRole}')"
               style="padding:10px 18px;background:#3d3530;color:#fff;border:none;
                      border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;
-                     font-family:Nunito,sans-serif;">추가하기</button>
+                     font-family:SUIT,sans-serif;">추가하기</button>
           </div>
         `).join('')}`;
     } catch(e) {
@@ -233,7 +233,7 @@ const KyncQuests2 = {
     const toast = document.createElement('div');
     toast.style.cssText = `position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
       background:#3d3530;color:#fff;padding:13px 24px;border-radius:20px;
-      font-size:14px;font-weight:700;z-index:9999;font-family:Nunito,sans-serif;
+      font-size:14px;font-weight:700;z-index:9999;font-family:SUIT,sans-serif;
       white-space:nowrap;`;
     toast.textContent = `"${q.title}" 추가됐어요!`;
     document.body.appendChild(toast);
@@ -287,7 +287,7 @@ const KyncQuests2 = {
         <button onclick="this.closest('[style*=fixed]').remove()"
           style="padding:14px 32px;background:#3d3530;color:#fff;border:none;
                  border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;
-                 font-family:Nunito,sans-serif;">시작하기</button>
+                 font-family:SUIT,sans-serif;">시작하기</button>
       </div>`;
     el.onclick = e => { if(e.target===el) el.remove(); };
     document.body.appendChild(el);
@@ -341,7 +341,7 @@ const KyncQuests2 = {
               <button onclick="KyncQuests2.agree('${q.id}','${myRole}')"
                 style="width:100%;padding:12px;background:#3d3530;color:#fff;border:none;
                        border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;
-                       font-family:Nunito,sans-serif;">동의하고 시작하기</button>`}
+                       font-family:SUIT,sans-serif;">동의하고 시작하기</button>`}
           </div>`;
       }).join('')}`;
   },
@@ -351,8 +351,10 @@ const KyncQuests2 = {
     this.open(containerId, myRole);
     // Firestore 실시간 동기화
     const fc = localStorage.getItem('kync_family_code');
+    // [수정] init이 여러 번 불려도 실시간 감시가 중복되지 않게
+    if (this._unsub) { try { this._unsub(); } catch(e) {} this._unsub = null; }
     if (fc && typeof db !== 'undefined') {
-      db.collection('families').doc(fc).collection('quests2')
+      this._unsub = db.collection('families').doc(fc).collection('quests2')
         .onSnapshot(snap => {
           const key = `kync_quests2_${fc}`;
           const local = JSON.parse(localStorage.getItem(key) || '[]');

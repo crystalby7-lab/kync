@@ -104,7 +104,7 @@ input[type="range"] {
   border: none;
   border-radius: 12px;
   font-size: 14px;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'SUIT', sans-serif;
   color: #3d3530;
   outline: none;
 }
@@ -140,7 +140,7 @@ input[type="range"] {
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'SUIT', sans-serif;
   transition: all 0.2s;
 }
 .code-btn:hover { background: #c17f4a; }
@@ -221,3 +221,8 @@ input[type="range"] {
   font-weight: 800;
   color: #c17f4a;
 }
+/* ── 받은 칭찬 카드 ── */
+.praise-box { background: #fff; border: 1.5px solid #e8e3da; border-radius: 20px; padding: 18px; margin-top: 14px; }
+.praise-box-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
+.praise-box-title { font-size: 13px; font-weight: 800; color: #3d3530; }
+.praise-send-btn { padding: 8px 14px; background: #c17f4a; color: #fff; border: none; border-radius: 20px; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }

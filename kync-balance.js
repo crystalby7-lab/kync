@@ -93,7 +93,7 @@ const KyncBalance = {
 
   // 오늘 쓸 질문 10개 선택 (날짜 기반 일관성)
   _getTodaysQuestions() {
-    const dayNum = Math.floor(Date.now() / 86400000);
+    const dayNum = localDayNum();
     const shuffled = [...this.QUESTIONS].sort((a,b) => {
       const ha = (a.id * 7 + dayNum * 13) % 100;
       const hb = (b.id * 7 + dayNum * 13) % 100;
@@ -195,7 +195,7 @@ const KyncBalance = {
 
       <button onclick="document.getElementById('balance-modal').remove()"
         style="width:100%;padding:14px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:Nunito,sans-serif;margin-top:8px;">
+               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;margin-top:8px;">
         닫기
       </button>
     `;
@@ -235,7 +235,7 @@ const KyncBalance = {
         ${q.opts.map(opt => `
           <button onclick="KyncBalance.submitAnswer(${qId},'${opt}','${myRole}')"
             style="flex:1;padding:20px 12px;background:#f5f2ed;border:2px solid transparent;
-                   border-radius:18px;cursor:pointer;font-family:Nunito,sans-serif;
+                   border-radius:18px;cursor:pointer;font-family:SUIT,sans-serif;
                    transition:all 0.15s;text-align:center;"
             onmouseover="this.style.borderColor='#c17f4a';this.style.background='#fdf1eb';"
             onmouseout="this.style.borderColor='transparent';this.style.background='#f5f2ed';">
@@ -249,7 +249,7 @@ const KyncBalance = {
 
       <button onclick="document.getElementById('balance-q-modal').remove();KyncBalance.openGame('${myRole}')"
         style="width:100%;padding:12px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:Nunito,sans-serif;">
+               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;">
         ← 목록으로
       </button>
     `;
@@ -322,13 +322,13 @@ const KyncBalance = {
         <button onclick="this.closest('[style*=fixed]').remove();KyncBalance.openGame('${myRole}')"
           style="flex:1;padding:14px;background:#f5f2ed;border:none;border-radius:14px;
                  font-size:14px;font-weight:800;color:#3d3530;cursor:pointer;
-                 font-family:Nunito,sans-serif;">
+                 font-family:SUIT,sans-serif;">
           목록으로
         </button>
         <button onclick="this.closest('[style*=fixed]').remove();KyncBalance.openNextQuestion('${myRole}')"
           style="flex:2;padding:14px;background:#3d3530;border:none;border-radius:14px;
                  font-size:14px;font-weight:800;color:#fff;cursor:pointer;
-                 font-family:Nunito,sans-serif;">
+                 font-family:SUIT,sans-serif;">
           다음 질문 →
         </button>
       </div>
