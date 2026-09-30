@@ -93,8 +93,6 @@ const App = {
       this._listenersReady = true;
     }
     this._setupEmotionGrids();
-    this._loadUserData();
-    this._watchUser();          // [추가] 포인트·레벨 실시간 반영
     this._initFeatures();       // [추가] 기록·퀘스트·칭찬카드·스트릭 (로그인 직후에도 바로 작동)
     this.renderFamilyInfo();    // [추가] 연결된 가족·코드·연결 일수
     await this._loadTodayData();
@@ -117,45 +115,6 @@ const App = {
       this._praiseUnsub = KyncPraise.listenForCards(fc, role);
       KyncPraise.renderReceivedCards(`${pre}-praise-list`, role).catch(e => console.warn('praise list:', e));
     }
-  },
-
-  /* ── [추가] 포인트·레벨: 서버 값을 실시간으로 표시 ── */
-  LEVEL_STEP: 300,
-  _watchUser() {
-    const uid = KyncAuth?.current?.uid;
-    if (!uid || typeof db === 'undefined') return;
-    if (this._userUnsub && this._userUid === uid) return;
-    if (this._userUnsub) { try { this._userUnsub(); } catch(e) {} }
-    this._userUid = uid;
-    this._userUnsub = db.collection('users').doc(uid).onSnapshot(snap => {
-      const points = snap.data()?.points || 0;
-      localStorage.setItem('kync_points', String(points));
-      this._renderPoints(points);
-    }, err => console.warn('user listen:', err));
-  },
-
-  _renderPoints(points) {
-    ['p-points-badge','c-points-badge'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = `${points} pt`;
-    });
-    const level = Math.floor(points / this.LEVEL_STEP) + 1;
-    const inLevel = points % this.LEVEL_STEP;
-    const pct = Math.round(inLevel / this.LEVEL_STEP * 100);
-    ['p-level-card','c-level-card'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.innerHTML = `
-        <div style="background:#fff;border:1.5px solid #e8e3da;border-radius:16px;padding:16px;margin-bottom:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
-            <div style="font-size:16px;font-weight:800;color:#3d3530;">Lv.${level}</div>
-            <div style="font-size:12px;color:#a09890;">다음 레벨까지 ${this.LEVEL_STEP - inLevel}pt</div>
-          </div>
-          <div style="height:8px;background:#f0ece6;border-radius:4px;overflow:hidden;">
-            <div style="height:100%;width:${pct}%;background:#c17f4a;border-radius:4px;"></div>
-          </div>
-        </div>`;
-    });
   },
 
   /* ── [추가] 연결된 가족·코드·연결 일수 표시 ── */
@@ -212,10 +171,6 @@ const App = {
 
   _renderDays(joinDate) {
     const days = localDayNum() - localDayNum(new Date(joinDate)) + 1;
-    ['p-day-badge','c-day-badge'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = `DAY ${days}`;
-    });
     ['p-days','c-days'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = days;
@@ -246,7 +201,7 @@ const App = {
       if (cAvatar) cAvatar.textContent = userName[0];
     }
 
-    // DAY 배지 (서버 값 오기 전 임시 표시)
+    // 연결 일수 (서버 값 오기 전 임시 표시)
     const joinDate = localStorage.getItem('kync_join_date');
     if (joinDate) this._renderDays(joinDate);
   },
@@ -315,12 +270,6 @@ const App = {
     });
     btn.style.borderColor = '#3d3530';
     btn.style.background = '#fff';
-  },
-
-  /* ── 사용자 데이터 로드 ── */
-  _loadUserData() {
-    const points = parseInt(localStorage.getItem('kync_points') || '0');
-    this._renderPoints(points);
   },
 
   /* ── 오늘 데이터 로드 ── */
