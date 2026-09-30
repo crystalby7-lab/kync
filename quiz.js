@@ -295,7 +295,7 @@ const Quiz = (() => {
       KyncDB.saveQuizResult(uid, saved).catch(e => console.error('quiz save', e));
     }
 
-    document.getElementById('r-eyebrow').textContent=role==='parent'?'부모 대화 유형 분석':'수험생 대화 유형 분석';
+    document.getElementById('r-eyebrow').textContent=role==='parent'?'부모 대화 유형 분석':'자녀 대화 유형 분석';
     document.getElementById('r-type-name').textContent=type.name;
     document.getElementById('r-type-sub').textContent=type.sub;
     document.getElementById('r-reliability').textContent=`AI 신뢰도 ${type.reliability}%`;
