@@ -182,11 +182,13 @@ const App = {
   _setDates() {
     const now = new Date();
     const days = ['일','월','화','수','목','금','토'];
-    const str = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${days[now.getDay()]}요일`;
-    const pDate = document.getElementById('p-todayDate');
-    const cDate = document.getElementById('c-todayDate');
-    if (pDate) pDate.textContent = str;
-    if (cDate) cDate.textContent = str;
+    // [수정] 오늘 탭 날짜: 요일 작게 + 날짜 크게
+    const html = `<div class="th-day">${days[now.getDay()]}요일</div>
+      <div class="th-date">${now.getMonth()+1}월 ${now.getDate()}일</div>`;
+    ['p-todayDate','c-todayDate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
 
     // 사용자 이름 표시
     const userName = localStorage.getItem('kync_user_name') || '';
