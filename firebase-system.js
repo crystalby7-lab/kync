@@ -115,7 +115,10 @@ async function handleAuthSuccess(user) {
 
     localStorage.setItem('kync_user_name', profile.name || user.displayName || '');
     localStorage.setItem('kync_user_uid',  user.uid);
+    // 다른 계정에서 남은 가족 코드가 섞이지 않도록 DB 기준으로 맞춤
     if (profile.familyCode) localStorage.setItem('kync_family_code', profile.familyCode);
+    else localStorage.removeItem('kync_family_code');
+    _currentProfile = profile;
 
     if (typeof KyncState !== 'undefined') {
       KyncState.uid        = user.uid;
@@ -131,10 +134,8 @@ async function handleAuthSuccess(user) {
     const role = profile.role;
     if (role === 'parent' || role === 'child') {
       localStorage.setItem('kync_role', role);
-      navigateTo('page-' + role);
-      if (typeof App !== 'undefined' && typeof App.init === 'function') {
-        App.init().catch(e => console.error('App.init', e));
-      }
+      if (profile.familyCode) enterApp(role);
+      else showConnectPage(role);
     } else {
       navigateTo('page-onboard');
     }
@@ -159,10 +160,119 @@ window.setUserRole = async function(role) {
     console.warn('역할 저장 실패:', e);
   }
   localStorage.setItem('kync_role', role);
+  if (_currentProfile) _currentProfile.role = role;
   _lastProcessedUid = null; // 재처리 허용
   showLoader(false);
+  if (_currentProfile?.familyCode) enterApp(role);
+  else showConnectPage(role);
+};
+
+/* ════════════════════════════════════════
+   가족 연결 (필수 단계)
+   - 부모: 코드 자동 생성 → 자녀 합류를 실시간으로 기다림
+   - 자녀: 부모에게 받은 코드를 입력해야 앱으로 들어갈 수 있음
+════════════════════════════════════════ */
+let _currentProfile = null;
+let _connectUnsub   = null;
+
+function enterApp(role) {
+  if (_connectUnsub) { _connectUnsub(); _connectUnsub = null; }
   navigateTo('page-' + role);
-  if (typeof App !== 'undefined') App.init();
+  if (typeof App !== 'undefined' && typeof App.init === 'function') {
+    Promise.resolve(App.init()).catch(e => console.error('App.init', e));
+  }
+}
+
+async function showConnectPage(role) {
+  navigateTo('page-connect');
+  document.getElementById('connect-parent').style.display = role === 'parent' ? 'block' : 'none';
+  document.getElementById('connect-child').style.display  = role === 'child'  ? 'block' : 'none';
+  if (role === 'parent') await prepareParentCode();
+}
+
+async function prepareParentCode() {
+  const user = auth.currentUser;
+  const codeEl  = document.getElementById('connect-code');
+  const statusEl = document.getElementById('connect-status');
+  const retryBtn = document.getElementById('connect-retry');
+  if (!user) { navigateTo('page-login'); return; }
+
+  codeEl.textContent = '— — —';
+  statusEl.textContent = '코드를 만드는 중이에요…';
+  retryBtn.style.display = 'none';
+  try {
+    // 이미 만든 가족이 있으면 새로 만들지 않고 그대로 사용
+    const fresh = await KyncDB.getUser(user.uid);
+    let code = fresh?.familyCode;
+    if (!code) {
+      const name = fresh?.name || _currentProfile?.name || '부모';
+      code = await KyncDB.createFamily(user.uid, name, 'parent');
+    }
+    if (_currentProfile) _currentProfile.familyCode = code;
+    localStorage.setItem('kync_family_code', code);
+    codeEl.textContent = code;
+    watchChildJoin(code);
+  } catch (e) {
+    console.error('가족 코드 생성 실패:', e);
+    codeEl.textContent = '—';
+    statusEl.textContent = '코드를 만들지 못했어요. 네트워크를 확인하고 다시 시도해주세요.';
+    retryBtn.style.display = 'block';
+  }
+}
+
+function watchChildJoin(code) {
+  if (_connectUnsub) _connectUnsub();
+  const statusEl = document.getElementById('connect-status');
+  const doneBtn  = document.getElementById('connect-parent-done');
+  _connectUnsub = db.collection('families').doc(code).onSnapshot(snap => {
+    const members = Object.values(snap.data()?.members || {});
+    const child = members.find(m => m.role === 'child');
+    if (child) {
+      statusEl.textContent = `${child.name || '자녀'}와(과) 연결됐어요!`;
+      doneBtn.textContent = '시작하기';
+    } else {
+      statusEl.textContent = '자녀가 코드를 입력하길 기다리는 중이에요…';
+      doneBtn.textContent = '먼저 둘러보기';
+    }
+  }, e => console.warn('가족 연결 감지 실패:', e));
+}
+
+window.copyConnectCode = function(btn) {
+  const code = document.getElementById('connect-code').textContent.trim();
+  if (!/^KY[A-Z0-9]{4}$/.test(code)) return;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '복사됐어요!';
+    setTimeout(() => btn.textContent = '코드 복사', 2000);
+  }).catch(() => alert('코드: ' + code));
+};
+
+window.retryParentCode = prepareParentCode;
+
+window.finishParentConnect = function() { enterApp('parent'); };
+
+window.joinConnectCode = async function() {
+  const input = document.getElementById('connect-code-input');
+  const code  = input.value.trim().toUpperCase();
+  if (!/^KY[A-Z0-9]{4}$/.test(code)) { alert('KY로 시작하는 6자리 코드를 입력해주세요.'); return; }
+  const user = auth.currentUser;
+  if (!user) { alert('로그인 정보가 없어요. 다시 로그인해주세요.'); navigateTo('page-login'); return; }
+
+  showLoader(true);
+  try {
+    const name = _currentProfile?.name || localStorage.getItem('kync_user_name') || '자녀';
+    await KyncDB.joinFamily(user.uid, code, name, 'child');
+    if (_currentProfile) _currentProfile.familyCode = code;
+    showLoader(false);
+    enterApp('child');
+  } catch (e) {
+    showLoader(false);
+    alert(e.message || '연결에 실패했어요. 코드를 확인해주세요.');
+  }
+};
+
+window.backToRoleSelect = function() {
+  if (_connectUnsub) { _connectUnsub(); _connectUnsub = null; }
+  navigateTo('page-onboard');
 };
 
 /* ── 구글 로그인 ── */
@@ -237,6 +347,8 @@ window.resetPassword = async function() {
 
 /* ── 로그아웃 ── */
 window.logout = async function() {
+  if (_connectUnsub) { _connectUnsub(); _connectUnsub = null; }
+  _currentProfile = null;
   _lastProcessedUid = null;
   _authProcessing = false;
   await KyncAuth.signOut();
