@@ -25,10 +25,25 @@ const KyncPraise = {
     { emoji:'·', text:'네가 있어서 행복해' },
   ],
 
+  // [추가] 자녀 → 부모님 문구
+  TEMPLATES_CHILD: [
+    { emoji:'—', text:'오늘도 고생 많으셨어요' },
+    { emoji:'·', text:'항상 고마워요' },
+    { emoji:'—', text:'저 믿어줘서 고마워요' },
+    { emoji:'·', text:'오늘 해주신 밥 맛있었어요' },
+    { emoji:'—', text:'요즘 힘드시죠, 쉬엄쉬엄 하세요' },
+    { emoji:'·', text:'말은 잘 안 해도 사랑해요' },
+    { emoji:'—', text:'걱정 안 하셔도 돼요, 잘하고 있어요' },
+    { emoji:'·', text:'엄마 아빠가 제 편이라 든든해요' },
+  ],
+  _templates: null,
+
   // 카드 보내기 모달 열기
   openSendModal(fromRole) {
     const existing = document.getElementById('praise-send-modal');
     if (existing) existing.remove();
+    // [추가] 보내는 사람에 따라 문구 다르게
+    this._templates = fromRole === 'child' ? this.TEMPLATES_CHILD : this.TEMPLATES;
 
     const modal = document.createElement('div');
     modal.id = 'praise-send-modal';
@@ -53,7 +68,7 @@ const KyncPraise = {
 
       <!-- 템플릿 그리드 -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;" id="praise-templates">
-        ${this.TEMPLATES.map((t,i)=>`
+        ${this._templates.map((t,i)=>`
           <button onclick="KyncPraise.selectTemplate(${i})" id="praise-t-${i}"
             style="padding:12px;background:#f5f2ed;border:2px solid transparent;
                    border-radius:14px;cursor:pointer;text-align:left;
@@ -98,7 +113,7 @@ const KyncPraise = {
 
   selectTemplate(idx) {
     this.selectedIdx = idx;
-    this.selectedText = this.TEMPLATES[idx].text;
+    this.selectedText = this._templates[idx].text;
     document.getElementById('praise-custom-input').value = '';
     document.querySelectorAll('[id^="praise-t-"]').forEach((el,i) => {
       el.style.borderColor = i===idx ? '#c17f4a' : 'transparent';
@@ -121,7 +136,7 @@ const KyncPraise = {
     if (!text) { this._shake(); return; }
 
     const emoji = this.selectedIdx !== null
-                  ? this.TEMPLATES[this.selectedIdx].emoji
+                  ? this._templates[this.selectedIdx].emoji
                   : '💌';
 
     const familyCode = localStorage.getItem('kync_family_code');
