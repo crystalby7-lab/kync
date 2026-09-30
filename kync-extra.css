@@ -306,3 +306,8 @@ input[type="range"] {
 .cs-past-msg { font-size: 13px; color: #6b6560; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cs-past .cs-bubble { margin-top: 8px; }
 .cs-foot { font-size: 11px; color: #a09890; line-height: 1.6; margin-top: 12px; }
+
+/* ── 오늘 탭 날짜 ── */
+.today-hero { padding: 6px 4px 2px; }
+.th-day { font-size: 13px; font-weight: 800; color: #c17f4a; letter-spacing: 0.02em; margin-bottom: 2px; }
+.th-date { font-size: 26px; font-weight: 800; color: #3d3530; letter-spacing: -0.5px; line-height: 1.2; }
