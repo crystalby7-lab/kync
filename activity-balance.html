@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Kync — 취향 맞추기</title>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,7 +14,7 @@
       --text: #1a1814; --text2: #6b6560; --text3: #a09b95;
       --accent: #3d3530; --accent2: #c17f4a;
     }
-    html, body { height: 100%; background: var(--bg); font-family: 'Nunito', sans-serif; }
+    html, body { height: 100%; background: var(--bg); font-family: 'SUIT', sans-serif; }
     .wrap { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: var(--bg); display: flex; flex-direction: column; }
 
     /* 탑바 */
@@ -31,7 +32,7 @@
       font-size: 13px; font-weight: 700; color: var(--text2);
       padding: 6px 14px; background: var(--card2);
       border: none; border-radius: 20px; cursor: pointer;
-      font-family: 'Nunito', sans-serif;
+      font-family: 'SUIT', sans-serif;
     }
 
     /* 콘텐츠 */
@@ -141,7 +142,7 @@
     .qs-opt {
       flex: 1; padding: 22px 14px; background: var(--card);
       border: 2px solid var(--border2); border-radius: 20px;
-      cursor: pointer; text-align: center; font-family: 'Nunito', sans-serif;
+      cursor: pointer; text-align: center; font-family: 'SUIT', sans-serif;
       transition: all 0.2s;
     }
     .qs-opt:hover { border-color: var(--accent2); background: #fffdf9; transform: translateY(-2px); }
@@ -164,8 +165,8 @@
     .result-my-val { font-size: 20px; font-weight: 800; color: #fff; }
     .result-hint { font-size: 13px; color: var(--text3); font-weight: 600; margin-bottom: 24px; }
     .result-btns { display: flex; gap: 10px; width: 100%; }
-    .btn-list { flex: 1; padding: 14px; background: var(--card2); border: 1.5px solid var(--border2); border-radius: 14px; font-size: 14px; font-weight: 800; color: var(--text2); cursor: pointer; font-family: 'Nunito', sans-serif; }
-    .btn-next-q { flex: 2; padding: 14px; background: var(--accent); border: none; border-radius: 14px; font-size: 14px; font-weight: 800; color: #fff; cursor: pointer; font-family: 'Nunito', sans-serif; }
+    .btn-list { flex: 1; padding: 14px; background: var(--card2); border: 1.5px solid var(--border2); border-radius: 14px; font-size: 14px; font-weight: 800; color: var(--text2); cursor: pointer; font-family: 'SUIT', sans-serif; }
+    .btn-next-q { flex: 2; padding: 14px; background: var(--accent); border: none; border-radius: 14px; font-size: 14px; font-weight: 800; color: #fff; cursor: pointer; font-family: 'SUIT', sans-serif; }
   </style>
 </head>
 <body>
@@ -255,6 +256,9 @@
   const myRole = localStorage.getItem('kync_role') || 'parent';
   const familyCode = localStorage.getItem('kync_family_code') || 'local';
   let currentQId = null;
+  let theirAnswers = {}; // [추가] 상대가 오늘 고른 답 { 질문id: 답 }
+  const theirLabel = myRole === 'parent' ? '자녀' : '부모님';
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   function goBack() {
     const activityTab = myRole === 'parent' ? 'p-activityTab' : 'c-activityTab';
@@ -287,7 +291,7 @@
           <div class="q-num">${isAnswered ? '✓' : idx + 1}</div>
           <div style="flex:1;">
             <div class="q-text">${q.q}</div>
-            ${isAnswered ? `<div class="q-answer">내 선택: ${myAns}</div>` : ''}
+            ${isAnswered ? `<div class="q-answer">${compareText(myAns, theirAnswers[q.id])}</div>` : ''}
           </div>
           ${!isAnswered ? '<div class="q-arrow">›</div>' : ''}
         </div>`;
@@ -298,6 +302,13 @@
       list.style.opacity = '0.5';
       list.style.pointerEvents = 'none';
     }
+  }
+
+  // [추가] 내 답과 상대 답 비교 문구 (내가 답한 뒤에만 상대 답 공개)
+  function compareText(mine, theirs) {
+    if (!theirs) return `내 선택: ${esc(mine)} · ${theirLabel} 답 기다리는 중`;
+    const tag = mine === theirs ? '같은 선택 ✓' : '다른 선택';
+    return `나: ${esc(mine)} · ${theirLabel}: ${esc(theirs)} — ${tag}`;
   }
 
   function openQuestion(qId) {
@@ -334,7 +345,7 @@
         await db.collection('families').doc(familyCode)
           .collection('balance_answers')
           .doc(`${today}_${myRole}_${currentQId}`)
-          .set({ role: myRole, qId: currentQId, answer, answeredAt: firebase.firestore.FieldValue.serverTimestamp() });
+          .set({ role: myRole, qId: currentQId, answer, day: today, answeredAt: firebase.firestore.FieldValue.serverTimestamp() });
       } catch(e) { console.warn(e); }
     }
 
@@ -351,8 +362,10 @@
   function showResult(answer, qId) {
     const q = KyncBalance.QUESTIONS.find(q => q.id === qId);
     document.getElementById('result-my-val').textContent = answer;
-    document.getElementById('result-hint').textContent =
-      `${myRole === 'parent' ? '자녀' : '부모님'}이 같은 질문에 답하면 비교해서 보여줄게요!`;
+    const theirs = theirAnswers[qId];
+    document.getElementById('result-hint').textContent = theirs
+      ? `${theirLabel}은(는) "${theirs}"를 골랐어요. ${theirs === answer ? '같은 취향이에요!' : '서로 달랐네요!'}`
+      : `${theirLabel}이(가) 같은 질문에 답하면 비교해서 보여줄게요!`;
     document.getElementById('result-screen').classList.add('active');
   }
 
@@ -370,6 +383,24 @@
 
   // 초기 렌더
   renderList();
+
+  // [추가] 상대의 오늘 답을 실시간으로 불러와 비교 (전에는 저장만 하고 비교를 안 했음)
+  if (familyCode !== 'local' && typeof db !== 'undefined') {
+    KyncAuth.ready().then(user => {
+      if (!user) return;
+      const today = new Date().toLocaleDateString('ko-KR');
+      const theirRole = myRole === 'parent' ? 'child' : 'parent';
+      const prefix = `${today}_${theirRole}_`;
+      db.collection('families').doc(familyCode).collection('balance_answers')
+        .orderBy(firebase.firestore.FieldPath.documentId())
+        .startAt(prefix).endAt(prefix + '\uf8ff')
+        .onSnapshot(snap => {
+          theirAnswers = {};
+          snap.forEach(d => { const v = d.data(); theirAnswers[v.qId] = v.answer; });
+          renderList();
+        }, e => console.warn('balance answers listen:', e));
+    });
+  }
 </script>
 </body>
 </html> 

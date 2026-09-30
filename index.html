@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Kync — 연결되는 가족</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="kync-extra.css" />
@@ -25,24 +26,24 @@
     #email-form { display:none; flex-direction:column; gap:10px; margin-top:14px; }
     #email-form input {
       padding:14px 16px; border:1.5px solid rgba(0,0,0,0.13);
-      border-radius:14px; font-size:15px; font-family:'Nunito',sans-serif;
+      border-radius:14px; font-size:15px; font-family:'SUIT',sans-serif;
       outline:none; background:#f7f5f2;
     }
     .email-tabs { display:flex; gap:6px; background:#efebe6; padding:4px; border-radius:14px; }
     .email-tab {
       flex:1; padding:10px; border:none; border-radius:10px; background:transparent;
-      font-size:14px; font-weight:700; color:#a09b95; cursor:pointer; font-family:'Nunito',sans-serif;
+      font-size:14px; font-weight:700; color:#a09b95; cursor:pointer; font-family:'SUIT',sans-serif;
     }
     .email-tab.on { background:#fff; color:#3d3530; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
     .connect-section { width:100%; }
     #connect-code-input {
       width:100%; padding:14px; border:2px solid #e8e5e0; border-radius:12px;
       font-size:22px; font-weight:800; text-align:center; letter-spacing:6px;
-      text-transform:uppercase; font-family:'Nunito',sans-serif; outline:none;
+      text-transform:uppercase; font-family:'SUIT',sans-serif; outline:none;
     }
     .email-link {
       background:none; border:none; font-size:12px; color:#a09b95; cursor:pointer;
-      text-decoration:underline; font-family:'Nunito',sans-serif;
+      text-decoration:underline; font-family:'SUIT',sans-serif;
     }
   </style>
 </head>
@@ -78,7 +79,7 @@
           autocomplete="new-password" onkeydown="if(event.key==='Enter') submitEmailForm()">
         <button id="email-submit" onclick="submitEmailForm()"
           style="padding:15px;background:#3d3530;color:#fff;border:none;border-radius:14px;
-                 font-size:15px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">
+                 font-size:15px;font-weight:800;cursor:pointer;font-family:SUIT,sans-serif;">
           로그인
         </button>
         <button type="button" id="reset-link" class="email-link" onclick="resetPassword()">비밀번호를 잊으셨나요?</button>
@@ -198,13 +199,6 @@
         </div>
         <button id="p-submitAnswer" class="submit-btn">답변 올리기</button>
 
-        <!-- 칭찬 카드 버튼 -->
-        <button onclick="KyncPraise.openSendModal('parent')"
-          style="width:100%;padding:15px;background:#fff;color:#3d3530;
-                 border:1.5px solid #e8e3da;border-radius:16px;font-size:14px;
-                 font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;margin-top:4px;">
-          자녀에게 칭찬 카드 보내기
-        </button>
 
         <!-- 상대 답변 잠금 -->
         <div class="opponent-answer-wrap" id="p-opponent-wrap">
@@ -215,6 +209,15 @@
               <span>서로 답변을 완료하면 공개돼요</span>
             </div>
           </div>
+        </div>
+
+        <!-- 칭찬 카드 -->
+        <div class="praise-box">
+          <div class="praise-box-head">
+            <div class="praise-box-title">받은 칭찬 카드</div>
+            <button class="praise-send-btn" onclick="KyncPraise.openSendModal('parent')">자녀에게 보내기</button>
+          </div>
+          <div id="p-praise-list"></div>
         </div>
       </section>
 
@@ -418,33 +421,14 @@
             </div>
           </div>
         </div>
-      </section>
 
-      <!-- 일기 탭 (자녀) -->
-      <section id="c-praiseTab" class="tab-content">
-        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:14px;">
-          <div class="today-date">나의 일기</div>
-
-          <div class="notice-box">이 일기는 부모님께 공개되지 않는 나만의 공간이야.</div>
-
-          <!-- 감정 선택 -->
-          <div>
-            <div style="font-size:11px;font-weight:700;color:#a09890;letter-spacing:0.08em;margin-bottom:10px;">오늘의 감정</div>
-            <div class="diary-emotion-row" id="c-diaryEmotionRow"></div>
+        <!-- 칭찬 카드 -->
+        <div class="praise-box">
+          <div class="praise-box-head">
+            <div class="praise-box-title">받은 칭찬 카드</div>
+            <button class="praise-send-btn" onclick="KyncPraise.openSendModal('child')">부모님에게 보내기</button>
           </div>
-
-          <!-- 일기 입력 -->
-          <textarea id="c-diaryInput" placeholder="오늘 하루는 어땠어?"
-            style="min-height:140px;padding:16px;border:1.5px solid #e8e3da;
-                   border-radius:16px;font-size:14px;font-family:Nunito,sans-serif;
-                   resize:none;outline:none;color:#3d3530;background:#fff;"></textarea>
-          <button class="submit-btn" onclick="App.saveDiary()">저장하기</button>
-
-          <!-- 이전 기록 -->
-          <div style="font-size:12px;font-weight:700;color:#a09890;letter-spacing:0.06em;margin-top:8px;">
-            이전 기록
-          </div>
-          <div id="c-diaryList" class="history-list"></div>
+          <div id="c-praise-list"></div>
         </div>
       </section>
 
@@ -537,13 +521,13 @@
         <div class="streak-card" style="margin-bottom:14px;"></div>
         <div class="level-card" id="c-level-card"></div>
         <div class="code-card">
-          <div class="code-hint">가족 연결 코드 입력</div>
+          <div class="code-hint" id="c-code-hint">가족 연결 코드 입력</div>
           <input id="c-code-input" maxlength="6" placeholder="KY + 4자리"
             style="width:100%;padding:14px;border:2px solid #e8e5e0;border-radius:12px;
                    font-size:22px;font-weight:800;text-align:center;letter-spacing:6px;
-                   text-transform:uppercase;font-family:Nunito,sans-serif;margin:10px 0;
+                   text-transform:uppercase;font-family:SUIT,sans-serif;margin:10px 0;
                    outline:none;box-sizing:border-box;">
-          <button class="code-btn" onclick="joinCode()">가족과 연결하기</button>
+          <button class="code-btn" id="c-code-join-btn" onclick="joinCode()">가족과 연결하기</button>
           <div class="code-display" id="c-family-code" style="margin-top:8px;font-size:20px;"></div>
         </div>
         <div class="family-card" style="margin-top:14px;">
@@ -655,8 +639,10 @@ async function generateCode() {
       const name = profile?.name || localStorage.getItem('kync_user_name') || '부모';
       code = await KyncDB.createFamily(user.uid, name, 'parent');
     }
+    const isNew = code !== localStorage.getItem('kync_family_code');
     localStorage.setItem('kync_family_code', code);
     document.getElementById('p-family-code').textContent = code;
+    if (isNew) App.init();
     alert('가족 연결 코드: ' + code + '\n자녀에게 공유해주세요!');
   } catch(e) { alert('코드 확인 실패: ' + e.message); }
 }
@@ -671,37 +657,12 @@ async function joinCode() {
   const name = localStorage.getItem('kync_user_name') || '자녀';
   try {
     await KyncDB.joinFamily(user.uid, code, name, 'child');
-    document.getElementById('c-family-code').textContent = '연결됨: ' + code;
     alert('가족과 연결됐어요!');
+    App.init(); // [수정] 연결 직후 오늘 기록·칭찬카드·가족 목록 바로 불러오기
   } catch(e) { alert(e.message); }
 }
 
-// 기능 초기화
-window.addEventListener('load', function() {
-  const uid = localStorage.getItem('kync_user_uid') || KyncAuth?.current?.uid;
-  if (uid && typeof KyncStreak !== 'undefined') KyncStreak.init(uid);
-
-  const role = localStorage.getItem('kync_role');
-  const familyCode = localStorage.getItem('kync_family_code');
-
-  // 퀘스트 초기화
-  if (role && typeof KyncQuests2 !== 'undefined') {
-    KyncQuests2.init(role==='parent'?'p-quest-list':'c-quest-list', role);
-  }
-
-  // 다이어리 초기화
-  if (role && typeof KyncDiary !== 'undefined') {
-    if (role === 'parent') KyncDiary.render('p-diary-container', 'parent');
-    else KyncDiary.render('c-diary-container', 'child');
-  }
-
-  // 칭찬 카드 실시간 감지
-  if (familyCode && role && typeof KyncPraise !== 'undefined') {
-    KyncPraise.listenForCards(familyCode, role);
-    const listId = role === 'parent' ? 'p-praise-list' : 'c-praise-list';
-    KyncPraise.renderReceivedCards(listId, role);
-  }
-});
+// 기능 초기화는 App.init()에서 로그인 확인 후 실행 (kync-core.js)
 </script>
 </body>
 </html> 

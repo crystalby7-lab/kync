@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Kync — 밸런스 게임</title>
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,7 +14,7 @@
       --text: #1a1814; --text2: #6b6560; --text3: #a09b95;
       --accent: #3d3530; --accent2: #c17f4a; --green: #5a9e6f;
     }
-    html, body { height: 100%; background: var(--bg); font-family: 'Nunito', sans-serif; }
+    html, body { height: 100%; background: var(--bg); font-family: 'SUIT', sans-serif; }
     .wrap { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: var(--bg); display: flex; flex-direction: column; }
 
     .top-bar {
@@ -26,7 +27,7 @@
     .logo-box { width: 30px; height: 30px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; }
     .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; }
     .logo-text { font-size: 20px; font-weight: 800; color: var(--accent); }
-    .back-btn { font-size: 13px; font-weight: 700; color: var(--text2); padding: 6px 14px; background: var(--card2); border: none; border-radius: 20px; cursor: pointer; font-family: 'Nunito', sans-serif; }
+    .back-btn { font-size: 13px; font-weight: 700; color: var(--text2); padding: 6px 14px; background: var(--card2); border: none; border-radius: 20px; cursor: pointer; font-family: 'SUIT', sans-serif; }
 
     .content { flex: 1; padding: 20px 20px 60px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -61,7 +62,7 @@
     .opt-btn {
       flex: 1; padding: 24px 16px; background: var(--card);
       border: 2px solid var(--border2); border-radius: 20px;
-      cursor: pointer; font-family: 'Nunito', sans-serif;
+      cursor: pointer; font-family: 'SUIT', sans-serif;
       transition: all 0.2s; text-align: center;
     }
     .opt-btn:hover { border-color: var(--accent2); background: #fffdf9; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(193,127,74,0.15); }
@@ -141,9 +142,9 @@
 <script>
   const myRole = localStorage.getItem('kync_role') || 'parent';
   const familyCode = localStorage.getItem('kync_family_code') || 'local';
-  const todayKey = new Date().toLocaleDateString('ko-KR');
-  const storageKey = `kync_balance_${familyCode}_${todayKey}`;
-  const q = KyncTogether.BALANCE_Q[Math.floor(Date.now() / 86400000) % KyncTogether.BALANCE_Q.length];
+  const balanceDay = new Date().toLocaleDateString('ko-KR');
+  const storageKey = `kync_balance_${familyCode}_${balanceDay}`;
+  const q = KyncTogether.BALANCE_Q[localDayNum() % KyncTogether.BALANCE_Q.length];
   const theirRole = myRole === 'parent' ? 'child' : 'parent';
   const theirLabel = myRole === 'parent' ? '자녀' : '부모님';
 
@@ -198,22 +199,6 @@
           </div>
         `}`;
 
-      // 실시간으로 상대 답변 감지
-      if (!theirAnswer && typeof db !== 'undefined' && familyCode !== 'local') {
-        db.collection('families').doc(familyCode)
-          .collection('balance').doc(todayKey)
-          .onSnapshot(snap => {
-            if (snap.exists) {
-              const data = snap.data();
-              if (data[theirRole]) {
-                const s = getSaved();
-                s[theirRole] = data[theirRole];
-                localStorage.setItem(storageKey, JSON.stringify(s));
-                render();
-              }
-            }
-          });
-      }
     }
   }
 
@@ -226,7 +211,7 @@
     if (familyCode !== 'local' && typeof db !== 'undefined') {
       try {
         await db.collection('families').doc(familyCode)
-          .collection('balance').doc(todayKey)
+          .collection('balance').doc(balanceDay)
           .set({ [myRole]: opt }, { merge: true });
       } catch(e) { console.warn(e); }
     }
@@ -239,6 +224,23 @@
   }
 
   render();
+
+  // [수정] 상대 답 실시간 감지 — 화면 그릴 때마다 감시가 늘어나던 문제 수정, 로그인 확인 후 1번만
+  if (familyCode !== 'local' && typeof db !== 'undefined') {
+    KyncAuth.ready().then(user => {
+      if (!user) return;
+      db.collection('families').doc(familyCode)
+        .collection('balance').doc(balanceDay)
+        .onSnapshot(snap => {
+          const data = snap.data() || {};
+          const s = getSaved();
+          let changed = false;
+          ['parent', 'child'].forEach(r => { if (data[r] && s[r] !== data[r]) { s[r] = data[r]; changed = true; } });
+          if (changed) { localStorage.setItem(storageKey, JSON.stringify(s)); render(); }
+        }, e => console.warn('balance listen:', e));
+    });
+  }
+
 </script>
 </body>
 </html> 

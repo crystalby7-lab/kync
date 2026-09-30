@@ -324,7 +324,7 @@ const Quiz = (() => {
         options:{
           responsive:true,
           maintainAspectRatio:false,
-          scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#a09b95',font:{size:10,family:'Nunito'}},pointLabels:{color:'#3d3530',font:{size:12,weight:'700',family:'Nunito'}},grid:{color:'rgba(0,0,0,0.06)'},angleLines:{color:'rgba(0,0,0,0.06)'}}},
+          scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#a09b95',font:{size:10,family:'SUIT'}},pointLabels:{color:'#3d3530',font:{size:12,weight:'700',family:'SUIT'}},grid:{color:'rgba(0,0,0,0.06)'},angleLines:{color:'rgba(0,0,0,0.06)'}}},
           plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw}/10점`}}},
         }
       });

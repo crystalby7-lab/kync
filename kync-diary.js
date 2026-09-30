@@ -258,7 +258,7 @@ const KyncDiary = {
             <button onclick="KyncDiary.selectEmotion('${e.id}')" id="kd-emo-${e.id}"
               style="padding:6px 13px;border-radius:20px;border:1.5px solid #e8e3da;
                      background:#fff;font-size:12px;font-weight:700;color:#6b6560;
-                     cursor:pointer;font-family:Nunito,sans-serif;transition:all 0.15s;
+                     cursor:pointer;font-family:SUIT,sans-serif;transition:all 0.15s;
                      display:flex;align-items:center;gap:5px;">
               <div style="width:7px;height:7px;border-radius:50%;background:${e.dot};flex-shrink:0;"></div>
               ${e.label}
@@ -273,11 +273,11 @@ const KyncDiary = {
           placeholder="오늘 하루 한 줄로..."
           style="width:100%;padding:13px 16px;background:#f5f2ed;
                  border:none;border-radius:14px;font-size:14px;
-                 font-family:Nunito,sans-serif;color:#3d3530;outline:none;">
+                 font-family:SUIT,sans-serif;color:#3d3530;outline:none;">
         <button id="kd-save-btn" onclick="KyncDiary.save('${this._myRole}')"
           style="width:100%;padding:14px;background:#3d3530;color:#fff;border:none;
                  border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;
-                 font-family:Nunito,sans-serif;margin-top:10px;transition:all 0.2s;">
+                 font-family:SUIT,sans-serif;margin-top:10px;transition:all 0.2s;">
           기록하기
         </button>
       </div>
@@ -293,7 +293,7 @@ const KyncDiary = {
                background:${this._view==='feed'?'#3d3530':'#fff'};
                color:${this._view==='feed'?'#fff':'#6b6560'};
                border:${this._view==='feed'?'none':'1.5px solid #e8e3da'};
-               font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">
+               font-size:13px;font-weight:800;cursor:pointer;font-family:SUIT,sans-serif;">
         피드
       </button>
       <button id="kd-tab-calendar" onclick="KyncDiary.switchView('calendar')"
@@ -301,7 +301,7 @@ const KyncDiary = {
                background:${this._view==='calendar'?'#3d3530':'#fff'};
                color:${this._view==='calendar'?'#fff':'#6b6560'};
                border:${this._view==='calendar'?'none':'1.5px solid #e8e3da'};
-               font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">
+               font-size:13px;font-weight:800;cursor:pointer;font-family:SUIT,sans-serif;">
         캘린더
       </button>
     </div>`;
@@ -515,7 +515,7 @@ const KyncDiary = {
                      width:28px;height:28px;border-radius:50%;
                      background:rgba(0,0,0,0.4);border:none;cursor:pointer;
                      color:#fff;font-size:14px;display:flex;align-items:center;
-                     justify-content:center;font-family:Nunito,sans-serif;">×</button>
+                     justify-content:center;font-family:SUIT,sans-serif;">×</button>
           ` : ''}
 
           ${e.img ? `
