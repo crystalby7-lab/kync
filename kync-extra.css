@@ -280,3 +280,29 @@ input[type="range"] {
 .qx-pop-title { font-size: 20px; font-weight: 900; color: #3d3530; margin-bottom: 6px; }
 .qx-pop-sub { font-size: 14px; color: #6b6560; margin-bottom: 20px; }
 .qx-pop .qx-btn-main { width: 100%; }
+
+/* ── AI 상담 (연결 탭) ── */
+.counsel-card { background: #fff; border: 1.5px solid #e8e3da; border-radius: 20px; padding: 18px; margin-top: 14px; }
+.cs-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
+.cs-title { font-size: 16px; font-weight: 800; color: #3d3530; }
+.cs-sub { font-size: 11px; color: #a09890; font-weight: 600; }
+.cs-input { width: 100%; min-height: 110px; padding: 14px; border: 1.5px solid #e8e3da; border-radius: 14px; background: #f7f5f2; font-size: 14px; line-height: 1.6; color: #3d3530; resize: none; outline: none; }
+.cs-input:focus { border-color: #c17f4a; background: #fff; }
+.cs-input:disabled { opacity: 0.6; }
+.cs-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.cs-count { font-size: 12px; color: #a09890; }
+.cs-send { padding: 11px 22px; border: none; border-radius: 12px; background: #3d3530; color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; }
+.cs-send:disabled { opacity: 0.4; cursor: default; }
+.cs-bubble { padding: 13px 15px; border-radius: 16px; font-size: 14px; line-height: 1.65; margin-bottom: 8px; word-break: keep-all; overflow-wrap: anywhere; }
+.cs-me { background: #3d3530; color: #fff; margin-left: 32px; border-bottom-right-radius: 4px; }
+.cs-ai { background: #f5f2ed; color: #3d3530; margin-right: 12px; border-bottom-left-radius: 4px; }
+.cs-typing { color: #a09890; }
+.cs-note { font-size: 12px; color: #a09890; text-align: center; margin-top: 4px; }
+.cs-history-toggle { width: 100%; margin-top: 16px; display: flex; justify-content: space-between; background: none; border: none; border-top: 1px solid #f0ece6; padding: 14px 2px 6px; font-size: 13px; font-weight: 800; color: #6b6560; cursor: pointer; }
+.cs-history-toggle span { font-weight: 600; color: #a09890; }
+.cs-past { padding: 10px 0; border-bottom: 1px solid #f5f2ed; cursor: pointer; }
+.cs-past-head { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+.cs-past-date { font-size: 12px; font-weight: 800; color: #c17f4a; flex-shrink: 0; }
+.cs-past-msg { font-size: 13px; color: #6b6560; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-past .cs-bubble { margin-top: 8px; }
+.cs-foot { font-size: 11px; color: #a09890; line-height: 1.6; margin-top: 12px; }

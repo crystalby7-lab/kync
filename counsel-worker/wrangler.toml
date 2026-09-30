@@ -1,0 +1,16 @@
+name = "kync-counsel"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "kync-app-191a2"
+ALLOWED_ORIGINS = "https://crystalby7-lab.github.io"
+MODEL = "claude-haiku-4-5-20251001"
+
+# 하루 1회 제한 기록용 저장소
+# 만든 뒤 나오는 id를 아래에 붙여넣기: npx wrangler kv namespace create COUNSEL_LIMIT
+[[kv_namespaces]]
+binding = "COUNSEL_LIMIT"
+id = "여기에_KV_ID"
+
+# API 키는 여기 적지 말고 비밀값으로 등록: npx wrangler secret put ANTHROPIC_API_KEY
