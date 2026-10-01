@@ -51,46 +51,46 @@ const KyncActivity = {
     // 대화 유형 검사
     const result = this._read('kync_quiz_result', null);
 
+    const tastePct = Math.round(tasteCount / tasteMax * 100);
+    const shortQ = q => this._esc(q.length > 22 ? q.slice(0, 21) + '…' : q);
+
     el.innerHTML = `
       <div class="qx-section">오늘의 활동</div>
 
-      <div class="qx-card ax-card" onclick="location.href='activity-together.html'">
-        <div class="ax-top">
-          <div class="qx-from">밸런스 게임</div>
-          <span class="ax-pill ${balance.cls}">${balance.pill}</span>
+      <div class="ax-hero" onclick="location.href='activity-together.html'">
+        <div class="ax-hero-top">
+          <span class="ax-hero-label">오늘의 밸런스 게임</span>
+          <span class="ax-hero-status">${balance.pill}</span>
         </div>
-        <div class="qx-title">${this._esc(bq.q)}</div>
-        <div class="qx-desc">각자 고르고 서로의 답을 비교해요</div>
+        <div class="ax-hero-q">${this._esc(bq.q)}</div>
+        <div class="ax-hero-opts">
+          ${bq.opts.map(o => `<span class="${bs[role] === o ? 'on' : ''}">${this._esc(o)}</span>`).join('')}
+        </div>
       </div>
 
-      <div class="qx-card ax-card" onclick="location.href='activity-balance.html'">
-        <div class="ax-top">
-          <div class="qx-from">취향 맞추기</div>
-          <span class="ax-pill ${tasteCount >= tasteMax ? 'done' : 'todo'}">${tasteCount >= tasteMax ? '오늘 완료' : '이어하기'}</span>
+      <div class="ax-grid">
+        <div class="ax-tile ax-taste" onclick="location.href='activity-balance.html'">
+          <div class="ax-tile-label">취향 맞추기</div>
+          <div class="ax-tile-num"><b>${tasteCount}</b>/${tasteMax}</div>
+          <div class="ax-tile-bar"><div style="width:${tastePct}%"></div></div>
+          <div class="ax-tile-foot">${tasteCount >= tasteMax ? '오늘 완료' : '이어하기 ›'}</div>
         </div>
-        <div class="qx-title">서로의 취향 알아가기</div>
-        <div class="qx-progress-row"><span><b>${tasteCount}</b> / ${tasteMax}문제</span><span>하루 최대 ${tasteMax}문제</span></div>
-        <div class="qx-bar"><div style="width:${Math.round(tasteCount / tasteMax * 100)}%"></div></div>
-      </div>
-
-      <div class="qx-card ax-card" onclick="location.href='activity-quiz.html'">
-        <div class="ax-top">
-          <div class="qx-from">서로 맞히기</div>
-          <span class="ax-pill ${quiz.cls}">${quiz.pill}</span>
+        <div class="ax-tile ax-guess" onclick="location.href='activity-quiz.html'">
+          <div class="ax-tile-label">서로 맞히기</div>
+          <div class="ax-tile-q">${shortQ(qq.q)}</div>
+          <div class="ax-tile-foot">${quiz.pill} ›</div>
         </div>
-        <div class="qx-title">${this._esc(qq.q)}</div>
-        <div class="qx-desc">내 답을 적고 ${otherLabel}의 답을 예측해요</div>
       </div>
 
       <div class="qx-section">나를 알아보기</div>
 
-      <div class="qx-card ax-card" onclick="location.href='quiz.html'">
-        <div class="ax-top">
-          <div class="qx-from">대화 유형 검사</div>
-          <span class="ax-pill ${result?.type ? 'done' : 'todo'}">${result?.type ? '다시 하기' : '검사하기'}</span>
+      <div class="ax-row" onclick="location.href='quiz.html'">
+        <div class="ax-row-icon">◎</div>
+        <div class="ax-row-body">
+          <div class="ax-row-title">${result?.type ? this._esc(result.type) : '대화 유형 검사'}</div>
+          <div class="ax-row-sub">${result?.type ? '대화 유형 검사 · 다시 하기' : '20문항으로 알아보는 나의 대화 방식'}</div>
         </div>
-        <div class="qx-title">${result?.type ? this._esc(result.type) : '나의 대화 유형은?'}</div>
-        <div class="qx-desc">${result?.type ? this._esc(result.sub || '') : `20문항 · 4가지 기준으로 분석해요`}</div>
+        <div class="ax-row-arrow">›</div>
       </div>`;
   },
 };
