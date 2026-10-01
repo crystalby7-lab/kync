@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="firebase-system.js?v=20260930-2"></script>
+  <script src="firebase-system.js?v=20261001-1"></script>
   <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -151,7 +151,7 @@ html,body{min-height:100%;background:var(--bg3);font-family: 'SUIT', -apple-syst
 <div class="wrap">
   <header class="top-bar">
     <div class="logo-wrapper"><div class="logo-box"><div class="logo-dot"></div></div><span class="logo-text">kync</span></div>
-    <button onclick="goHome()" class="back-link" style="border:none;cursor:pointer;">← 나가기</button>
+    <button onclick="goHome()" class="back-link" style="border:none;cursor:pointer;">← 돌아가기</button>
   </header>
 
   <!-- 역할 선택 -->
@@ -248,7 +248,7 @@ html,body{min-height:100%;background:var(--bg3);font-family: 'SUIT', -apple-syst
         <div id="r-compat"></div>
       </div>
 
-      <button class="home-btn" onclick="Quiz.saveAndGoHome()">결과 저장하고 홈으로 →</button>
+      <button class="home-btn" onclick="Quiz.saveAndGoHome()">활동으로 돌아가기</button>
       <button class="retry-btn" onclick="Quiz.reset()">다시 검사하기</button>
     </div>
   </div>
@@ -257,8 +257,9 @@ html,body{min-height:100%;background:var(--bg3);font-family: 'SUIT', -apple-syst
 KyncAuth.onAuthChange(user => {
   if (!user) location.href = 'index.html';
 });
-function goHome(){ window.location.href = 'index.html'; }
+// [수정] 돌아가기 → 오늘 탭이 아니라 활동 탭으로
+function goHome(){ Quiz.saveAndGoHome(); }
 </script>
-<script src="quiz.js?v=20260930-2"></script>
+<script src="quiz.js?v=20261001-1"></script>
 </body>
 </html> 
