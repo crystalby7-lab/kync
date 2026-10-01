@@ -178,7 +178,7 @@ input[type="range"] {
 
 /* ── 체크인 카드 ── */
 .checkin-card {
-  background: #f5f2ed;
+  background: #fff;
   border-radius: 20px;
   padding: 20px;
 }
