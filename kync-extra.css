@@ -311,3 +311,16 @@ input[type="range"] {
 .today-hero { padding: 6px 4px 2px; }
 .th-day { font-size: 13px; font-weight: 800; color: #c17f4a; letter-spacing: 0.02em; margin-bottom: 2px; }
 .th-date { font-size: 26px; font-weight: 800; color: #3d3530; letter-spacing: -0.5px; line-height: 1.2; }
+
+/* ── 탭 제목 (기록·활동·퀘스트) ── */
+.tab-title { font-size: 26px; font-weight: 800; color: #3d3530; letter-spacing: -0.5px; padding: 6px 0 0; margin-bottom: 16px; }
+
+/* ── 활동 탭 카드 ── */
+.ax-card { cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
+.ax-card:active { transform: scale(0.99); border-color: #c17f4a; }
+.ax-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ax-top .qx-from { margin-bottom: 0; }
+.ax-pill { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+.ax-pill.todo { background: #3d3530; color: #fff; }
+.ax-pill.wait { background: #fdf1eb; color: #c17f4a; }
+.ax-pill.done { background: #f0ece6; color: #6b6560; }
