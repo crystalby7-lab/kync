@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261001-1" />
-  <link rel="stylesheet" href="kync-extra.css?v=20261001-1" />
+  <link rel="stylesheet" href="style.css?v=20261001-2" />
+  <link rel="stylesheet" href="kync-extra.css?v=20261001-2" />
   <style>
     @keyframes spin { to { transform: rotate(360deg); } }
     #kync-global-loader {
@@ -220,74 +220,23 @@
       <!-- 기록 탭 (Kelog 스타일) -->
       <section id="p-recordTab" class="tab-content">
         <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
-          <div class="today-date" style="margin-bottom:14px;">기록</div>
+          <div class="tab-title">기록</div>
           <div id="p-diary-container"></div>
         </div>
       </section>
 
       <!-- 활동 탭 -->
       <section id="p-activityTab" class="tab-content">
-        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:14px;">
-          <div class="today-date">활동</div>
-
-          <div onclick="location.href='quiz.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#3d3530;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◎</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">대화 유형 검사</div>
-              <div style="font-size:12px;color:#a09890;">20문항 · 4축 분석 · 부모 6가지 유형</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
-
-          <div onclick="location.href='activity-balance.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#c17f4a;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◈</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">취향 맞추기</div>
-              <div style="font-size:12px;color:#a09890;">서로의 취향을 알아가는 질문 · 하루 최대 10문제</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
-
-          <div onclick="location.href='activity-quiz.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#5a9e6f;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◌</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">서로 맞히기 퀴즈</div>
-              <div style="font-size:12px;color:#a09890;">2단계 — 내 답 먼저, 상대방 예측 후 공개</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
-
-          <div onclick="location.href='activity-together.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#d4cdc2;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#3d3530;flex-shrink:0;">○</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">밸런스 게임</div>
-              <div style="font-size:12px;color:#a09890;">오늘 더 힘들었던 쪽은? 각자 답하고 비교</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
+        <div style="padding:18px 18px 110px;">
+          <div class="tab-title">활동</div>
+          <div id="p-activity-list"></div>
         </div>
       </section>
 
       <!-- 퀘스트 탭 -->
       <section id="p-questTab" class="tab-content">
         <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
-          <div class="today-date" style="margin-bottom:14px;">퀘스트</div>
+          <div class="tab-title">퀘스트</div>
           <div id="p-quest-list"></div>
         </div>
       </section>
@@ -427,74 +376,23 @@
       <!-- 기록 탭 (자녀, Kelog 스타일) -->
       <section id="c-recordTab" class="tab-content">
         <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
-          <div class="today-date" style="margin-bottom:14px;">기록</div>
+          <div class="tab-title">기록</div>
           <div id="c-diary-container"></div>
         </div>
       </section>
 
       <!-- 활동 탭 -->
       <section id="c-activityTab" class="tab-content">
-        <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:14px;">
-          <div class="today-date">활동</div>
-
-          <div onclick="location.href='quiz.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#3d3530;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◎</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">대화 유형 검사</div>
-              <div style="font-size:12px;color:#a09890;">20문항 · 4축 분석 · 자녀 6가지 유형</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
-
-          <div onclick="location.href='activity-balance.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#c17f4a;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◈</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">취향 맞추기</div>
-              <div style="font-size:12px;color:#a09890;">서로의 취향을 알아가는 질문 · 하루 최대 10문제</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
-
-          <div onclick="location.href='activity-quiz.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#5a9e6f;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">◌</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">서로 맞히기 퀴즈</div>
-              <div style="font-size:12px;color:#a09890;">2단계 — 내 답 먼저, 상대방 예측 후 공개</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
-
-          <div onclick="location.href='activity-together.html'"
-            style="background:#fff;border-radius:20px;padding:20px;border:1.5px solid #e8e3da;
-                   cursor:pointer;display:flex;align-items:center;gap:14px;">
-            <div style="width:48px;height:48px;background:#d4cdc2;border-radius:14px;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:16px;font-weight:800;color:#3d3530;flex-shrink:0;">○</div>
-            <div style="flex:1;">
-              <div style="font-size:16px;font-weight:800;color:#3d3530;margin-bottom:3px;">밸런스 게임</div>
-              <div style="font-size:12px;color:#a09890;">오늘 더 힘들었던 쪽은? 각자 답하고 비교</div>
-            </div>
-            <div style="font-size:20px;color:#d4cdc2;">›</div>
-          </div>
+        <div style="padding:18px 18px 110px;">
+          <div class="tab-title">활동</div>
+          <div id="c-activity-list"></div>
         </div>
       </section>
 
       <!-- 퀘스트 탭 -->
       <section id="c-questTab" class="tab-content">
         <div style="padding:18px 18px 110px;display:flex;flex-direction:column;gap:0;">
-          <div class="today-date" style="margin-bottom:14px;">퀘스트</div>
+          <div class="tab-title">퀘스트</div>
           <div id="c-quest-list"></div>
         </div>
       </section>
@@ -568,14 +466,15 @@
   })();
 </script>
 
-<script src="firebase-system.js?v=20261001-1"></script>
-<script src="kync-core.js?v=20261001-1"></script>
-<script src="kync-features.js?v=20261001-1"></script>
-<script src="kync-balance.js?v=20261001-1"></script>
-<script src="kync-quests.js?v=20261001-1"></script>
-<script src="kync-diary.js?v=20261001-1"></script>
-<script src="kync-quests2.js?v=20261001-1"></script>
-<script src="kync-counsel.js?v=20261001-1"></script>
+<script src="firebase-system.js?v=20261001-2"></script>
+<script src="kync-core.js?v=20261001-2"></script>
+<script src="kync-features.js?v=20261001-2"></script>
+<script src="kync-balance.js?v=20261001-2"></script>
+<script src="kync-quests.js?v=20261001-2"></script>
+<script src="kync-diary.js?v=20261001-2"></script>
+<script src="kync-quests2.js?v=20261001-2"></script>
+<script src="kync-counsel.js?v=20261001-2"></script>
+<script src="kync-activity.js?v=20261001-2"></script>
 
 <script>
 // 탭 전환
@@ -588,6 +487,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     parentPage.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(targetId).classList.add('active');
     this.classList.add('active');
+    if (targetId.endsWith('activityTab') && typeof KyncActivity !== 'undefined') KyncActivity.render();
   });
 });
 
