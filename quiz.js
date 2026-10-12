@@ -239,9 +239,9 @@ const Quiz = (() => {
   let qs=[]; let role=''; let cur=0; let ans={};
 
   function show(id){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.qs-step').forEach(s=>s.classList.add('hidden'));
     const el = document.getElementById(id);
-    if(el) { el.classList.add('active'); window.scrollTo(0,0); }
+    if(el) { el.classList.remove('hidden'); window.scrollTo(0,0); }
   }
 
   function calcScores(){
@@ -260,13 +260,12 @@ const Quiz = (() => {
     document.getElementById('q-prog-text').textContent=`${cur+1} / ${tot}`;
     document.getElementById('q-axis-pill').textContent=q.tag;
     document.getElementById('q-prog-bar').style.width=`${((cur+1)/tot)*100}%`;
-    document.getElementById('q-num').textContent=`질문 ${String(cur+1).padStart(2,'0')}`;
     document.getElementById('q-text').textContent=q.q;
 
     document.getElementById('q-opts').innerHTML=q.opts.map((o,i)=>{
-      const sel=ans[cur]===o.s?'selected':'';
-      return `<button class="opt ${sel}" onclick="Quiz.select(${o.s},this)">
-        <span class="opt-num">${i+1}</span><span>${o.t}</span>
+      const sel=ans[cur]===o.s?'on':'';
+      return `<button class="opt-item ${sel}" onclick="Quiz.select(${o.s},this)" aria-pressed="${!!sel}">
+        <span class="n">${i+1}</span><span>${o.t}</span>
       </button>`;
     }).join('');
 
@@ -298,7 +297,7 @@ const Quiz = (() => {
     document.getElementById('r-eyebrow').textContent=role==='parent'?'부모 대화 유형 분석':'자녀 대화 유형 분석';
     document.getElementById('r-type-name').textContent=type.name;
     document.getElementById('r-type-sub').textContent=type.sub;
-    document.getElementById('r-reliability').textContent=`AI 신뢰도 ${type.reliability}%`;
+    document.getElementById('r-reliability').textContent=`응답 일관성 ${type.reliability}%`;
     document.getElementById('r-summary').textContent=type.summary;
 
     show('s-result');
@@ -314,9 +313,9 @@ const Quiz = (() => {
           datasets:[{
             label:'나의 점수',
             data:[scores.A,scores.B,scores.C,scores.D],
-            backgroundColor:'rgba(193,127,74,0.15)',
-            borderColor:'#c17f4a',
-            pointBackgroundColor:'#c17f4a',
+            backgroundColor:'rgba(242,169,59,0.18)',
+            borderColor:'#E0942A',
+            pointBackgroundColor:'#E0942A',
             pointRadius:5,
             borderWidth:2,
           }]
@@ -324,7 +323,7 @@ const Quiz = (() => {
         options:{
           responsive:true,
           maintainAspectRatio:false,
-          scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#a09b95',font:{size:10,family:'SUIT'}},pointLabels:{color:'#3d3530',font:{size:12,weight:'700',family:'SUIT'}},grid:{color:'rgba(0,0,0,0.06)'},angleLines:{color:'rgba(0,0,0,0.06)'}}},
+          scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#A3978D',backdropColor:'transparent',font:{size:10,family:'SUIT Variable'}},pointLabels:{color:'#2B2421',font:{size:13,weight:'700',family:'SUIT Variable'}},grid:{color:'rgba(0,0,0,0.06)'},angleLines:{color:'rgba(0,0,0,0.06)'}}},
           plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw}/10점`}}},
         }
       });
@@ -333,9 +332,8 @@ const Quiz = (() => {
       document.getElementById('axes-display').innerHTML=AXES.map(ax=>{
         const pct=(scores[ax.id]/10)*100;
         return `<div class="axis-row">
-          <div class="axis-top"><span>${ax.lo}</span><span class="axis-center-name">${ax.name}</span><span>${ax.hi}</span></div>
-          <div class="axis-bg"><div class="axis-fill" style="width:0%" data-pct="${pct}"></div></div>
-          <div class="axis-score-row"><div class="axis-score">${scores[ax.id]} / 10</div></div>
+          <div class="axis-top"><span>${ax.lo}</span><b>${ax.name} ${scores[ax.id]}/10</b><span>${ax.hi}</span></div>
+          <div class="bar"><div class="axis-fill" data-pct="${pct}"></div></div>
         </div>`;
       }).join('');
       setTimeout(()=>{ document.querySelectorAll('.axis-fill').forEach(el=>{ el.style.width=el.dataset.pct+'%'; }); },100);
@@ -344,8 +342,8 @@ const Quiz = (() => {
       document.getElementById('gauge-display').innerHTML=type.gauges.map(g=>`
         <div class="gauge-row">
           <div class="gauge-label">${g.label}</div>
-          <div class="gauge-bg"><div class="gauge-fill" style="width:0%;background:${g.color}" data-val="${g.val}"></div></div>
-          <div class="gauge-val" style="color:${g.color}">${g.val}</div>
+          <div class="bar"><div class="gauge-fill" style="background:${g.color}" data-val="${g.val}"></div></div>
+          <div class="gauge-val">${g.val}</div>
         </div>`).join('');
       setTimeout(()=>{ document.querySelectorAll('.gauge-fill').forEach(el=>{ el.style.width=el.dataset.val+'%'; }); },200);
 
@@ -353,19 +351,19 @@ const Quiz = (() => {
       document.getElementById('r-detail-card').innerHTML=`
         <div class="detail-section">
           <div class="detail-title">강점</div>
-          ${type.strengths.map(t=>`<div class="detail-item"><span class="detail-dash">—</span>${t}</div>`).join('')}
+          ${type.strengths.map(t=>`<div class="detail-item"><span>${t}</span></div>`).join('')}
         </div>
         <div class="detail-section">
           <div class="detail-title">주의할 점</div>
-          ${type.cautions.map(t=>`<div class="detail-item"><span class="detail-dash">—</span>${t}</div>`).join('')}
+          ${type.cautions.map(t=>`<div class="detail-item"><span>${t}</span></div>`).join('')}
         </div>
         <div class="detail-section">
           <div class="detail-title">상대방이 보는 나</div>
-          <div style="font-size:14px;color:var(--text2);line-height:1.7;padding:8px 0;">${type.othersView}</div>
+          <p class="detail-text">${type.othersView}</p>
         </div>
-        <div class="detail-section" style="margin-bottom:0;">
+        <div class="detail-section">
           <div class="detail-title">나의 진심</div>
-          <div style="font-size:14px;color:var(--text2);line-height:1.7;padding:8px 0;">${type.myIntent}</div>
+          <p class="detail-text">${type.myIntent}</p>
         </div>`;
 
       /* 팁 */
@@ -373,10 +371,10 @@ const Quiz = (() => {
 
       /* 궁합 */
       document.getElementById('r-compat').innerHTML=type.compat.map(c=>{
-        const cls=c.badge==='good'?'badge-good':c.badge==='mid'?'badge-mid':'badge-hard';
+        const cls=c.badge==='good'?'pill-moss':c.badge==='mid'?'pill-honey':'pill-berry';
         const lbl=c.badge==='good'?'잘 맞아요':c.badge==='mid'?'노력 필요':'도전적';
         return `<div class="compat-item">
-          <div class="compat-badge ${cls}">${lbl}</div>
+          <span class="pill ${cls}">${lbl}</span>
           <div class="compat-text"><strong>${c.type}</strong>${c.desc}</div>
         </div>`;
       }).join('');
@@ -386,10 +384,10 @@ const Quiz = (() => {
   /* 로딩 연출 */
   function runLoading(){
     show('s-loading');
-    const msgs=['4개 축의 응답 데이터를 처리 중...','대화 패턴과 감정 성향을 분석 중...','6가지 유형과 비교 대조 중...','정밀 분석 리포트를 생성 중...'];
+    const msgs=['응답을 4개 축으로 나누는 중','6가지 유형과 비교하는 중'];
     let i=0;
     const msgEl=document.getElementById('loading-msg');
-    const timer=setInterval(()=>{ if(i<msgs.length){ if(msgEl) msgEl.textContent=msgs[i++]; } else { clearInterval(timer); renderResult(); } },700);
+    const timer=setInterval(()=>{ if(i<msgs.length){ if(msgEl) msgEl.textContent=msgs[i++]; } else { clearInterval(timer); renderResult(); } },600);
   }
 
   return {
@@ -399,8 +397,8 @@ const Quiz = (() => {
     },
     select(score,btn){
       ans[cur]=score;
-      document.querySelectorAll('.opt').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
+      document.querySelectorAll('#q-opts .opt-item').forEach(b=>{ b.classList.remove('on'); b.setAttribute('aria-pressed','false'); });
+      btn.classList.add('on'); btn.setAttribute('aria-pressed','true');
       document.getElementById('btn-next').disabled=false;
     },
     prev(){ if(cur>0){ cur--; renderQ(); } },
@@ -409,12 +407,12 @@ const Quiz = (() => {
       if(cur<qs.length-1){ cur++; renderQ(); }
       else runLoading();
     },
-    reset(){ show('s-role'); radarChart&&radarChart.destroy(); radarChart=null; },
+    reset(){ window.scrollTo(0,0); show('s-role'); radarChart&&radarChart.destroy(); radarChart=null; },
     // ★ 나가기 → 활동 탭으로 이동
     saveAndGoHome(){
       const role = localStorage.getItem('kync_role') || 'parent';
       const activityTab = role === 'parent' ? 'p-activityTab' : 'c-activityTab';
-      location.href = `index.html?tab=${activityTab}&role=${role}`;
+      location.href = `index.html?tab=${activityTab}`;
     },
   };
 })(); 

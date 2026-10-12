@@ -4,396 +4,178 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Kync — 취향 맞추기</title>
-  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #f0eeeb; --card: #ffffff; --card2: #f7f5f2;
-      --border: rgba(0,0,0,0.07); --border2: rgba(0,0,0,0.13);
-      --text: #1a1814; --text2: #6b6560; --text3: #a09b95;
-      --accent: #3d3530; --accent2: #c17f4a;
-    }
-    html, body { height: 100%; background: var(--bg); font-family: 'SUIT', sans-serif; }
-    .wrap { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: var(--bg); display: flex; flex-direction: column; }
-
-    /* 탑바 */
-    .top-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 22px 14px; background: var(--card);
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 10;
-    }
-    .logo-wrapper { display: flex; align-items: center; gap: 8px; }
-    .logo-box { width: 30px; height: 30px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; }
-    .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; }
-    .logo-text { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
-    .back-btn {
-      font-size: 13px; font-weight: 700; color: var(--text2);
-      padding: 6px 14px; background: var(--card2);
-      border: none; border-radius: 20px; cursor: pointer;
-      font-family: 'SUIT', sans-serif;
-    }
-
-    /* 콘텐츠 */
-    .content { flex: 1; padding: 20px 20px 40px; display: flex; flex-direction: column; gap: 14px; }
-
-    /* 헤더 섹션 */
-    .page-header {
-      background: var(--accent); border-radius: 24px; padding: 28px 24px;
-      position: relative; overflow: hidden;
-    }
-    .page-header::before {
-      content: ''; position: absolute; top: -30px; right: -30px;
-      width: 140px; height: 140px; border-radius: 50%;
-      border: 28px solid rgba(255,255,255,0.05);
-    }
-    .header-icon {
-      width: 52px; height: 52px; border-radius: 16px;
-      background: rgba(255,255,255,0.12);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: 800; color: #fff;
-      margin-bottom: 16px;
-    }
-    .header-title { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-    .header-sub { font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 600; line-height: 1.6; }
-
-    /* 진행 바 */
-    .progress-card {
-      background: var(--card); border-radius: 20px; padding: 20px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-    }
-    .progress-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .progress-label { font-size: 13px; font-weight: 700; color: var(--text2); }
-    .progress-count { font-size: 22px; font-weight: 900; color: var(--accent2); }
-    .progress-bg { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--accent2); border-radius: 4px; transition: width 0.4s; }
-
-    /* 질문 목록 */
-    .q-list { display: flex; flex-direction: column; gap: 10px; }
-    .q-item {
-      background: var(--card); border-radius: 16px;
-      border: 1.5px solid var(--border2);
-      padding: 16px; cursor: pointer;
-      display: flex; align-items: center; gap: 12px;
-      transition: all 0.2s;
-    }
-    .q-item:hover { border-color: var(--accent2); background: #fffdf9; }
-    .q-item.answered { background: var(--accent); border-color: var(--accent); cursor: default; }
-    .q-num {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: var(--bg); color: var(--text3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800; flex-shrink: 0;
-    }
-    .q-item.answered .q-num { background: var(--accent2); color: #fff; font-size: 14px; }
-    .q-text { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); }
-    .q-item.answered .q-text { color: #fff; }
-    .q-answer { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 3px; }
-    .q-arrow { font-size: 18px; color: var(--border2); }
-
-    /* 완료 배너 */
-    .done-banner {
-      background: linear-gradient(135deg, var(--accent2), #b36e3a);
-      border-radius: 20px; padding: 24px;
-      text-align: center; box-shadow: 0 8px 24px rgba(193,127,74,0.3);
-    }
-    .done-icon { font-size: 36px; margin-bottom: 10px; }
-    .done-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-    .done-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
-
-    /* 질문 풀기 화면 */
-    .question-screen {
-      display: none; position: fixed; inset: 0;
-      background: var(--bg); z-index: 100;
-      flex-direction: column; max-width: 430px; margin: 0 auto;
-    }
-    .question-screen.active { display: flex; animation: slideIn 0.3s ease; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-    .qs-header {
-      padding: 54px 22px 14px; background: var(--card);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 12px;
-    }
-    .qs-back {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--bg); border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; color: var(--text2);
-    }
-    .qs-title { font-size: 16px; font-weight: 800; color: var(--text); }
-
-    .qs-content { flex: 1; padding: 24px 20px 40px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
-
-    .qs-question-card {
-      background: var(--accent); border-radius: 24px; padding: 28px 24px;
-      position: relative; overflow: hidden;
-    }
-    .qs-question-card::before {
-      content: ''; position: absolute; top: -20px; right: -20px;
-      width: 100px; height: 100px; border-radius: 50%;
-      border: 20px solid rgba(255,255,255,0.06);
-    }
-    .qs-label { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; margin-bottom: 12px; font-weight: 700; }
-    .qs-q-text { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.5; }
-
-    .qs-opts { display: flex; gap: 12px; }
-    .qs-opt {
-      flex: 1; padding: 22px 14px; background: var(--card);
-      border: 2px solid var(--border2); border-radius: 20px;
-      cursor: pointer; text-align: center; font-family: 'SUIT', sans-serif;
-      transition: all 0.2s;
-    }
-    .qs-opt:hover { border-color: var(--accent2); background: #fffdf9; transform: translateY(-2px); }
-    .qs-opt-text { font-size: 15px; font-weight: 800; color: var(--text); }
-
-    /* 결과 화면 */
-    .result-screen {
-      display: none; position: fixed; inset: 0;
-      background: var(--bg); z-index: 101;
-      flex-direction: column; align-items: center; justify-content: center;
-      padding: 32px 24px; max-width: 430px; margin: 0 auto;
-      text-align: center;
-    }
-    .result-screen.active { display: flex; animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-    @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-    .result-big { font-size: 64px; margin-bottom: 16px; }
-    .result-title { font-size: 22px; font-weight: 900; color: var(--text); margin-bottom: 8px; }
-    .result-my { background: var(--accent); border-radius: 16px; padding: 16px 24px; margin: 16px 0 8px; width: 100%; }
-    .result-my-label { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 4px; font-weight: 700; }
-    .result-my-val { font-size: 20px; font-weight: 800; color: #fff; }
-    .result-hint { font-size: 13px; color: var(--text3); font-weight: 600; margin-bottom: 24px; }
-    .result-btns { display: flex; gap: 10px; width: 100%; }
-    .btn-list { flex: 1; padding: 14px; background: var(--card2); border: 1.5px solid var(--border2); border-radius: 14px; font-size: 14px; font-weight: 800; color: var(--text2); cursor: pointer; font-family: 'SUIT', sans-serif; }
-    .btn-next-q { flex: 2; padding: 14px; background: var(--accent); border: none; border-radius: 14px; font-size: 14px; font-weight: 800; color: #fff; cursor: pointer; font-family: 'SUIT', sans-serif; }
-  </style>
+  <meta name="theme-color" content="#F4F1EC" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="kync.css?v=20261012-6" />
 </head>
 <body>
-<div class="wrap">
-
-  <!-- 탑바 -->
-  <div class="top-bar">
-    <div class="logo-wrapper">
-      <div class="logo-box"><div class="logo-dot"></div></div>
-      <span class="logo-text">kync</span>
+<div class="sub-app">
+  <header class="sub-head">
+    <button class="icon-btn" onclick="goBack()" aria-label="활동으로 돌아가기"><span data-ic="back"></span></button>
+    <h1>취향 맞추기</h1>
+  </header>
+  <main class="sub-body">
+    <div class="sub-intro">
+      <h2>서로의 취향 알아가기</h2>
+      <p>하루 10문제. 내가 답한 뒤에 상대의 선택이 보여요.</p>
     </div>
-    <button class="back-btn" onclick="goBack()">← 돌아가기</button>
-  </div>
-
-  <!-- 메인 콘텐츠 -->
-  <div class="content">
-
-    <!-- 헤더 -->
-    <div class="page-header">
-      <div class="header-icon">◈</div>
-      <div class="header-title">취향 맞추기</div>
-      <div class="header-sub">서로의 취향을 알아가는 질문<br>하루 최대 10문제</div>
-    </div>
-
-    <!-- 진행 바 -->
-    <div class="progress-card">
-      <div class="progress-top">
-        <div class="progress-label">오늘의 진행도</div>
-        <div class="progress-count" id="prog-count">0 / 10</div>
+    <section class="card tight">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <span class="small sub" style="font-weight:700">오늘 진행</span>
+        <b class="num" id="prog-count">0 / 10</b>
       </div>
-      <div class="progress-bg">
-        <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+      <div class="bar"><div id="prog-fill" style="width:0%"></div></div>
+    </section>
+    <div id="done-banner" class="done-card hidden">
+      <span data-mascot="happy" data-size="52" data-noshadow></span>
+      <div><b>오늘 10문제 모두 했어요</b><small>내일 새 질문이 기다려요.</small></div>
+    </div>
+    <div class="stack" style="gap:8px" id="q-list"></div>
+  </main>
+</div>
+
+<!-- 질문 풀기 -->
+<div class="full-layer" id="question-screen" role="dialog" aria-modal="true">
+  <div>
+    <header class="sub-head">
+      <button class="icon-btn" onclick="closeQuestion()" aria-label="목록으로"><span data-ic="back"></span></button>
+      <h1 id="qs-title">취향 맞추기</h1>
+    </header>
+    <div class="sub-body">
+      <div class="dark-card">
+        <div class="q-label">나의 취향은?</div>
+        <p class="q-text" id="qs-q-text"></p>
+      </div>
+      <div class="opt-row" id="qs-opts"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 답한 뒤 -->
+<div class="full-layer" id="result-screen" role="dialog" aria-modal="true">
+  <div>
+    <div class="sub-body" style="justify-content:center;text-align:center;padding-top:60px">
+      <div id="result-art" style="display:flex;justify-content:center"></div>
+      <h2 id="result-title">답했어요</h2>
+      <div class="kv dark" style="text-align:left"><small>내 선택</small><b id="result-my-val"></b></div>
+      <p class="small sub" id="result-hint"></p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-soft grow" onclick="closeResult()">목록으로</button>
+        <button class="btn btn-primary grow" id="btn-next-q" onclick="nextQuestion()">다음 질문</button>
       </div>
     </div>
-
-    <!-- 질문 목록 -->
-    <div class="q-list" id="q-list"></div>
-
-    <!-- 완료 배너 (숨김) -->
-    <div class="done-banner" id="done-banner" style="display:none;">
-      <div class="done-icon">🎉</div>
-      <div class="done-title">오늘 모두 완료!</div>
-      <div class="done-sub">내일 새로운 10문제가 기다려요</div>
-    </div>
-
   </div>
 </div>
 
-<!-- 질문 풀기 화면 -->
-<div class="question-screen" id="question-screen">
-  <div class="qs-header">
-    <button class="qs-back" onclick="closeQuestion()">‹</button>
-    <div class="qs-title" id="qs-title">취향 맞추기</div>
-  </div>
-  <div class="qs-content">
-    <div class="qs-question-card">
-      <div class="qs-label">나의 취향은?</div>
-      <div class="qs-q-text" id="qs-q-text"></div>
-    </div>
-    <div class="qs-opts" id="qs-opts"></div>
-  </div>
-</div>
-
-<!-- 결과 화면 -->
-<div class="result-screen" id="result-screen">
-  <div class="result-big">✓</div>
-  <div class="result-title">답변 완료!</div>
-  <div class="result-my">
-    <div class="result-my-label">내 선택</div>
-    <div class="result-my-val" id="result-my-val"></div>
-  </div>
-  <div class="result-hint" id="result-hint"></div>
-  <div class="result-btns">
-    <button class="btn-list" onclick="closeResult()">목록으로</button>
-    <button class="btn-next-q" onclick="nextQuestion()">다음 질문 →</button>
-  </div>
-</div>
-
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-system.js?v=20261012-1"></script>
-<script src="kync-balance.js?v=20261012-1"></script>
-
+<script src="kync-ui.js?v=20261012-6"></script>
+<script src="firebase-system.js?v=20261012-6"></script>
+<script src="kync-balance.js?v=20261012-6"></script>
 <script>
   const myRole = localStorage.getItem('kync_role') || 'parent';
   const familyCode = localStorage.getItem('kync_family_code') || 'local';
+  const MAX = KyncBalance.MAX_PER_DAY;
   let currentQId = null;
-  let theirAnswers = {}; // [추가] 상대가 오늘 고른 답 { 질문id: 답 }
+  let theirAnswers = {}; // 상대가 오늘 고른 답 { 질문id: 답 }
   const theirLabel = myRole === 'parent' ? '자녀' : '부모님';
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc = KyncUI.esc;
 
   function goBack() {
-    const activityTab = myRole === 'parent' ? 'p-activityTab' : 'c-activityTab';
-    location.href = `index.html?tab=${activityTab}&role=${myRole}`;
-  }
-
-  function getTodayState() {
-    return KyncBalance._getTodayState(familyCode);
-  }
-
-  function getTodaysQuestions() {
-    return KyncBalance._getTodaysQuestions();
+    location.href = `index.html?tab=${myRole === 'parent' ? 'p-activityTab' : 'c-activityTab'}`;
   }
 
   function renderList() {
-    const { data } = getTodayState();
-    const todaysQs = getTodaysQuestions();
+    const { data } = KyncBalance._getTodayState(familyCode);
+    const todaysQs = KyncBalance._getTodaysQuestions();
     const answered = Object.keys(data.answers).length;
 
-    document.getElementById('prog-count').textContent = `${answered} / 10`;
-    document.getElementById('prog-fill').style.width = `${(answered / 10) * 100}%`;
+    document.getElementById('prog-count').textContent = `${answered} / ${MAX}`;
+    document.getElementById('prog-fill').style.width = `${(answered / MAX) * 100}%`;
+    document.getElementById('done-banner').classList.toggle('hidden', answered < MAX);
 
-    const list = document.getElementById('q-list');
-    list.innerHTML = todaysQs.map((q, idx) => {
-      const myAns = data.answers[q.id];
-      const isAnswered = !!myAns;
-      return `
-        <div class="q-item ${isAnswered ? 'answered' : ''}"
-          ${!isAnswered ? `onclick="openQuestion(${q.id})"` : ''}>
-          <div class="q-num">${isAnswered ? '✓' : idx + 1}</div>
-          <div style="flex:1;">
-            <div class="q-text">${q.q}</div>
-            ${isAnswered ? `<div class="q-answer">${compareText(myAns, theirAnswers[q.id])}</div>` : ''}
-          </div>
-          ${!isAnswered ? '<div class="q-arrow">›</div>' : ''}
-        </div>`;
+    document.getElementById('q-list').innerHTML = todaysQs.map((q, idx) => {
+      const mine = data.answers[q.id];
+      if (mine) {
+        return `<div class="tq-item done"><span class="n">${ic('check', 14)}</span>
+          <div class="grow"><b>${esc(q.q)}</b><small>${compareText(mine, theirAnswers[q.id])}</small></div></div>`;
+      }
+      return `<button class="tq-item" onclick="openQuestion(${q.id})"><span class="n">${idx + 1}</span>
+        <div class="grow"><b>${esc(q.q)}</b></div><span class="chev">${ic('chev', 18)}</span></button>`;
     }).join('');
-
-    if (answered >= 10) {
-      document.getElementById('done-banner').style.display = 'block';
-      list.style.opacity = '0.5';
-      list.style.pointerEvents = 'none';
-    }
   }
 
-  // [추가] 내 답과 상대 답 비교 문구 (내가 답한 뒤에만 상대 답 공개)
+  // 내 답과 상대 답 비교 (내가 답한 뒤에만 상대 답 공개)
   function compareText(mine, theirs) {
-    if (!theirs) return `내 선택: ${esc(mine)} · ${theirLabel} 답 기다리는 중`;
-    const tag = mine === theirs ? '같은 선택 ✓' : '다른 선택';
-    return `나: ${esc(mine)} · ${theirLabel}: ${esc(theirs)} — ${tag}`;
+    if (!theirs) return `나: ${esc(mine)}, ${theirLabel} 답 기다리는 중`;
+    return `나: ${esc(mine)}, ${theirLabel}: ${esc(theirs)} (${mine === theirs ? '같아요' : '달라요'})`;
   }
 
   function openQuestion(qId) {
     const q = KyncBalance.QUESTIONS.find(q => q.id === qId);
     if (!q) return;
     currentQId = qId;
-
     document.getElementById('qs-q-text').textContent = q.q;
-    document.getElementById('qs-opts').innerHTML = q.opts.map(opt => `
-      <button class="qs-opt" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">
-        <div class="qs-opt-text">${opt}</div>
-      </button>
-    `).join('');
-
+    document.getElementById('qs-opts').innerHTML = q.opts.map(o =>
+      `<button class="opt-big" data-opt="${esc(o)}" onclick="submitAnswer(this.dataset.opt)">${esc(o)}</button>`).join('');
     document.getElementById('question-screen').classList.add('active');
   }
-
-  function closeQuestion() {
-    document.getElementById('question-screen').classList.remove('active');
-  }
+  function closeQuestion() { document.getElementById('question-screen').classList.remove('active'); }
 
   async function submitAnswer(answer) {
-    const { key, data } = getTodayState();
+    const { key, data } = KyncBalance._getTodayState(familyCode);
     if (data.answers[currentQId]) return;
-
     data.answers[currentQId] = answer;
     data.count = Object.keys(data.answers).length;
     KyncBalance._saveTodayState(key, data);
 
-    // Firestore 저장
-    if (familyCode !== 'local' && typeof db !== 'undefined') {
-      try {
-        const today = new Date().toLocaleDateString('ko-KR');
-        await db.collection('families').doc(familyCode)
-          .collection('balance_answers')
-          .doc(`${today}_${myRole}_${currentQId}`)
-          .set({ role: myRole, qId: currentQId, answer, day: today, answeredAt: firebase.firestore.FieldValue.serverTimestamp() });
-      } catch(e) { console.warn(e); }
-    }
-
-    // 포인트
-    if (typeof KyncDB !== 'undefined' && typeof KyncAuth !== 'undefined' && KyncAuth.current) {
-      await KyncDB.addPoints(KyncAuth.current.uid, 10).catch(() => {});
-    }
-
     closeQuestion();
     showResult(answer, currentQId);
     renderList();
+
+    if (familyCode !== 'local') {
+      try {
+        const today = new Date().toLocaleDateString('ko-KR');
+        await db.collection('families').doc(familyCode).collection('balance_answers')
+          .doc(`${today}_${myRole}_${currentQId}`)
+          .set({ role: myRole, qId: currentQId, answer, day: today, answeredAt: firebase.firestore.FieldValue.serverTimestamp() });
+      } catch (e) { toast('저장하지 못했어요. 인터넷 연결을 확인해주세요.', 'error'); }
+    }
   }
 
   function showResult(answer, qId) {
-    const q = KyncBalance.QUESTIONS.find(q => q.id === qId);
-    document.getElementById('result-my-val').textContent = answer;
     const theirs = theirAnswers[qId];
+    document.getElementById('result-my-val').textContent = answer;
+    document.getElementById('result-art').innerHTML = theirs ? KyncBrand.mascot(theirs === answer ? 'happy' : 'wow', 96) : KyncBrand.curled(90);
+    document.getElementById('result-title').textContent = theirs ? (theirs === answer ? '같은 취향이에요' : '서로 달랐어요') : '답했어요';
     document.getElementById('result-hint').textContent = theirs
-      ? `${theirLabel}은(는) "${theirs}"를 골랐어요. ${theirs === answer ? '같은 취향이에요!' : '서로 달랐네요!'}`
-      : `${theirLabel}이(가) 같은 질문에 답하면 비교해서 보여줄게요!`;
+      ? `${theirLabel}은(는) “${theirs}”를 골랐어요.`
+      : `${theirLabel}도 이 질문에 답하면 비교해서 보여줄게요.`;
+    const { data } = KyncBalance._getTodayState(familyCode);
+    document.getElementById('btn-next-q').classList.toggle('hidden', Object.keys(data.answers).length >= MAX);
     document.getElementById('result-screen').classList.add('active');
   }
-
-  function closeResult() {
-    document.getElementById('result-screen').classList.remove('active');
-  }
+  function closeResult() { document.getElementById('result-screen').classList.remove('active'); }
 
   function nextQuestion() {
     closeResult();
-    const { data } = getTodayState();
-    const todaysQs = getTodaysQuestions();
-    const next = todaysQs.find(q => !data.answers[q.id]);
+    const { data } = KyncBalance._getTodayState(familyCode);
+    const next = KyncBalance._getTodaysQuestions().find(q => !data.answers[q.id]);
     if (next) openQuestion(next.id);
   }
 
-  // 초기 렌더
   renderList();
 
-  // [추가] 상대의 오늘 답을 실시간으로 불러와 비교 (전에는 저장만 하고 비교를 안 했음)
-  if (familyCode !== 'local' && typeof db !== 'undefined') {
+  // 상대의 오늘 답을 실시간으로 불러와 비교
+  if (familyCode !== 'local') {
     KyncAuth.ready().then(user => {
-      if (!user) return;
+      if (!user) { location.href = 'index.html'; return; }
       const today = new Date().toLocaleDateString('ko-KR');
-      const theirRole = myRole === 'parent' ? 'child' : 'parent';
-      const prefix = `${today}_${theirRole}_`;
+      const prefix = `${today}_${myRole === 'parent' ? 'child' : 'parent'}_`;
       db.collection('families').doc(familyCode).collection('balance_answers')
         .orderBy(firebase.firestore.FieldPath.documentId())
-        .startAt(prefix).endAt(prefix + '\uf8ff')
+        .startAt(prefix).endAt(prefix + '')
         .onSnapshot(snap => {
           theirAnswers = {};
           snap.forEach(d => { const v = d.data(); theirAnswers[v.qId] = v.answer; });
@@ -403,4 +185,4 @@
   }
 </script>
 </body>
-</html> 
+</html>

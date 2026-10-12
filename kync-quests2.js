@@ -38,6 +38,8 @@ const KyncQuests2 = {
   _today() { return typeof todayKey === 'function' ? todayKey() : new Date().toISOString().slice(0,10); },
   _ref(id) { return db.collection('families').doc(this._fc()).collection('quests2').doc(id); },
 
+  stop() { if (this._unsub) { try { this._unsub(); } catch(e) {} this._unsub = null; } },
+
   // 둘 다 체크한 날 수
   _doneDays(q) {
     return Object.values(q.checks || {}).filter(c => c?.parent && c?.child).length;
@@ -62,6 +64,7 @@ const KyncQuests2 = {
         this._quests = snap.docs.map(d => ({ ...d.data(), id: d.id }));
         try { localStorage.setItem(`kync_quests2_${fc}`, JSON.stringify(this._quests)); } catch(e) {}
         this.render();
+        if (typeof KyncInbox !== 'undefined') KyncInbox.refresh();
       }, err => console.warn('quests listen:', err));
   },
 
@@ -75,7 +78,7 @@ const KyncQuests2 = {
     const role = this._role;
 
     if (!this._fc()) {
-      el.innerHTML = `<div class="qx-empty">가족과 연결하면 퀘스트를 시작할 수 있어요.</div>`;
+      el.innerHTML = `<div class="qx-empty">${KyncBrand.curled(40)}가족과 연결하면 퀘스트를 시작할 수 있어요.</div>`;
       return;
     }
 
@@ -91,7 +94,7 @@ const KyncQuests2 = {
     html += `<div class="qx-section">진행 중</div>`;
     html += active.length
       ? active.map(q => this._activeCard(q)).join('')
-      : `<div class="qx-empty">진행 중인 퀘스트가 없어요.</div>`;
+      : `<div class="qx-empty">${KyncBrand.mascot('sleepy', 44, { shadow: false })}<span>진행 중인 퀘스트가 없어요.<br>작은 약속 하나로 시작해봐요.</span></div>`;
 
     if (received.length) {
       html += `<div class="qx-section">받은 제안 <span class="qx-count">${received.length}</span></div>`;
@@ -103,11 +106,11 @@ const KyncQuests2 = {
       html += sent.map(q => this._sentCard(q)).join('');
     }
 
-    html += `<button class="qx-add-btn" onclick="KyncQuests2.openAddSheet()">+ 새 퀘스트 제안하기</button>`;
+    html += `<button class="qx-add" onclick="KyncQuests2.openAddSheet()">${ic('plus', 20)}새 퀘스트 제안하기</button>`;
 
     if (done.length) {
-      html += `<button class="qx-done-toggle" onclick="KyncQuests2.toggleDone()">
-        완료한 퀘스트 ${done.length}개 <span>${this._showDone ? '접기 ▲' : '보기 ▼'}</span></button>`;
+      html += `<button class="qx-toggle" onclick="KyncQuests2.toggleDone()" aria-expanded="${this._showDone}">
+        완료한 퀘스트 ${done.length}개 ${ic(this._showDone ? 'up' : 'down', 18)}</button>`;
       if (this._showDone) html += done.map(q => this._doneCard(q)).join('');
     }
 
@@ -131,20 +134,20 @@ const KyncQuests2 = {
     else                status = '둘 다 체크하면 하루가 채워져요';
 
     return `
-      <div class="qx-card qx-active">
+      <div class="qx-card">
         <div class="qx-title">${this._esc(q.title)}</div>
         ${q.desc ? `<div class="qx-desc">${this._esc(q.desc)}</div>` : ''}
         <div class="qx-progress-row">
           <span><b>${doneDays}</b> / ${q.days}일</span>
           <span>${pct}%</span>
         </div>
-        <div class="qx-bar"><div style="width:${pct}%"></div></div>
+        <div class="bar"><div style="width:${pct}%"></div></div>
         <div class="qx-today">
-          <div class="qx-who ${role === 'parent' ? (mine ? 'on' : '') : (theirs ? 'on' : '')}">부모님 ${ (role === 'parent' ? mine : theirs) ? '✓' : '' }</div>
-          <div class="qx-who ${role === 'child' ? (mine ? 'on' : '') : (theirs ? 'on' : '')}">자녀 ${ (role === 'child' ? mine : theirs) ? '✓' : '' }</div>
+          <div class="qx-who ${(role === 'parent' ? mine : theirs) ? 'on' : ''}">${(role === 'parent' ? mine : theirs) ? ic('check', 15) : ''}부모님</div>
+          <div class="qx-who ${(role === 'child' ? mine : theirs) ? 'on' : ''}">${(role === 'child' ? mine : theirs) ? ic('check', 15) : ''}자녀</div>
         </div>
-        <button class="qx-check ${mine ? 'checked' : ''}" ${mine ? 'disabled' : ''}
-          onclick="KyncQuests2.checkToday('${q.id}')">${mine ? '오늘 했어요 ✓' : '오늘 했어요'}</button>
+        <button class="btn btn-block ${mine ? 'done' : 'btn-primary'}" ${mine ? 'disabled' : ''}
+          onclick="KyncQuests2.checkToday('${q.id}')">${mine ? ic('check', 18) + '오늘 체크했어요' : '오늘 했어요'}</button>
         <div class="qx-status">${status}</div>
       </div>`;
   },
@@ -156,8 +159,8 @@ const KyncQuests2 = {
         <div class="qx-title">${this._esc(q.title)}</div>
         ${q.desc ? `<div class="qx-desc">${this._esc(q.desc)}</div>` : ''}
         <div class="qx-actions">
-          <button class="qx-btn-sub" onclick="KyncQuests2.decline('${q.id}')">넘기기</button>
-          <button class="qx-btn-main" onclick="KyncQuests2.accept('${q.id}')">같이 할래요</button>
+          <button class="btn btn-soft" onclick="KyncQuests2.decline('${q.id}')">넘기기</button>
+          <button class="btn btn-primary" onclick="KyncQuests2.accept('${q.id}')">같이 할래요</button>
         </div>
       </div>`;
   },
@@ -167,22 +170,23 @@ const KyncQuests2 = {
       <div class="qx-card qx-muted">
         <div class="qx-title">${this._esc(q.title)}</div>
         <div class="qx-desc">${q.days}일 · ${this._otherLabel(this._role)}의 답을 기다리는 중</div>
-        <button class="qx-link" onclick="KyncQuests2.cancel('${q.id}')">제안 취소</button>
+        <button class="text-btn" style="margin-top:6px" onclick="KyncQuests2.cancel('${q.id}')">제안 취소</button>
       </div>`;
   },
 
   _doneCard(q) {
     return `
       <div class="qx-card qx-done">
-        <div class="qx-title">✓ ${this._esc(q.title)}</div>
-        <div class="qx-desc">${q.days}일 완료${q.doneAt ? ' · ' + this._esc(q.doneAt) : ''}</div>
+        ${ic('checkCircle', 22)}
+        <div><div class="qx-title" style="font-size:15px">${this._esc(q.title)}</div>
+        <div class="qx-desc">${q.days}일 완료${q.doneAt ? ', ' + this._esc(q.doneAt.replace(/-/g, '.')) : ''}</div></div>
       </div>`;
   },
 
   /* ── 동작 ── */
   async _write(id, data) {
     try { await this._ref(id).set(data, { merge: true }); }
-    catch(e) { alert('저장 실패: ' + e.message); throw e; }
+    catch(e) { toast('저장하지 못했어요. 다시 시도해주세요.', 'error'); throw e; }
   },
 
   async accept(id) {
@@ -196,12 +200,12 @@ const KyncQuests2 = {
   },
 
   async decline(id) {
-    if (!confirm('이 제안을 넘길까요?')) return;
+    if (!await KyncUI.confirm({ title: '이 제안을 넘길까요?', ok: '넘기기' })) return;
     await this._write(id, { status: 'declined', declinedBy: this._role });
   },
 
   async cancel(id) {
-    if (!confirm('보낸 제안을 취소할까요?')) return;
+    if (!await KyncUI.confirm({ title: '보낸 제안을 취소할까요?', ok: '취소하기', cancel: '그대로 두기' })) return;
     await this._write(id, { status: 'declined', declinedBy: this._role });
   },
 
@@ -216,12 +220,12 @@ const KyncQuests2 = {
         await this._ref(id).set({ status: 'done', doneAt: day }, { merge: true });
         this._popDone(q.title);
       }
-    } catch(e) { alert('저장 실패: ' + e.message); }
+    } catch(e) { toast('저장하지 못했어요. 다시 시도해주세요.', 'error'); }
   },
 
   async _addQuest(q) {
     const fc = this._fc();
-    if (!fc) { alert('먼저 가족과 연결해주세요.'); return; }
+    if (!fc) { toast('먼저 가족과 연결해주세요.', 'error'); return; }
     const role = this._role;
     const id = 'q_' + Date.now();
     await this._write(id, {
@@ -236,7 +240,7 @@ const KyncQuests2 = {
       checks: {},
     });
     this.closeAddSheet();
-    this._toast(`${this._otherLabel(role)}에게 제안했어요`);
+    toast(`${this._otherLabel(role)}에게 제안했어요`, 'ok');
   },
 
   addFromTemplate(templateId) {
@@ -248,69 +252,43 @@ const KyncQuests2 = {
     const title = document.getElementById('qx-custom-title')?.value?.trim();
     const desc  = document.getElementById('qx-custom-desc')?.value?.trim();
     const days  = Math.min(30, Math.max(1, parseInt(document.getElementById('qx-custom-days')?.value) || 7));
-    if (!title) { alert('퀘스트 제목을 입력해주세요.'); return; }
+    if (!title) { toast('퀘스트 이름을 입력해주세요.', 'error'); return; }
     this._addQuest({ title, desc, days });
   },
 
   /* ── 추가 시트 ── */
   openAddSheet() {
-    this.closeAddSheet();
-    const wrap = document.createElement('div');
-    wrap.id = 'qx-sheet';
-    wrap.className = 'qx-sheet-bg';
-    wrap.innerHTML = `
-      <div class="qx-sheet">
-        <div class="qx-handle"></div>
-        <div class="qx-sheet-title">새 퀘스트 제안하기</div>
-        <div class="qx-sheet-sub">${this._otherLabel(this._role)}이(가) 동의하면 시작돼요</div>
-
-        <div class="qx-label">추천 퀘스트</div>
-        <div class="qx-templates">
-          ${this.TEMPLATES.map(t => `
-            <button class="qx-template" onclick="KyncQuests2.addFromTemplate('${t.id}')">
-              <div class="qx-t-title">${this._esc(t.title)}</div>
-              <div class="qx-t-meta">${this._esc(t.desc)} · ${t.days}일</div>
-            </button>`).join('')}
+    this._sheet = KyncUI.sheet(`
+      <h2>새 퀘스트 제안하기</h2>
+      <p class="sheet-sub">${this._otherLabel(this._role)}이(가) 같이 하겠다고 하면 시작돼요.</p>
+      <div class="label" style="margin-bottom:8px">추천 퀘스트</div>
+      <div class="qx-templates">
+        ${this.TEMPLATES.map(t => `
+          <button class="qx-template" onclick="KyncQuests2.addFromTemplate('${t.id}')">
+            <div class="qx-t-title">${this._esc(t.title)}</div>
+            <div class="qx-t-meta">${this._esc(t.desc)}<br>${t.days}일</div>
+          </button>`).join('')}
+      </div>
+      <div class="label" style="margin:20px 0 8px">직접 만들기</div>
+      <div class="stack" style="gap:8px">
+        <input id="qx-custom-title" class="input" maxlength="20" placeholder="퀘스트 이름" aria-label="퀘스트 이름">
+        <input id="qx-custom-desc" class="input" maxlength="40" placeholder="어떻게 할지 (선택)" aria-label="어떻게 할지">
+        <div class="row">
+          <label class="qx-days"><input id="qx-custom-days" type="number" min="1" max="30" value="7" aria-label="기간(일)">일</label>
+          <button class="btn btn-primary grow" onclick="KyncQuests2.addCustom()">제안하기</button>
         </div>
-
-        <div class="qx-label">직접 만들기</div>
-        <input id="qx-custom-title" class="qx-input" maxlength="20" placeholder="퀘스트 이름">
-        <input id="qx-custom-desc" class="qx-input" maxlength="40" placeholder="어떻게 할지 (선택)">
-        <div class="qx-row">
-          <div class="qx-days"><input id="qx-custom-days" type="number" min="1" max="30" value="7"><span>일</span></div>
-          <button class="qx-btn-main" onclick="KyncQuests2.addCustom()">제안하기</button>
-        </div>
-      </div>`;
-    wrap.addEventListener('click', e => { if (e.target === wrap) this.closeAddSheet(); });
-    document.body.appendChild(wrap);
+      </div>`, { id: 'qx-sheet' });
   },
 
-  closeAddSheet() { document.getElementById('qx-sheet')?.remove(); },
+  closeAddSheet() { this._sheet?.close(); this._sheet = null; },
 
   /* ── 알림 ── */
-  _toast(msg) {
-    const t = document.createElement('div');
-    t.className = 'qx-toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2200);
+  _popStarted(title) {
+    KyncUI.confirm({ title: '퀘스트를 시작했어요', message: `“${title}”\n둘 다 체크한 날이 하루로 채워져요.`, ok: '좋아요', cancel: null, mascot: 'happy' });
   },
-
-  _popup(icon, title, sub) {
-    const el = document.createElement('div');
-    el.className = 'qx-sheet-bg qx-center';
-    el.innerHTML = `
-      <div class="qx-pop">
-        <div class="qx-pop-icon">${icon}</div>
-        <div class="qx-pop-title">${title}</div>
-        <div class="qx-pop-sub">"${this._esc(sub)}"</div>
-        <button class="qx-btn-main" onclick="this.closest('.qx-sheet-bg').remove()">확인</button>
-      </div>`;
-    el.addEventListener('click', e => { if (e.target === el) el.remove(); });
-    document.body.appendChild(el);
+  _popDone(title) {
+    KyncUI.confirm({ title: '퀘스트 완료!', message: `“${title}”\n끝까지 함께 해냈어요.`, ok: '좋아요', cancel: null, mascot: 'happy' });
   },
-  _popStarted(title) { this._popup('✓', '퀘스트 시작!', title); },
-  _popDone(title)    { this._popup('★', '퀘스트 완료!', title); },
 };
 
 window.KyncQuests2 = KyncQuests2;

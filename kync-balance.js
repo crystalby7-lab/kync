@@ -6,7 +6,7 @@ const KyncBalance = {
 
   MAX_PER_DAY: 10,
 
-  // 100개 취향 질문 풀
+  // 취향 질문 60개
   QUESTIONS: [
     // 음식/취향
     { id:1,  q:'치킨 vs 피자, 오늘 고른다면?',              opts:['치킨','피자'] },
@@ -65,7 +65,7 @@ const KyncBalance = {
     { id:46, q:'10년 후 어디서 살고 싶어?',                 opts:['도시','시골/전원'] },
     { id:47, q:'부자가 되는 게 꿈이야 vs 하고 싶은 거 하는 게 꿈?',opts:['부자','하고싶은거'] },
     { id:48, q:'해외에서 살아보고 싶어?',                   opts:['살아보고싶어','한국이 좋아'] },
-    { id:49, q:'유명해지고 싶어?',                          opts:['그러고싶어⭐','별로'] },
+    { id:49, q:'유명해지고 싶어?',                          opts:['그러고싶어','별로'] },
     { id:50, q:'나중에 결혼하고 싶어?',                     opts:['하고 싶어','잘 모르겠어'] },
     // 추가 (51-60)
     { id:51, q:'노래 잘 하고 싶어 vs 춤 잘 추고 싶어?',    opts:['노래','춤'] },
@@ -74,10 +74,10 @@ const KyncBalance = {
     { id:54, q:'긴 글 vs 짧고 핵심만, 메시지 스타일은?',  opts:['길게','짧게'] },
     { id:55, q:'스트레스 받으면 어떻게 풀어?',             opts:['먹방','운동'] },
     { id:56, q:'혼밥 vs 같이 먹기, 어떤 게 더 편해?',      opts:['혼밥','같이먹기'] },
-    { id:57, q:'이른 잠 vs 늦게까지 깨어있기?',            opts:['일찍자기','늦게까지⭐'] },
+    { id:57, q:'이른 잠 vs 늦게까지 깨어있기?',            opts:['일찍자기','늦게까지'] },
     { id:58, q:'걷는 거 vs 대중교통, 가까운 거리라면?',    opts:['걷기','버스/지하철'] },
     { id:59, q:'혼자서 다 해결하기 vs 도움 요청하기?',     opts:['혼자해결','도움요청'] },
-    { id:60, q:'지금 이 순간 가장 갖고 싶은 초능력은?',    opts:['순간이동','시간정지⏸'] },
+    { id:60, q:'지금 이 순간 가장 갖고 싶은 초능력은?',    opts:['순간이동','시간정지'] },
   ],
 
   // 오늘 사용한 질문 추적
@@ -100,255 +100,6 @@ const KyncBalance = {
       return ha - hb;
     });
     return shuffled.slice(0, this.MAX_PER_DAY);
-  },
-
-  openGame(myRole) {
-    const familyCode = localStorage.getItem('kync_family_code');
-    const { key, data } = this._getTodayState(familyCode || 'local');
-    const todaysQs = this._getTodaysQuestions();
-    const answered = Object.keys(data.answers).length;
-
-    const modal = document.createElement('div');
-    modal.id = 'balance-modal';
-    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);
-      z-index:9999;display:flex;flex-direction:column;align-items:center;
-      justify-content:flex-end;`;
-
-    const sheet = document.createElement('div');
-    sheet.style.cssText = `background:#fff;border-radius:28px 28px 0 0;
-      width:100%;max-width:430px;max-height:85vh;overflow-y:auto;
-      padding:28px 24px 48px;animation:slideUp 0.35s cubic-bezier(0.34,1.1,0.64,1);`;
-
-    sheet.innerHTML = `
-      <div style="width:40px;height:4px;background:#e8e3da;border-radius:2px;margin:0 auto 20px;"></div>
-
-      <!-- 헤더 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div>
-          <div style="font-size:18px;font-weight:900;color:#3d3530;"> 취향 맞추기</div>
-          <div style="font-size:12px;color:#a09890;margin-top:2px;">
-            오늘 ${answered}/${this.MAX_PER_DAY} 완료
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:22px;font-weight:900;color:#c17f4a;">${answered}</div>
-          <div style="font-size:10px;color:#a09890;">/ ${this.MAX_PER_DAY}</div>
-        </div>
-      </div>
-
-      <!-- 진행 바 -->
-      <div style="height:6px;background:#f0eeeb;border-radius:3px;margin-bottom:20px;overflow:hidden;">
-        <div style="height:100%;background:#c17f4a;border-radius:3px;
-                    width:${(answered/this.MAX_PER_DAY)*100}%;transition:width 0.4s;"></div>
-      </div>
-
-      <!-- 질문 목록 -->
-      <div id="balance-question-list">
-        ${todaysQs.map((q, idx) => {
-          const myAns    = data.answers[q.id];
-          const theirAns = data.guesses[`${myRole}_${q.id}`];
-          const isAnswered = !!myAns;
-
-          return `
-            <div style="border-radius:16px;border:1.5px solid ${isAnswered?'#3d3530':'#e8e3da'};
-                        padding:16px;margin-bottom:10px;
-                        background:${isAnswered?'#3d3530':'#fff'};
-                        cursor:${isAnswered?'default':'pointer'};
-                        transition:all 0.2s;"
-              ${!isAnswered ? `onclick="KyncBalance.openQuestion(${q.id},'${myRole}')"` : ''}>
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:24px;height:24px;border-radius:50%;
-                            background:${isAnswered?'#c17f4a':'#f0eeeb'};
-                            display:flex;align-items:center;justify-content:center;
-                            font-size:11px;font-weight:800;
-                            color:${isAnswered?'#fff':'#a09890'};flex-shrink:0;">
-                  ${isAnswered ? '' : idx+1}
-                </div>
-                <div style="flex:1;">
-                  <div style="font-size:13px;font-weight:700;
-                              color:${isAnswered?'#fff':'#3d3530'};margin-bottom:${isAnswered?'6px':'0'};">
-                    ${q.q}
-                  </div>
-                  ${isAnswered ? `
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                      <div style="font-size:11px;background:rgba(255,255,255,0.15);
-                                  color:#fff;padding:4px 10px;border-radius:20px;">
-                        내 답: ${myAns}
-                      </div>
-                    </div>
-                  ` : ''}
-                </div>
-                ${!isAnswered ? '<div style="font-size:18px;color:#e8e3da;">›</div>':''}
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-
-      ${answered >= this.MAX_PER_DAY ? `
-        <div style="background:#f5f2ed;border-radius:16px;padding:20px;text-align:center;margin-top:8px;">
-          <div style="font-size:24px;margin-bottom:8px;"></div>
-          <div style="font-size:15px;font-weight:800;color:#3d3530;margin-bottom:4px;">오늘 모두 완료!</div>
-          <div style="font-size:12px;color:#a09890;">내일 새로운 10문제가 기다려요</div>
-        </div>
-      ` : ''}
-
-      <button onclick="document.getElementById('balance-modal').remove()"
-        style="width:100%;padding:14px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;margin-top:8px;">
-        닫기
-      </button>
-    `;
-
-    modal.appendChild(sheet);
-    modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
-    document.body.appendChild(modal);
-  },
-
-  openQuestion(qId, myRole) {
-    const q = this.QUESTIONS.find(q => q.id === qId);
-    if (!q) return;
-
-    const familyCode = localStorage.getItem('kync_family_code');
-    const { key, data } = this._getTodayState(familyCode || 'local');
-
-    // 기존 모달 닫기
-    document.getElementById('balance-modal')?.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'balance-q-modal';
-    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);
-      z-index:9999;display:flex;align-items:flex-end;justify-content:center;`;
-
-    const sheet = document.createElement('div');
-    sheet.style.cssText = `background:#fff;border-radius:28px 28px 0 0;
-      width:100%;max-width:430px;padding:32px 24px 48px;
-      animation:slideUp 0.35s cubic-bezier(0.34,1.1,0.64,1);`;
-
-    sheet.innerHTML = `
-      <div style="width:40px;height:4px;background:#e8e3da;border-radius:2px;margin:0 auto 24px;"></div>
-      <div style="font-size:11px;font-weight:700;color:#c17f4a;letter-spacing:0.1em;margin-bottom:12px;"> 취향 맞추기</div>
-      <div style="font-size:20px;font-weight:800;color:#3d3530;line-height:1.4;margin-bottom:8px;">${q.q}</div>
-      <div style="font-size:12px;color:#a09890;margin-bottom:24px;">나의 취향을 골라봐요</div>
-
-      <div style="display:flex;gap:12px;margin-bottom:24px;">
-        ${q.opts.map(opt => `
-          <button onclick="KyncBalance.submitAnswer(${qId},'${opt}','${myRole}')"
-            style="flex:1;padding:20px 12px;background:#f5f2ed;border:2px solid transparent;
-                   border-radius:18px;cursor:pointer;font-family:SUIT,sans-serif;
-                   transition:all 0.15s;text-align:center;"
-            onmouseover="this.style.borderColor='#c17f4a';this.style.background='#fdf1eb';"
-            onmouseout="this.style.borderColor='transparent';this.style.background='#f5f2ed';">
-            <div style="font-size:28px;margin-bottom:8px;">${opt.match(/[\u{1F300}-\u{1FAFF}]/gu)?.[0] || ''}</div>
-            <div style="font-size:13px;font-weight:800;color:#3d3530;">
-              ${opt.replace(/[\u{1F300}-\u{1FAFF}]/gu, '').trim()}
-            </div>
-          </button>
-        `).join('')}
-      </div>
-
-      <button onclick="document.getElementById('balance-q-modal').remove();KyncBalance.openGame('${myRole}')"
-        style="width:100%;padding:12px;background:transparent;border:none;
-               font-size:13px;color:#a09890;cursor:pointer;font-family:SUIT,sans-serif;">
-        ← 목록으로
-      </button>
-    `;
-
-    modal.appendChild(sheet);
-    modal.addEventListener('click', e => { if(e.target===modal) { modal.remove(); this.openGame(myRole); } });
-    document.body.appendChild(modal);
-  },
-
-  async submitAnswer(qId, answer, myRole) {
-    const familyCode = localStorage.getItem('kync_family_code');
-    const { key, data } = this._getTodayState(familyCode || 'local');
-
-    // 이미 답했으면 무시
-    if (data.answers[qId]) return;
-
-    data.answers[qId] = answer;
-    data.count = Object.keys(data.answers).length;
-    this._saveTodayState(key, data);
-
-    // Firestore 저장
-    if (familyCode && typeof db !== 'undefined') {
-      try {
-        const today = new Date().toLocaleDateString('ko-KR');
-        await db.collection('families').doc(familyCode)
-          .collection('balance_answers')
-          .doc(`${today}_${myRole}_${qId}`)
-          .set({ role: myRole, qId, answer, answeredAt: firebase.firestore.FieldValue.serverTimestamp() });
-      } catch(e) { console.warn(e); }
-    }
-
-    // 포인트
-    if (typeof KyncDB !== 'undefined' && KyncAuth?.current) {
-      await KyncDB.addPoints(KyncAuth.current.uid, 10);
-    }
-
-    // 결과 화면으로 전환
-    document.getElementById('balance-q-modal')?.remove();
-    this._showAnswerResult(qId, answer, myRole);
-  },
-
-  _showAnswerResult(qId, myAnswer, myRole) {
-    const q = this.QUESTIONS.find(q => q.id === qId);
-    const modal = document.createElement('div');
-    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);
-      z-index:9999;display:flex;align-items:flex-end;justify-content:center;`;
-
-    const sheet = document.createElement('div');
-    sheet.style.cssText = `background:#fff;border-radius:28px 28px 0 0;
-      width:100%;max-width:430px;padding:32px 24px 48px;
-      animation:slideUp 0.35s cubic-bezier(0.34,1.1,0.64,1);`;
-
-    sheet.innerHTML = `
-      <div style="width:40px;height:4px;background:#e8e3da;border-radius:2px;margin:0 auto 24px;"></div>
-      <div style="text-align:center;margin-bottom:24px;">
-        <div style="font-size:48px;margin-bottom:12px;"></div>
-        <div style="font-size:18px;font-weight:800;color:#3d3530;margin-bottom:6px;">답변 완료!</div>
-        <div style="font-size:14px;color:#6b6560;">${q.q}</div>
-      </div>
-      <div style="background:#3d3530;border-radius:16px;padding:18px;text-align:center;margin-bottom:16px;">
-        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;">내 선택</div>
-        <div style="font-size:20px;font-weight:800;color:#fff;">${myAnswer}</div>
-      </div>
-      <div style="background:#fdf1eb;border-radius:16px;padding:14px;text-align:center;margin-bottom:20px;">
-        <div style="font-size:12px;color:#c17f4a;font-weight:700;">
-          ${myRole==='parent'?'자녀':'부모님'}이 같은 질문에 답하면 비교해서 보여줄게요!
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button onclick="this.closest('[style*=fixed]').remove();KyncBalance.openGame('${myRole}')"
-          style="flex:1;padding:14px;background:#f5f2ed;border:none;border-radius:14px;
-                 font-size:14px;font-weight:800;color:#3d3530;cursor:pointer;
-                 font-family:SUIT,sans-serif;">
-          목록으로
-        </button>
-        <button onclick="this.closest('[style*=fixed]').remove();KyncBalance.openNextQuestion('${myRole}')"
-          style="flex:2;padding:14px;background:#3d3530;border:none;border-radius:14px;
-                 font-size:14px;font-weight:800;color:#fff;cursor:pointer;
-                 font-family:SUIT,sans-serif;">
-          다음 질문 →
-        </button>
-      </div>
-    `;
-
-    modal.appendChild(sheet);
-    modal.addEventListener('click', e => { if(e.target===modal) { modal.remove(); this.openGame(myRole); } });
-    document.body.appendChild(modal);
-  },
-
-  openNextQuestion(myRole) {
-    const familyCode = localStorage.getItem('kync_family_code');
-    const { data } = this._getTodayState(familyCode || 'local');
-    const todaysQs  = this._getTodaysQuestions();
-    const next = todaysQs.find(q => !data.answers[q.id]);
-    if (next) {
-      this.openQuestion(next.id, myRole);
-    } else {
-      this.openGame(myRole); // 다 했으면 목록
-    }
   },
 };
 
