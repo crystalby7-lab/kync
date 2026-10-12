@@ -110,6 +110,7 @@ const App = {
     if (typeof KyncQuests2 !== 'undefined') KyncQuests2.init(`${pre}-quest-list`, role);
     if (typeof KyncDiary !== 'undefined') KyncDiary.render(`${pre}-diary-container`, role);
     if (typeof KyncCounsel !== 'undefined') KyncCounsel.init(role); // [추가] AI 상담
+    if (typeof KyncActivity !== 'undefined') KyncActivity.render(); // [추가] 활동 탭
 
     if (fc && typeof KyncPraise !== 'undefined') {
       if (this._praiseUnsub) { try { this._praiseUnsub(); } catch(e) {} }

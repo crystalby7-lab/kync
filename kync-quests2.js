@@ -127,7 +127,7 @@ const KyncQuests2 = {
     let status;
     if (mine && theirs) status = '오늘 하루 채웠어요!';
     else if (mine)      status = `${this._otherLabel(role)} 체크를 기다리는 중`;
-    else if (theirs)    status = `${this._otherLabel(role)}은(는) 오늘 했어요`;
+    else if (theirs)    status = `${role === 'parent' ? '자녀는' : '부모님은'} 오늘 했어요`;
     else                status = '둘 다 체크하면 하루가 채워져요';
 
     return `
