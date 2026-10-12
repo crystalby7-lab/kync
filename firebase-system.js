@@ -74,8 +74,21 @@ function navigateTo(pageId) {
 const KyncAuth = {
   async signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    const { user } = await auth.signInWithPopup(provider);
-    return user;
+    // 홈 화면에 추가한 앱(특히 아이폰)은 팝업이 안 열려서 페이지 이동 방식으로 로그인
+    if (typeof KyncInstall !== 'undefined' && KyncInstall.isStandalone()) {
+      await auth.signInWithRedirect(provider);
+      return null;
+    }
+    try {
+      const { user } = await auth.signInWithPopup(provider);
+      return user;
+    } catch (e) {
+      if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/web-storage-unsupported'].includes(e.code)) {
+        await auth.signInWithRedirect(provider);
+        return null;
+      }
+      throw e;
+    }
   },
   async signInWithEmail(email, password) {
     const { user } = await auth.signInWithEmailAndPassword(email, password);
@@ -117,6 +130,9 @@ function authErrorMessage(e) {
     'auth/popup-blocked':          '팝업이 막혀 있어요. 브라우저에서 팝업을 허용해주세요.',
     'auth/requires-recent-login':  '보안을 위해 다시 로그인한 뒤 시도해주세요.',
     'auth/user-mismatch':          '지금 로그인한 계정으로 확인해주세요.',
+    'auth/operation-not-supported-in-this-environment': '여기서는 Google 창을 열 수 없어요. 사파리나 크롬에서 열어 다시 시도해주세요.',
+    'auth/unauthorized-domain':    '이 주소에서는 로그인할 수 없어요. 운영자에게 알려주세요.',
+    'permission-denied':           '권한이 없어요 (Firebase 보안 규칙).',
   };
   return map[e?.code] || e?.message || '문제가 생겼어요. 다시 시도해주세요.';
 }
@@ -163,8 +179,11 @@ async function handleAuthSuccess(user) {
     showLoader(false);
     // 로그인은 됐는데 정보를 못 불러온 경우: 다시 시도 화면
     const off = !navigator.onLine;
+    const denied = e?.code === 'permission-denied';
     document.getElementById('error-title').textContent = off ? '인터넷 연결이 끊겼어요' : '정보를 불러오지 못했어요';
-    document.getElementById('error-sub').textContent = off ? '연결되면 다시 시도해주세요.' : `잠시 후 다시 시도해주세요. 계속 안 되면 ${KYNC_CONFIG.contactEmail}로 알려주세요.`;
+    document.getElementById('error-sub').textContent = off ? '연결되면 다시 시도해주세요.'
+      : denied ? `데이터를 읽을 권한이 없어요 (Firebase 보안 규칙). ${KYNC_CONFIG.contactEmail}로 알려주세요.`
+      : `잠시 후 다시 시도해주세요. 계속 안 되면 ${KYNC_CONFIG.contactEmail}로 알려주세요. (${e?.code || e?.message || '알 수 없는 오류'})`;
     navigateTo('page-error');
   } finally {
     showLoader(false);
@@ -423,6 +442,13 @@ window.logout = async function(skipConfirm) {
   if (typeof App !== 'undefined') App.reset?.();
   await KyncAuth.signOut();
 };
+
+// 페이지 이동 방식으로 로그인하고 돌아왔을 때 실패 이유 보여주기
+if (typeof auth.getRedirectResult === 'function') {
+  auth.getRedirectResult().catch(e => {
+    if (e?.code && e.code !== 'auth/no-auth-event') setTimeout(() => toast(authErrorMessage(e), 'error'), 500);
+  });
+}
 
 /* ── 인증 상태 핸들러 ── */
 // 스크립트를 다 불러온 뒤에 화면을 정해요 (로그인 확인이 먼저 끝나 App 등이 아직 없을 때 대비)
