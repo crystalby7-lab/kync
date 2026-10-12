@@ -1,0 +1,48 @@
+rules_version = '2';
+// Kync Firestore 보안 규칙
+// Firebase 콘솔 > Firestore Database > 규칙 탭에 붙여넣고 [게시]를 눌러주세요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function famPath(code) { return /databases/$(database)/documents/families/$(code); }
+    function isMember(code) {
+      return signedIn() && exists(famPath(code)) && request.auth.uid in get(famPath(code)).data.members;
+    }
+
+    // 내 계정 정보 (나만 읽고 씀)
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+      match /counsel/{day} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // 예전 버전 개인 일기 (탈퇴할 때 지우기용)
+    match /diary/{uid}/entries/{id} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // 가족 공간
+    match /families/{code} {
+      // 코드를 아는 사람이 연결할 수 있도록 문서 하나 읽기는 허용 (목록 조회는 막음)
+      allow get: if signedIn();
+      allow list: if false;
+      // 만들 때는 나 혼자만 멤버
+      allow create: if signedIn()
+        && request.resource.data.members.keys().hasOnly([request.auth.uid]);
+      // 멤버는 수정 가능, 멤버가 아니면 '나를 멤버에 추가'만 가능
+      allow update: if isMember(code) || (
+        signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+        && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid])
+      );
+      allow delete: if isMember(code);
+
+      // 가족 공간 안의 기록 (답변, 감정, 사진, 칭찬 카드, 활동, 퀘스트)
+      match /{sub}/{doc} {
+        allow read, write: if isMember(code);
+      }
+    }
+  }
+}

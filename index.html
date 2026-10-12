@@ -13,6 +13,13 @@
   <meta name="apple-mobile-web-app-title" content="Kync" />
   <link rel="preload" href="fonts/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="kync.css?v=20261012-2" />
+  <script>
+    // 활동 페이지에서 돌아온 경우: 로그인 확인이 끝나면 그 탭을 열어요 (enterApp에서 처리)
+    (function () {
+      var tab = new URLSearchParams(location.search).get('tab');
+      if (tab) { window._returnTab = tab; history.replaceState({}, '', 'index.html'); }
+    })();
+  </script>
 </head>
 <body>
 
@@ -407,15 +414,6 @@ function selectTab(targetId) {
 }
 document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.target)));
 
-// 활동 페이지에서 돌아온 경우: 로그인 확인이 끝나면 그 탭을 열어요 (enterApp에서 처리)
-(function () {
-  const params = new URLSearchParams(location.search);
-  if (params.get('tab')) {
-    window._returnTab = params.get('tab');
-    history.replaceState({}, '', 'index.html');
-    KyncUI.loader(true);
-  }
-})();
 </script>
 </body>
 </html>

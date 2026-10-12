@@ -53,6 +53,7 @@ const KYNC_CONFIG = {
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/>',
     phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
     refresh: '<path d="M20 11a8 8 0 0 0-14.3-4.6L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.6L20 16"/><path d="M20 20.5V16h-4.5"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     smile: '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5q3.5 3 7 0"/><circle cx="9" cy="10" r=".9" fill="currentColor"/><circle cx="15" cy="10" r=".9" fill="currentColor"/>',
   };
   window.ic = function (name, size, cls) {
@@ -246,6 +247,8 @@ KyncUI.hydrate = function (root) {
   root.querySelectorAll('[data-google]').forEach(el => { el.outerHTML = GOOGLE_G; });
   root.querySelectorAll('[data-wordmark]').forEach(el => { el.outerHTML = KyncBrand.wordmark(); });
 };
+// 활동 페이지에서 돌아오는 중이면 로그인 확인이 끝날 때까지 로딩 표시
+if (window._returnTab) KyncUI.loader(true);
 if (document.readyState !== 'loading') KyncUI.hydrate();
 else document.addEventListener('DOMContentLoaded', () => KyncUI.hydrate());
 

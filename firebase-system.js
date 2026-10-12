@@ -219,7 +219,10 @@ async function showConnectPage(role) {
   document.getElementById('connect-parent').classList.toggle('hidden', role !== 'parent');
   document.getElementById('connect-child').classList.toggle('hidden', role !== 'child');
   if (role === 'parent') await prepareParentCode();
-  else setTimeout(() => document.getElementById('connect-code-input')?.focus(), 200);
+  else {
+    const input = document.getElementById('connect-code-input');
+    if (input) input.value = '';
+  }
 }
 
 function setConnectStatus(text, ok) {
