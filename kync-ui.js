@@ -63,74 +63,24 @@ const KYNC_CONFIG = {
   window.GOOGLE_G = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
 })();
 
-/* ── 브랜드: 고슴도치 '도치' (보영이 직접 그린 캐릭터를 다듬은 것) ── */
+/* ── 브랜드: 고슴도치 '도치' — 보영이 직접 그린 그림(선은 그대로, 색만 입힘) ── */
 const KyncBrand = (function () {
-  const C = { line: '#3B2A21', quill: '#8A5A3C', body: '#F7E6CC', blush: '#F0A08C' };
-  const SW = 2.8;
-  const ST = `stroke="${C.line}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round"`;
-  // 살짝 기울어진 몸통
-  const BODY = 'M44 21C60 15 78 21 84 35C90 51 88 64 92 82C95 97 88 106 74 108C62 110 49 106 40 98C30 89 26 79 26 62C26 42 32 27 44 21Z';
-  // 몸 바깥으로 뻗은 가시 (왼쪽 3, 위 3, 오른쪽 2)
-  const SPIKES = [
-    'M32 39L7 33L29 49Z', 'M27 54L3 60L27 64Z', 'M28 69L8 86L32 79Z',
-    'M38 26L32 4L47 20Z', 'M53 17L60 1L66 17Z', 'M73 21L96 11L82 32Z', 'M86 43L111 40L88 56Z', 'M89 62L112 73L91 74Z',
-  ];
+  const SRC = 'images/doci.png';
+  const RATIO = 522 / 477;   // 그림 세로/가로 비율
 
-  function face(mood) {
-    const eye = x => `<ellipse cx="${x}" cy="55" rx="3.3" ry="4.4" fill="${C.line}"/><circle cx="${x + 1}" cy="53.5" r="1" fill="#fff"/>`;
-    let brows = `<path d="M44 44.5l9-1.5M65 43l9 1" stroke="${C.line}" stroke-width="${SW}" stroke-linecap="round"/>`;
-    let eyes = eye(48) + eye(70);
-    let mouth = `<path d="M59 70.5v4" stroke="${C.line}" stroke-width="2.4" stroke-linecap="round"/>`;
-    if (mood === 'happy') {
-      brows = `<path d="M44 42.5q4.5-2.5 9-1M65 41.5q4.5-1.5 9 1" stroke="${C.line}" stroke-width="${SW}" fill="none" stroke-linecap="round"/>`;
-      eyes = `<path d="M44.5 56q3.5-5 7 0M66.5 55q3.5-5 7 0" stroke="${C.line}" stroke-width="${SW}" fill="none" stroke-linecap="round"/>`;
-      mouth = `<path d="M55.5 71.5q3.5 4 7 0" stroke="${C.line}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-    } else if (mood === 'sleepy') {
-      eyes = `<path d="M45 56h7M67 55h7" stroke="${C.line}" stroke-width="${SW}" stroke-linecap="round"/>`;
-    } else if (mood === 'wow') {
-      brows = `<path d="M44 41l9-2M65 39.5l9 2" stroke="${C.line}" stroke-width="${SW}" stroke-linecap="round"/>`;
-      mouth = `<ellipse cx="59" cy="73" rx="2.4" ry="3" fill="${C.line}"/>`;
-    }
-    return `${brows}${eyes}<ellipse cx="59" cy="66" rx="3.6" ry="3" fill="${C.line}"/>${mouth}` +
-      `<ellipse cx="41" cy="65" rx="5" ry="3" fill="${C.blush}" opacity=".5"/><ellipse cx="78" cy="63" rx="5" ry="3" fill="${C.blush}" opacity=".5"/>`;
-  }
-
-  // mood: default | happy | sleepy | wow
+  // size = 가로 폭(px). mood는 예전 호출과 맞추려고 받기만 해요 (그림은 하나)
   function mascot(mood, size, opts) {
     opts = opts || {};
-    const shadow = opts.shadow === false ? '' : `<ellipse cx="62" cy="117" rx="32" ry="4" fill="rgba(43,36,33,.10)"/>`;
-    return `<svg class="mascot ${opts.cls || ''}" width="${size}" height="${Math.round(size * 124 / 120)}" viewBox="0 0 120 124" aria-hidden="true">${shadow}
-      ${SPIKES.map(d => `<path d="${d}" fill="${C.quill}" ${ST}/>`).join('')}
-      <path d="${BODY}" fill="${C.body}" ${ST}/>
-      <path d="M30 76q-8 2-6 8q2 4 8 1" fill="${C.body}" ${ST}/>
-      <path d="M89 70q8 0 8 5q-1 5-7 4" fill="${C.body}" ${ST}/>
-      <ellipse cx="49" cy="111" rx="9" ry="5" fill="${C.body}" ${ST}/>
-      <ellipse cx="84" cy="109" rx="9" ry="5" fill="${C.body}" ${ST}/>
-      ${face(mood)}</svg>`;
+    return `<img class="mascot ${opts.cls || ''}" src="${SRC}" width="${size}" height="${Math.round(size * RATIO)}" alt="" aria-hidden="true" draggable="false">`;
   }
-
-  // 몸을 동그랗게 만 모습 (답을 기다릴 때, 로딩)
+  // 기다리는 중·로딩 (로딩 화면에서는 CSS로 살짝 흔들려요)
   function curled(size, cls) {
-    const spikes = [];
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2 - Math.PI / 2, w = 0.2;
-      const p = (r, t) => `${(60 + Math.cos(t) * r).toFixed(1)} ${(60 + Math.sin(t) * r).toFixed(1)}`;
-      spikes.push(`M${p(34, a - w)}L${p(56, a)}L${p(34, a + w)}Z`);
-    }
-    return `<svg class="mascot ${cls || ''}" width="${size}" height="${size}" viewBox="0 0 120 120" aria-hidden="true">
-      ${spikes.map(d => `<path d="${d}" fill="${C.quill}" ${ST}/>`).join('')}
-      <circle cx="60" cy="60" r="36" fill="${C.body}" ${ST}/>
-      <path d="M46 62h8M66 62h8" stroke="${C.line}" stroke-width="${SW}" stroke-linecap="round"/>
-      <ellipse cx="60" cy="71" rx="3.4" ry="2.8" fill="${C.line}"/>
-      <ellipse cx="42" cy="71" rx="5" ry="3" fill="${C.blush}" opacity=".5"/><ellipse cx="78" cy="71" rx="5" ry="3" fill="${C.blush}" opacity=".5"/></svg>`;
+    return mascot('default', size, { cls });
   }
-
-  // 로고: 도치 + kync
   function wordmark(cls) {
-    return `<span class="wordmark ${cls || ''}" aria-label="kync">${mascot('default', 32, { shadow: false, cls: 'wm-mark' })}<span class="wm-text">kync</span></span>`;
+    return `<span class="wordmark ${cls || ''}" aria-label="kync">${mascot('default', 28, { cls: 'wm-mark' })}<span class="wm-text">kync</span></span>`;
   }
-
-  return { mascot, curled, wordmark, C };
+  return { mascot, curled, wordmark, SRC };
 })();
 
 /* ── 화면 도구 ── */
