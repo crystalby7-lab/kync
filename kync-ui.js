@@ -66,7 +66,7 @@ const KYNC_CONFIG = {
 /* ── 브랜드: 고슴도치 '도치' — 보영이 직접 그린 그림(선은 그대로, 색만 입힘) ── */
 const KyncBrand = (function () {
   const SRC = 'images/doci.png';
-  const RATIO = 522 / 477;   // 그림 세로/가로 비율
+  const RATIO = 537 / 468;   // 그림 세로/가로 비율
 
   // size = 가로 폭(px). mood는 예전 호출과 맞추려고 받기만 해요 (그림은 하나)
   function mascot(mood, size, opts) {
