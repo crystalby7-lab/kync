@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 const KYNC_CONFIG = {
-  version: '1.1.0',
+  version: '1.1.1',
   contactEmail: 'xoun148@gmail.com',
   termsVersion: '2026-10-12',   // 약관 내용이 바뀌면 날짜를 바꾸면 다시 동의를 받아요
 };
@@ -218,6 +218,7 @@ KyncUI.hydrate = function (root) {
 };
 // 활동 페이지에서 돌아오는 중이면 로그인 확인이 끝날 때까지 로딩 표시
 if (window._returnTab) KyncUI.loader(true);
+document.addEventListener('DOMContentLoaded', () => { const v = document.getElementById('login-version'); if (v) v.textContent = 'v' + KYNC_CONFIG.version; });
 if (document.readyState !== 'loading') KyncUI.hydrate();
 else document.addEventListener('DOMContentLoaded', () => KyncUI.hydrate());
 
@@ -287,6 +288,20 @@ const KyncInstall = {
   },
 };
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); KyncInstall._evt = e; });
+
+/* ── 예상 못 한 오류 알림 ── */
+(function () {
+  const shown = new Set();
+  const report = (msg, code) => {
+    msg = String(msg || '');
+    if (!msg || /ResizeObserver|Script error|cancelled-popup|popup-closed/i.test(msg) || shown.has(msg)) return;
+    shown.add(msg);
+    console.error('[Kync]', msg);
+    if (typeof KyncUI !== 'undefined') KyncUI.toast(code === 'permission-denied' ? '권한이 없어 저장하지 못했어요 (보안 규칙)' : '문제가 생겼어요. 이 화면을 캡처해서 알려주세요: ' + msg.slice(0, 80), 'error');
+  };
+  window.addEventListener('error', e => report(e.message));
+  window.addEventListener('unhandledrejection', e => report(e.reason?.message || e.reason, e.reason?.code));
+})();
 
 /* ── 인터넷 연결 표시 ── */
 (function () {
