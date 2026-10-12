@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Kync" />
   <link rel="preload" href="fonts/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="kync.css?v=20261012-2" />
+  <link rel="stylesheet" href="kync.css?v=20261012-3" />
   <script>
     // 활동 페이지에서 돌아온 경우: 로그인 확인이 끝나면 그 탭을 열어요 (enterApp에서 처리)
     (function () {
@@ -385,33 +385,20 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<script src="kync-ui.js?v=20261012-2"></script>
-<script src="kync-legal.js?v=20261012-2"></script>
-<script src="firebase-system.js?v=20261012-2"></script>
-<script src="kync-account.js?v=20261012-2"></script>
-<script src="kync-core.js?v=20261012-2"></script>
-<script src="kync-features.js?v=20261012-2"></script>
-<script src="kync-balance.js?v=20261012-2"></script>
-<script src="kync-diary.js?v=20261012-2"></script>
-<script src="kync-quests2.js?v=20261012-2"></script>
-<script src="kync-counsel.js?v=20261012-2"></script>
-<script src="kync-activity.js?v=20261012-2"></script>
+<script src="kync-ui.js?v=20261012-3"></script>
+<script src="kync-legal.js?v=20261012-3"></script>
+<script src="firebase-system.js?v=20261012-3"></script>
+<script src="kync-account.js?v=20261012-3"></script>
+<script src="kync-core.js?v=20261012-3"></script>
+<script src="kync-features.js?v=20261012-3"></script>
+<script src="kync-balance.js?v=20261012-3"></script>
+<script src="kync-diary.js?v=20261012-3"></script>
+<script src="kync-quests2.js?v=20261012-3"></script>
+<script src="kync-counsel.js?v=20261012-3"></script>
+<script src="kync-activity.js?v=20261012-3"></script>
 
 <script>
-// 탭 전환
-function selectTab(targetId) {
-  const panel = document.getElementById(targetId);
-  if (!panel) return;
-  const page = panel.closest('.page');
-  page.querySelectorAll('.tab-panel').forEach(c => c.classList.toggle('active', c === panel));
-  page.querySelectorAll('.tab-btn').forEach(b => {
-    const on = b.dataset.target === targetId;
-    b.classList.toggle('active', on);
-    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
-  });
-  page.querySelector('.app-main').scrollTop = 0;
-  if (targetId.endsWith('activityTab') && typeof KyncActivity !== 'undefined') KyncActivity.render();
-}
+// 탭 전환 (selectTab은 kync-ui.js에 있어요)
 document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.target)));
 
 </script>

@@ -422,7 +422,10 @@ window.logout = async function(skipConfirm) {
 };
 
 /* ── 인증 상태 핸들러 ── */
+// 스크립트를 다 불러온 뒤에 화면을 정해요 (로그인 확인이 먼저 끝나 App 등이 아직 없을 때 대비)
+const _domReady = new Promise(r => document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', r) : r());
 auth.onAuthStateChanged(async (user) => {
+  await _domReady;
   // 로그인 화면이 있는 index.html에서만 화면 이동 처리 (활동 페이지에서 오류 방지)
   if (!document.getElementById('page-login')) return;
   if (!user) {
