@@ -1,5 +1,6 @@
 /* ════════════════════════════════════════════════════════════════
-   firebase-system.js — Kync Firebase 초기화 및 데이터 레이어
+   firebase-system.js — Kync Firebase 초기화, 로그인, 데이터 레이어
+   로그인 뒤 어느 화면으로 갈지는 kync-account.js의 KyncAccount.route()가 정해요.
 ════════════════════════════════════════════════════════════════ */
 
 const FIREBASE_CONFIG = {
@@ -15,12 +16,12 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-// [추가] 첫 로그인 상태 확인이 끝났을 때 풀리는 약속 (로그인 전에 DB 읽다 실패하는 문제 방지)
+// 첫 로그인 상태 확인이 끝났을 때 풀리는 약속 (로그인 전에 DB 읽다 실패하는 문제 방지)
 const _authReady = new Promise(resolve => {
   const off = auth.onAuthStateChanged(u => { off(); resolve(u); });
 });
 
-// [추가] 계정별로 기기에 저장되는 값 — 계정이 바뀌거나 로그아웃하면 비움
+// 계정별로 기기에 저장되는 값 — 계정이 바뀌거나 로그아웃하면 비움
 const ACCOUNT_KEYS = [
   'kync_role', 'kync_family_code', 'kync_user_name', 'kync_user_uid',
   'kync_points', 'kync_quiz_result', 'kync_join_date', 'kync_diary_entries'
@@ -28,13 +29,20 @@ const ACCOUNT_KEYS = [
 function clearAccountCache() {
   ACCOUNT_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
 }
+// 탈퇴할 때: 이 기기에 남은 Kync 기록을 모두 지움 (처음 소개를 봤다는 표시만 남김)
+function clearAllLocalData() {
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('kync_') && k !== 'kync_intro_seen')
+      .forEach(k => localStorage.removeItem(k));
+  } catch(e) {}
+}
 
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// [추가] 한국 시간 기준 '오늘 몇 번째 날' (자정에 바뀜) — 오늘의 질문 등 날짜별 선택에 사용
+// 한국 시간 기준 '오늘 몇 번째 날' (자정에 바뀜) — 오늘의 질문 등 날짜별 선택에 사용
 function localDayNum(d = new Date()) {
   return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
 }
@@ -46,16 +54,18 @@ function generateFamilyCode() {
   return c;
 }
 
-function showLoader(on) {
-  const el = document.getElementById('kync-global-loader');
-  if (el) el.style.display = on ? 'flex' : 'none';
+function showLoader(on, text) {
+  if (typeof KyncUI !== 'undefined') KyncUI.loader(on, text);
+}
+function toast(msg, type) {
+  if (typeof KyncUI !== 'undefined') KyncUI.toast(msg, type);
 }
 
 function navigateTo(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === pageId));
   const el = document.getElementById(pageId);
-  if (el) el.classList.add('active');
-  window.scrollTo(0, 0);
+  const scroller = el?.querySelector('.screen');
+  if (scroller) scroller.scrollTop = 0;
 }
 
 /* ════════════════════════════════════════
@@ -71,10 +81,8 @@ const KyncAuth = {
     const { user } = await auth.signInWithEmailAndPassword(email, password);
     return user;
   },
-  async signUpWithEmail(name, email, password) {
-    _pendingSignupName = name;
+  async signUpWithEmail(email, password) {
     const { user } = await auth.createUserWithEmailAndPassword(email, password);
-    await user.updateProfile({ displayName: name });
     return user;
   },
   async resetPassword(email) {
@@ -82,10 +90,10 @@ const KyncAuth = {
   },
   async signOut() {
     await auth.signOut();
-    clearAccountCache(); // [수정] 다음 계정에 이전 계정 정보가 섞이지 않게
+    clearAccountCache(); // 다음 계정에 이전 계정 정보가 섞이지 않게
     navigateTo('page-login');
   },
-  ready() { return _authReady; }, // [추가]
+  ready() { return _authReady; },
   onAuthChange(cb) { return auth.onAuthStateChanged(cb); },
   get current() { return auth.currentUser; }
 };
@@ -93,7 +101,6 @@ const KyncAuth = {
 /* ── 중복 처리 방지 ── */
 let _authProcessing = false;
 let _lastProcessedUid = null;
-let _pendingSignupName = null; // 회원가입 직후 displayName 반영 전 이름
 
 /* ── Firebase 인증 에러 → 한국어 메시지 ── */
 function authErrorMessage(e) {
@@ -102,12 +109,16 @@ function authErrorMessage(e) {
     'auth/user-not-found':         '가입되지 않은 이메일이에요. 회원가입을 먼저 해주세요.',
     'auth/wrong-password':         '이메일 또는 비밀번호가 맞지 않아요.',
     'auth/invalid-credential':     '이메일 또는 비밀번호가 맞지 않아요.',
+    'auth/invalid-login-credentials': '이메일 또는 비밀번호가 맞지 않아요.',
     'auth/email-already-in-use':   '이미 가입된 이메일이에요. 로그인해주세요.',
     'auth/weak-password':          '비밀번호는 6자 이상이어야 해요.',
     'auth/too-many-requests':      '시도가 너무 많아요. 잠시 후 다시 시도해주세요.',
-    'auth/network-request-failed': '네트워크 연결을 확인해주세요.'
+    'auth/network-request-failed': '인터넷 연결을 확인해주세요.',
+    'auth/popup-blocked':          '팝업이 막혀 있어요. 브라우저에서 팝업을 허용해주세요.',
+    'auth/requires-recent-login':  '보안을 위해 다시 로그인한 뒤 시도해주세요.',
+    'auth/user-mismatch':          '지금 로그인한 계정으로 확인해주세요.',
   };
-  return map[e.code] || e.message;
+  return map[e?.code] || e?.message || '문제가 생겼어요. 다시 시도해주세요.';
 }
 
 async function handleAuthSuccess(user) {
@@ -122,56 +133,38 @@ async function handleAuthSuccess(user) {
     if (!profile) {
       profile = {
         uid:      user.uid,
-        name:     _pendingSignupName || user.displayName || user.email.split('@')[0],
+        name:     user.displayName || '',
         email:    user.email,
-        photoURL: user.photoURL || '',
-        points:   0,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await KyncDB.setUser(user.uid, profile);
     }
-    _pendingSignupName = null;
 
-    // [추가] 같은 기기에서 다른 계정으로 로그인하면 이전 계정 값 비우기
+    // 같은 기기에서 다른 계정으로 로그인하면 이전 계정 값 비우기
     const prevUid = localStorage.getItem('kync_user_uid');
     if (prevUid && prevUid !== user.uid) clearAccountCache();
 
-    // [추가] 포인트·대화유형 결과는 서버 값을 기준으로 맞춤
-    localStorage.setItem('kync_points', String(profile.points || 0));
+    // 대화유형 결과는 서버 값을 기준으로 맞춤
     if (profile.quizResult) localStorage.setItem('kync_quiz_result', JSON.stringify(profile.quizResult));
     else localStorage.removeItem('kync_quiz_result');
 
-    localStorage.setItem('kync_user_name', profile.name || user.displayName || '');
+    localStorage.setItem('kync_user_name', profile.name || '');
     localStorage.setItem('kync_user_uid',  user.uid);
     // 다른 계정에서 남은 가족 코드가 섞이지 않도록 DB 기준으로 맞춤
     if (profile.familyCode) localStorage.setItem('kync_family_code', profile.familyCode);
     else localStorage.removeItem('kync_family_code');
-    _currentProfile = profile;
-
-    if (typeof KyncState !== 'undefined') {
-      KyncState.uid        = user.uid;
-      KyncState.userName   = profile.name || user.displayName || '나';
-      KyncState.familyCode = profile.familyCode || null;
-      KyncState.points     = profile.points || 0;
-      KyncState.role       = profile.role || null;
-    }
+    if (profile.role) localStorage.setItem('kync_role', profile.role);
 
     _lastProcessedUid = user.uid;
-    showLoader(false);
-
-    const role = profile.role;
-    if (role === 'parent' || role === 'child') {
-      localStorage.setItem('kync_role', role);
-      if (profile.familyCode) enterApp(role);
-      else showConnectPage(role);
-    } else {
-      navigateTo('page-onboard');
-    }
+    await KyncAccount.route(user, profile);
   } catch(e) {
     console.error('handleAuthSuccess error:', e);
+    _lastProcessedUid = null;
     showLoader(false);
-    navigateTo('page-onboard');
+    navigateTo('page-login');
+    KyncUI.alert('정보를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 로그인해주세요.');
   } finally {
+    showLoader(false);
     _authProcessing = false;
   }
 }
@@ -183,16 +176,19 @@ window.setUserRole = async function(role) {
 
   showLoader(true);
   try {
-    await KyncDB.updateUser(user.uid, { role });
+    // 역할이 바뀌면 자녀 출생 연월·부모 확인을 다시 받음
+    const prev = KyncAccount.profile?.role;
+    const data = { role };
+    if (prev && prev !== role) { data.birth = firebase.firestore.FieldValue.delete(); data.adultConfirmed = false; }
+    await KyncDB.updateUser(user.uid, data);
+    localStorage.setItem('kync_role', role);
+    const profile = await KyncDB.getUser(user.uid);
+    await KyncAccount.route(user, profile);
   } catch(e) {
-    console.warn('역할 저장 실패:', e);
+    toast('역할을 저장하지 못했어요. 다시 시도해주세요.', 'error');
+  } finally {
+    showLoader(false);
   }
-  localStorage.setItem('kync_role', role);
-  if (_currentProfile) _currentProfile.role = role;
-  _lastProcessedUid = null; // 재처리 허용
-  showLoader(false);
-  if (_currentProfile?.familyCode) enterApp(role);
-  else showConnectPage(role);
 };
 
 /* ════════════════════════════════════════
@@ -200,107 +196,134 @@ window.setUserRole = async function(role) {
    - 부모: 코드 자동 생성 → 자녀 합류를 실시간으로 기다림
    - 자녀: 부모에게 받은 코드를 입력해야 앱으로 들어갈 수 있음
 ════════════════════════════════════════ */
-let _currentProfile = null;
-let _connectUnsub   = null;
+let _connectUnsub = null;
+
+function stopConnectWatch() {
+  if (_connectUnsub) { _connectUnsub(); _connectUnsub = null; }
+}
 
 function enterApp(role) {
-  if (_connectUnsub) { _connectUnsub(); _connectUnsub = null; }
+  stopConnectWatch();
   navigateTo('page-' + role);
+  const tab = window._returnTab;
+  window._returnTab = null;
+  if (tab && typeof selectTab === 'function') selectTab(tab);
   if (typeof App !== 'undefined' && typeof App.init === 'function') {
     Promise.resolve(App.init()).catch(e => console.error('App.init', e));
   }
+  KyncAccount.onEnterApp(role);
 }
 
 async function showConnectPage(role) {
   navigateTo('page-connect');
-  document.getElementById('connect-parent').style.display = role === 'parent' ? 'block' : 'none';
-  document.getElementById('connect-child').style.display  = role === 'child'  ? 'block' : 'none';
+  document.getElementById('connect-parent').classList.toggle('hidden', role !== 'parent');
+  document.getElementById('connect-child').classList.toggle('hidden', role !== 'child');
   if (role === 'parent') await prepareParentCode();
+  else setTimeout(() => document.getElementById('connect-code-input')?.focus(), 200);
+}
+
+function setConnectStatus(text, ok) {
+  const el = document.getElementById('connect-status');
+  if (!el) return;
+  el.classList.toggle('ok', !!ok);
+  el.innerHTML = `${ok ? ic('checkCircle', 18) : '<span class="pulse"></span>'}<span>${KyncUI.esc(text)}</span>`;
 }
 
 async function prepareParentCode() {
   const user = auth.currentUser;
   const codeEl  = document.getElementById('connect-code');
-  const statusEl = document.getElementById('connect-status');
   const retryBtn = document.getElementById('connect-retry');
   if (!user) { navigateTo('page-login'); return; }
 
-  codeEl.textContent = '— — —';
-  statusEl.textContent = '코드를 만드는 중이에요…';
-  retryBtn.style.display = 'none';
+  codeEl.textContent = '——————';
+  setConnectStatus('코드를 만드는 중이에요');
+  retryBtn.classList.add('hidden');
   try {
     // 이미 만든 가족이 있으면 새로 만들지 않고 그대로 사용
     const fresh = await KyncDB.getUser(user.uid);
     let code = fresh?.familyCode;
-    if (!code) {
-      const name = fresh?.name || _currentProfile?.name || '부모';
-      code = await KyncDB.createFamily(user.uid, name, 'parent');
-    }
-    if (_currentProfile) _currentProfile.familyCode = code;
+    if (!code) code = await KyncDB.createFamily(user.uid, fresh?.name || '부모', 'parent');
+    if (KyncAccount.profile) KyncAccount.profile.familyCode = code;
     localStorage.setItem('kync_family_code', code);
     codeEl.textContent = code;
     watchChildJoin(code);
   } catch (e) {
     console.error('가족 코드 생성 실패:', e);
-    codeEl.textContent = '—';
-    statusEl.textContent = '코드를 만들지 못했어요. 네트워크를 확인하고 다시 시도해주세요.';
-    retryBtn.style.display = 'block';
+    codeEl.textContent = '——————';
+    setConnectStatus('코드를 만들지 못했어요. 인터넷 연결을 확인해주세요.');
+    retryBtn.classList.remove('hidden');
   }
 }
 
 function watchChildJoin(code) {
-  if (_connectUnsub) _connectUnsub();
-  const statusEl = document.getElementById('connect-status');
-  const doneBtn  = document.getElementById('connect-parent-done');
+  stopConnectWatch();
+  const doneBtn = document.getElementById('connect-parent-done');
   _connectUnsub = db.collection('families').doc(code).onSnapshot(snap => {
-    const members = Object.values(snap.data()?.members || {});
-    const child = members.find(m => m.role === 'child');
+    const fam = snap.data() || {};
+    const child = Object.entries(fam.members || {}).map(([uid, m]) => ({ uid, ...m })).find(m => m.role === 'child');
     if (child) {
-      statusEl.textContent = `${child.name || '자녀'}와(과) 연결됐어요!`;
-      doneBtn.textContent = '시작하기';
+      const needConsent = child.minor && !fam.guardianConsents?.[child.uid];
+      setConnectStatus(needConsent ? `${child.name || '자녀'}와(과) 연결됐어요. 보호자 동의가 필요해요.` : `${child.name || '자녀'}와(과) 연결됐어요`, true);
+      doneBtn.textContent = needConsent ? '보호자 동의하고 시작하기' : '시작하기';
+      doneBtn.dataset.consentFor = needConsent ? child.uid : '';
     } else {
-      statusEl.textContent = '자녀가 코드를 입력하길 기다리는 중이에요…';
+      setConnectStatus('자녀가 코드를 입력하길 기다리는 중이에요');
       doneBtn.textContent = '먼저 둘러보기';
+      doneBtn.dataset.consentFor = '';
     }
   }, e => console.warn('가족 연결 감지 실패:', e));
 }
 
-window.copyConnectCode = function(btn) {
+window.copyConnectCode = function() {
   const code = document.getElementById('connect-code').textContent.trim();
   if (!/^KY[A-Z0-9]{4}$/.test(code)) return;
-  navigator.clipboard.writeText(code).then(() => {
-    btn.textContent = '복사됐어요!';
-    setTimeout(() => btn.textContent = '코드 복사', 2000);
-  }).catch(() => alert('코드: ' + code));
+  navigator.clipboard.writeText(code)
+    .then(() => toast('코드를 복사했어요', 'ok'))
+    .catch(() => KyncUI.alert(code, '가족 연결 코드'));
+};
+
+window.shareConnectCode = async function() {
+  const code = document.getElementById('connect-code').textContent.trim();
+  if (!/^KY[A-Z0-9]{4}$/.test(code)) return;
+  const text = `Kync 가족 연결 코드: ${code}\n${location.origin}${location.pathname}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Kync 가족 연결', text }); } catch(e) {}
+  } else {
+    copyConnectCode();
+  }
 };
 
 window.retryParentCode = prepareParentCode;
 
-window.finishParentConnect = function() { enterApp('parent'); };
+window.finishParentConnect = function() {
+  const childUid = document.getElementById('connect-parent-done').dataset.consentFor;
+  enterApp('parent');
+  if (childUid) setTimeout(() => KyncAccount.openGuardian(childUid), 300);
+};
 
 window.joinConnectCode = async function() {
   const input = document.getElementById('connect-code-input');
   const code  = input.value.trim().toUpperCase();
-  if (!/^KY[A-Z0-9]{4}$/.test(code)) { alert('KY로 시작하는 6자리 코드를 입력해주세요.'); return; }
+  if (!/^KY[A-Z0-9]{4}$/.test(code)) { toast('KY로 시작하는 6자리 코드를 입력해주세요.', 'error'); input.focus(); return; }
   const user = auth.currentUser;
-  if (!user) { alert('로그인 정보가 없어요. 다시 로그인해주세요.'); navigateTo('page-login'); return; }
+  if (!user) { navigateTo('page-login'); return; }
 
   showLoader(true);
   try {
-    const name = _currentProfile?.name || localStorage.getItem('kync_user_name') || '자녀';
-    await KyncDB.joinFamily(user.uid, code, name, 'child');
-    if (_currentProfile) _currentProfile.familyCode = code;
-    showLoader(false);
-    enterApp('child');
+    const profile = KyncAccount.profile || {};
+    await KyncDB.joinFamily(user.uid, code, profile.name || '자녀', 'child', KyncAccount.isMinor(profile));
+    const fresh = await KyncDB.getUser(user.uid);
+    await KyncAccount.route(user, fresh);
   } catch (e) {
+    toast(e.message || '연결하지 못했어요. 코드를 확인해주세요.', 'error');
+  } finally {
     showLoader(false);
-    alert(e.message || '연결에 실패했어요. 코드를 확인해주세요.');
   }
 };
 
 window.backToRoleSelect = function() {
-  if (_connectUnsub) { _connectUnsub(); _connectUnsub = null; }
-  navigateTo('page-onboard');
+  stopConnectWatch();
+  navigateTo('page-role');
 };
 
 /* ── 구글 로그인 ── */
@@ -310,18 +333,29 @@ window.loginWithGoogle = async function() {
     await KyncAuth.signInWithGoogle();
   } catch(e) {
     showLoader(false);
-    if (e.code !== 'auth/popup-closed-by-user') alert('구글 로그인 실패: ' + e.message);
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+      toast(authErrorMessage(e), 'error');
+    }
   }
 };
 
 /* ── 이메일 로그인 / 회원가입 ── */
+window.toggleEmailForm = function() {
+  const f = document.getElementById('email-form');
+  const open = !f.classList.contains('open');
+  f.classList.toggle('open', open);
+  document.getElementById('email-toggle').classList.toggle('hidden', open);
+  if (open) setTimeout(() => document.getElementById('email-input').focus(), 50);
+};
+
 window.switchEmailMode = function(mode) {
   const isSignup = mode === 'signup';
   document.getElementById('tab-login').classList.toggle('on', !isSignup);
   document.getElementById('tab-signup').classList.toggle('on', isSignup);
-  document.querySelectorAll('.signup-only').forEach(el => el.style.display = isSignup ? 'block' : 'none');
+  document.querySelectorAll('.signup-only').forEach(el => el.classList.toggle('hidden', !isSignup));
   document.getElementById('email-submit').textContent = isSignup ? '회원가입' : '로그인';
-  document.getElementById('reset-link').style.display = isSignup ? 'none' : 'block';
+  document.getElementById('reset-link').classList.toggle('hidden', isSignup);
+  document.getElementById('pw-input').autocomplete = isSignup ? 'new-password' : 'current-password';
   document.getElementById('email-form').dataset.mode = mode;
 };
 
@@ -333,75 +367,77 @@ window.submitEmailForm = function() {
 window.loginWithEmail = async function() {
   const email = document.getElementById('email-input')?.value?.trim();
   const pw    = document.getElementById('pw-input')?.value;
-  if (!email || !pw) { alert('이메일과 비밀번호를 입력해주세요.'); return; }
+  if (!email || !pw) { toast('이메일과 비밀번호를 입력해주세요.', 'error'); return; }
   try {
     showLoader(true);
     await KyncAuth.signInWithEmail(email, pw);
   } catch(e) {
     showLoader(false);
-    alert('로그인 실패: ' + authErrorMessage(e));
+    toast(authErrorMessage(e), 'error');
   }
 };
 
 window.signupWithEmail = async function() {
-  const name  = document.getElementById('signup-name-input')?.value?.trim();
   const email = document.getElementById('email-input')?.value?.trim();
   const pw    = document.getElementById('pw-input')?.value;
   const pw2   = document.getElementById('pw2-input')?.value;
-  if (!name)           { alert('이름을 입력해주세요.'); return; }
-  if (!email || !pw)   { alert('이메일과 비밀번호를 입력해주세요.'); return; }
-  if (pw.length < 6)   { alert('비밀번호는 6자 이상이어야 해요.'); return; }
-  if (pw !== pw2)      { alert('비밀번호가 서로 달라요.'); return; }
+  if (!email || !pw)   { toast('이메일과 비밀번호를 입력해주세요.', 'error'); return; }
+  if (pw.length < 6)   { toast('비밀번호는 6자 이상이어야 해요.', 'error'); return; }
+  if (pw !== pw2)      { toast('비밀번호가 서로 달라요.', 'error'); return; }
   try {
     showLoader(true);
-    await KyncAuth.signUpWithEmail(name, email, pw);
+    await KyncAuth.signUpWithEmail(email, pw);
   } catch(e) {
-    _pendingSignupName = null;
     showLoader(false);
-    alert('회원가입 실패: ' + authErrorMessage(e));
+    toast(authErrorMessage(e), 'error');
   }
 };
 
 window.resetPassword = async function() {
   const email = document.getElementById('email-input')?.value?.trim();
-  if (!email) { alert('비밀번호를 찾을 이메일을 먼저 입력해주세요.'); return; }
+  if (!email) { toast('비밀번호를 찾을 이메일을 먼저 입력해주세요.', 'error'); return; }
   try {
     await KyncAuth.resetPassword(email);
-    alert('비밀번호 재설정 메일을 보냈어요. 메일함을 확인해주세요.');
+    KyncUI.alert('비밀번호를 다시 정하는 메일을 보냈어요. 메일함을 확인해주세요.', '메일을 보냈어요');
   } catch(e) {
-    alert(authErrorMessage(e));
+    toast(authErrorMessage(e), 'error');
   }
 };
 
 /* ── 로그아웃 ── */
-window.logout = async function() {
-  if (_connectUnsub) { _connectUnsub(); _connectUnsub = null; }
-  _currentProfile = null;
+window.logout = async function(skipConfirm) {
+  if (!skipConfirm) {
+    const ok = await KyncUI.confirm({ title: '로그아웃할까요?', ok: '로그아웃' });
+    if (!ok) return;
+  }
+  stopConnectWatch();
+  KyncAccount.reset();
   _lastProcessedUid = null;
   _authProcessing = false;
+  if (typeof App !== 'undefined') App.reset?.();
   await KyncAuth.signOut();
 };
 
 /* ── 인증 상태 핸들러 ── */
 auth.onAuthStateChanged(async (user) => {
-  // [수정] 로그인 화면이 있는 index.html에서만 화면 이동 처리 (활동 페이지에서 오류 방지)
+  // 로그인 화면이 있는 index.html에서만 화면 이동 처리 (활동 페이지에서 오류 방지)
   if (!document.getElementById('page-login')) return;
   if (!user) {
     _lastProcessedUid = null;
     _authProcessing = false;
     showLoader(false);
+    if (window._returnTab) { window._returnTab = null; navigateTo('page-login'); }
+    KyncAccount.maybeShowIntro();
     return;
   }
-
-  const activePage = document.querySelector('.page.active');
-  if (activePage && (activePage.id === 'page-parent' || activePage.id === 'page-child')) return;
-
   await handleAuthSuccess(user);
 });
 
 /* ════════════════════════════════════════
    KyncDB — Firestore 데이터
 ════════════════════════════════════════ */
+const FAMILY_SUBCOLLECTIONS = ['records', 'diary', 'praise', 'balance', 'balance_answers', 'scenes', 'together_quiz', 'quests', 'quests2'];
+
 const KyncDB = {
 
   async getUser(uid) {
@@ -430,15 +466,15 @@ const KyncDB = {
     return code;
   },
 
-  async joinFamily(uid, code, userName, role) {
+  async joinFamily(uid, code, userName, role, minor) {
     code = code.trim().toUpperCase();
     const ref  = db.collection('families').doc(code);
     const snap = await ref.get();
-    if (!snap.exists) throw new Error('존재하지 않는 코드예요.');
-    // [추가] 이미 다른 가족과 연결돼 있으면 막기
+    if (!snap.exists) throw new Error('없는 코드예요. 부모님 화면의 코드를 다시 확인해주세요.');
+    // 이미 다른 가족과 연결돼 있으면 막기
     const me = await KyncDB.getUser(uid);
     if (me?.familyCode && me.familyCode !== code) throw new Error('이미 다른 가족과 연결돼 있어요.');
-    await ref.update({ [`members.${uid}`]: { name: userName, role } });
+    await ref.update({ [`members.${uid}`]: { name: userName, role, minor: !!minor } });
     await KyncDB.updateUser(uid, { familyCode: code });
     localStorage.setItem('kync_family_code', code);
     return code;
@@ -450,6 +486,17 @@ const KyncDB = {
     if (!snap.exists) return [];
     const m = snap.data().members || {};
     return Object.entries(m).map(([uid, d]) => ({ uid, ...d }));
+  },
+
+  // 가족 정보 (멤버 + 연결 시작일 + 보호자 동의). 없으면 null
+  async getFamily(code) {
+    if (!code) return null;
+    const snap = await db.collection('families').doc(code).get();
+    return snap.exists ? snap.data() : null;
+  },
+
+  async updateFamily(code, data) {
+    await db.collection('families').doc(code).update(data);
   },
 
   async getTodayRecord(familyCode) {
@@ -484,90 +531,42 @@ const KyncDB = {
       .onSnapshot(snap => callback(snap.exists ? snap.data() : {}));
   },
 
-  async getHistory(familyCode) {
-    if (!familyCode) return [];
-    const snap = await db.collection('families').doc(familyCode)
-      .collection('records')
-      .orderBy(firebase.firestore.FieldPath.documentId(), 'desc')
-      .limit(30).get();
-    const out = [];
-    snap.forEach(doc => {
-      const d = doc.data();
-      const dateStr = doc.id.replace(/-/g, '.');
-      if (d.parent)  out.push({ date: dateStr, role: 'parent', type: 'answer',  content: d.parent.content,  question: d.parent.question });
-      if (d.child)   out.push({ date: dateStr, role: 'child',  type: 'answer',  content: d.child.content,   question: d.child.question });
-      if (d.checkin) out.push({ date: dateStr, role: 'child',  type: 'checkin',
-        emotion: d.checkin.emotion, stress: d.checkin.stress,
-        energy: d.checkin.energy,   memo: d.checkin.memo });
-    });
-    return out;
-  },
-
-  async getDiaryEntries(uid) {
-    const snap = await db.collection('diary').doc(uid)
-      .collection('entries').orderBy('createdAt', 'desc').limit(50).get();
-    const out = [];
-    snap.forEach(doc => out.push({ id: doc.id, ...doc.data() }));
-    return out;
-  },
-
-  async saveDiaryEntry(uid, entry) {
-    await db.collection('diary').doc(uid).collection('entries').add({
-      ...entry,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  },
-
-  async getQuests(familyCode) {
-    if (!familyCode) return [];
-    const snap = await db.collection('families').doc(familyCode)
-      .collection('quests').orderBy('id').get();
-    const out = [];
-    snap.forEach(doc => out.push({ docId: doc.id, ...doc.data() }));
-    return out;
-  },
-
-  async seedDefaultQuests(familyCode, templates) {
-    const batch = db.batch();
-    templates.forEach(q => {
-      const ref = db.collection('families').doc(familyCode)
-        .collection('quests').doc(String(q.id));
-      batch.set(ref, q);
-    });
-    await batch.commit();
-  },
-
-  async updateQuestConsent(familyCode, questId, role) {
-    const ref  = db.collection('families').doc(familyCode)
-      .collection('quests').doc(String(questId));
-    await ref.update({ [`agreed.${role}`]: true });
-    const snap = await ref.get();
-    const q    = snap.data();
-    if (q.agreed.parent && q.agreed.child) {
-      await ref.update({ status: 'active', startDate: todayKey(), progress: 0 });
-      return true;
-    }
-    return false;
-  },
-
-  async addPoints(uid, amount) {
-    if (!uid) return;
-    await db.collection('users').doc(uid).set({
-      points: firebase.firestore.FieldValue.increment(amount)
-    }, { merge: true });
-  },
-
-  // [추가] 가족 정보 (멤버 + 연결 시작일)
-  async getFamily(code) {
-    if (!code) return null;
-    const snap = await db.collection('families').doc(code).get();
-    return snap.exists ? snap.data() : null;
-  },
-
   async saveQuizResult(uid, result) {
     if (!uid) return;
     await db.collection('users').doc(uid).set({
       quizResult: { ...result, savedAt: firebase.firestore.FieldValue.serverTimestamp() }
     }, { merge: true });
-  }
-}; 
+  },
+
+  /* ── 삭제 ── */
+  async _deleteCollection(ref) {
+    for (;;) {
+      const snap = await ref.limit(300).get();
+      if (snap.empty) return;
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      if (snap.size < 300) return;
+    }
+  },
+
+  // 가족 공간과 그 안의 모든 기록 삭제 (탈퇴, 가족 연결 끊기)
+  async deleteFamilySpace(code) {
+    if (!code) return;
+    const ref = db.collection('families').doc(code);
+    for (const sub of FAMILY_SUBCOLLECTIONS) await this._deleteCollection(ref.collection(sub));
+    await ref.delete();
+  },
+
+  // 내 계정의 개인 기록 삭제 (탈퇴)
+  async deleteUserData(uid) {
+    const userRef = db.collection('users').doc(uid);
+    await this._deleteCollection(userRef.collection('counsel'));
+    await this._deleteCollection(db.collection('diary').doc(uid).collection('entries'));
+    await userRef.delete();
+  },
+
+  async deleteCounsel(uid) {
+    await this._deleteCollection(db.collection('users').doc(uid).collection('counsel'));
+  },
+};

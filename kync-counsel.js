@@ -21,7 +21,6 @@ const KyncCounsel = {
       '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
     }[c]));
   },
-  _nl(s) { return this._esc(s).replace(/\n/g, '<br>'); },
   _el() { return document.getElementById(this._role === 'parent' ? 'p-counsel' : 'c-counsel'); },
   _col(uid) { return db.collection('users').doc(uid).collection('counsel'); },
   _fmt(day) { const [y, m, d] = String(day).split('-'); return `${+m}월 ${+d}일`; },
@@ -51,31 +50,43 @@ const KyncCounsel = {
     const todayItem = this._items.find(i => i.day === today);
     const past = this._items.filter(i => i.day !== today);
     const ready = !!KYNC_COUNSEL_URL;
+    const status = typeof KyncAccount !== 'undefined' ? KyncAccount.aiStatus() : 'ok';
 
     let body;
-    if (todayItem) {
+    if (status === 'consent') {
       body = `
-        <div class="cs-bubble cs-me">${this._nl(todayItem.message)}</div>
-        <div class="cs-bubble cs-ai">${this._nl(todayItem.reply)}</div>
+        <div class="cs-gate">
+          <p class="small sub">AI 상담을 쓰려면 동의가 필요해요. 상담 메시지는 답변을 만들기 위해 미국의 Anthropic으로 전송돼요.</p>
+          <div class="row">
+            <button class="btn btn-soft btn-sm" onclick="KyncAccount.openLegal('ai')">내용 보기</button>
+            <button class="btn btn-primary btn-sm grow" onclick="KyncAccount.setAgreement('ai', true)">동의하고 시작하기</button>
+          </div>
+        </div>`;
+    } else if (status === 'guardian') {
+      body = `<div class="note">${ic('shield', 18)}<span>만 14세 미만은 부모님이 설정에서 AI 상담을 허용해야 쓸 수 있어요.</span></div>`;
+    } else if (todayItem) {
+      body = `
+        <div class="cs-bubble cs-me">${this._esc(todayItem.message)}</div>
+        <div class="cs-bubble cs-ai">${this._esc(todayItem.reply)}</div>
         <div class="cs-note">오늘 상담은 여기까지예요. 내일 또 이야기해요.</div>`;
     } else if (this._sending) {
       body = `
-        <div class="cs-bubble cs-me">${this._nl(this._pending)}</div>
-        <div class="cs-bubble cs-ai cs-typing">답변을 쓰고 있어요…</div>`;
+        <div class="cs-bubble cs-me">${this._esc(this._pending)}</div>
+        <div class="cs-bubble cs-ai cs-typing">답변을 쓰고 있어요</div>`;
     } else {
       body = `
-        <textarea id="cs-input" class="cs-input" maxlength="${this.MAX}" ${ready ? '' : 'disabled'}
+        <textarea id="cs-input" class="textarea" maxlength="${this.MAX}" ${ready ? '' : 'disabled'} aria-label="상담 내용"
           placeholder="${ready ? (this._role === 'parent' ? '자녀와 관련된 고민을 편하게 적어주세요' : '요즘 고민을 편하게 적어봐') : '상담 기능을 준비하고 있어요'}"
           oninput="document.getElementById('cs-count').textContent=this.value.length"></textarea>
         <div class="cs-row">
-          <span class="cs-count"><span id="cs-count">0</span>/${this.MAX}</span>
-          <button class="cs-send" ${ready ? '' : 'disabled'} onclick="KyncCounsel.send()">보내기</button>
+          <span class="count"><span id="cs-count">0</span>/${this.MAX}</span>
+          <button class="btn btn-primary btn-sm" ${ready ? '' : 'disabled'} onclick="KyncCounsel.send()">보내기</button>
         </div>`;
     }
 
-    const history = past.length ? `
-      <button class="cs-history-toggle" onclick="KyncCounsel.toggleHistory()">
-        이전 상담 ${past.length}개 <span>${this._showHistory ? '접기 ▲' : '보기 ▼'}</span>
+    const history = past.length && status === 'ok' ? `
+      <button class="qx-toggle" style="margin-top:12px" onclick="KyncCounsel.toggleHistory()" aria-expanded="${this._showHistory}">
+        이전 상담 ${past.length}개 ${ic(this._showHistory ? 'up' : 'down', 18)}
       </button>
       ${this._showHistory ? past.map(i => `
         <div class="cs-past" onclick="KyncCounsel.togglePast('${i.day}')">
@@ -84,18 +95,15 @@ const KyncCounsel = {
             <span class="cs-past-msg">${this._esc(i.message)}</span>
           </div>
           ${this._openDay === i.day ? `
-            <div class="cs-bubble cs-me">${this._nl(i.message)}</div>
-            <div class="cs-bubble cs-ai">${this._nl(i.reply)}</div>` : ''}
+            <div class="cs-bubble cs-me">${this._esc(i.message)}</div>
+            <div class="cs-bubble cs-ai">${this._esc(i.reply)}</div>` : ''}
         </div>`).join('') : ''}` : '';
 
     el.innerHTML = `
-      <div class="cs-head">
-        <div class="cs-title">AI 상담</div>
-        <div class="cs-sub">하루 한 번 · 나만 볼 수 있어요</div>
-      </div>
+      <div class="card-head"><h2>AI 상담</h2><span class="pill">하루 한 번, 나만 보기</span></div>
       ${body}
       ${history}
-      <div class="cs-foot">AI 답변은 참고용이에요. 많이 힘들 땐 ${this._role === 'child' ? '청소년상담 1388, ' : ''}자살예방상담 109에 바로 연락할 수 있어요.</div>`;
+      <p class="cs-foot">AI 답변은 참고용이에요. 많이 힘들 땐 ${this._role === 'child' ? '청소년상담 1388, ' : ''}자살예방상담 109에 바로 연락할 수 있어요.</p>`;
   },
 
   toggleHistory() { this._showHistory = !this._showHistory; this.render(); },
@@ -125,11 +133,12 @@ const KyncCounsel = {
 
   async send() {
     if (this._sending || !KYNC_COUNSEL_URL) return;
+    if (typeof KyncAccount !== 'undefined' && KyncAccount.aiStatus() !== 'ok') return;
     const input = document.getElementById('cs-input');
     const message = input?.value?.trim();
-    if (!message) { alert('고민을 적어주세요.'); return; }
+    if (!message) { toast('고민을 적어주세요.', 'error'); return; }
     const user = KyncAuth?.current;
-    if (!user) { alert('로그인 정보가 없어요. 다시 로그인해주세요.'); return; }
+    if (!user) { toast('로그인 정보가 없어요. 다시 로그인해주세요.', 'error'); return; }
 
     this._sending = true;
     this._pending = message;
@@ -157,7 +166,7 @@ const KyncCounsel = {
       this.render();
       const box = document.getElementById('cs-input');
       if (box) { box.value = message; document.getElementById('cs-count').textContent = message.length; }
-      alert(e.message);
+      toast(e.message || '상담을 보내지 못했어요.', 'error');
     }
   },
 };
