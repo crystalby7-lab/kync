@@ -121,6 +121,7 @@ const KyncPraise = {
             got = true;
           }
         });
+        if (got && typeof KyncInbox !== 'undefined') KyncInbox.refresh();
         if (got) this.renderReceivedCards(`${myRole === 'parent' ? 'p' : 'c'}-praise-list`, myRole).catch(() => {});
       }, err => console.warn('praise listen:', err));
   },

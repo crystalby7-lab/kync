@@ -75,6 +75,7 @@ const App = {
     this._initFeatures();
     this.renderFamilyInfo();
     await this._loadTodayData();
+    if (typeof KyncInbox !== 'undefined') KyncInbox.refresh();
   },
 
   // 로그아웃·연결 끊기 때 실시간 감시 정리
@@ -138,7 +139,7 @@ const App = {
       const others = members.filter(m => m.uid !== myUid);
       const html = others.length ? others.map(m => `
         <div class="member">
-          <div class="avatar ${m.role === 'child' ? 'child' : ''}">${this._esc((m.name || '?')[0])}</div>
+          <div class="avatar" style="background:${KyncUI.avatarColor(m.uid, m.role)}">${this._esc((m.name || '?')[0])}</div>
           <div><b>${this._esc(m.name || '이름 없음')}</b><small>${m.role === 'parent' ? '부모' : '자녀'}</small></div>
         </div>`).join('') : empty;
       listIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
@@ -166,7 +167,8 @@ const App = {
     const userName = localStorage.getItem('kync_user_name') || '';
     if (userName) {
       ['p-username','c-username'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = userName; });
-      ['p-avatar','c-avatar'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = userName[0]; });
+      const myColor = KyncUI.avatarColor(KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid'), this._role());
+      ['p-avatar','c-avatar'].forEach(id => { const el = document.getElementById(id); if (el) { el.textContent = userName[0]; el.style.background = myColor; } });
     }
     const joinDate = localStorage.getItem('kync_join_date');
     if (joinDate) this._renderDays(joinDate);
@@ -236,6 +238,7 @@ const App = {
 
   _applyTodayRecord(record, role) {
     if (!record || (role !== 'parent' && role !== 'child')) return;
+    if (this._lastRecord && JSON.stringify(this._lastRecord) !== JSON.stringify(record)) { if (typeof KyncInbox !== 'undefined') KyncInbox.refresh(); }
     this._lastRecord = record;
     const pre = role[0];
 

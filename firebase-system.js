@@ -161,8 +161,11 @@ async function handleAuthSuccess(user) {
     console.error('handleAuthSuccess error:', e);
     _lastProcessedUid = null;
     showLoader(false);
-    navigateTo('page-login');
-    KyncUI.alert('정보를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 로그인해주세요.');
+    // 로그인은 됐는데 정보를 못 불러온 경우: 다시 시도 화면
+    const off = !navigator.onLine;
+    document.getElementById('error-title').textContent = off ? '인터넷 연결이 끊겼어요' : '정보를 불러오지 못했어요';
+    document.getElementById('error-sub').textContent = off ? '연결되면 다시 시도해주세요.' : `잠시 후 다시 시도해주세요. 계속 안 되면 ${KYNC_CONFIG.contactEmail}로 알려주세요.`;
+    navigateTo('page-error');
   } finally {
     showLoader(false);
     _authProcessing = false;

@@ -64,6 +64,7 @@ const KyncQuests2 = {
         this._quests = snap.docs.map(d => ({ ...d.data(), id: d.id }));
         try { localStorage.setItem(`kync_quests2_${fc}`, JSON.stringify(this._quests)); } catch(e) {}
         this.render();
+        if (typeof KyncInbox !== 'undefined') KyncInbox.refresh();
       }, err => console.warn('quests listen:', err));
   },
 

@@ -18,6 +18,9 @@ kync-core.js          오늘 탭 (질문, 답변 공개, 감정 체크인, 자�
 kync-features.js      칭찬 카드, 연속 기록, 활동 질문 목록
 kync-diary.js         기록 탭 (사진·감정·한 줄, 캘린더)
 kync-activity.js      활동 탭
+kync-inbox.js         알림함 (상단 종 아이콘)
+sw.js                 서비스 워커 (인터넷 우선, 끊기면 저장해둔 화면)
+images/doci.png       마스코트 그림
 kync-quests2.js       퀘스트 탭
 kync-counsel.js       AI 상담
 kync-balance.js       취향 맞추기 질문

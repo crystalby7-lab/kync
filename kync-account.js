@@ -82,7 +82,8 @@ const KyncAccount = {
 
   finishIntro() {
     try { localStorage.setItem('kync_intro_seen', '1'); } catch (e) {}
-    navigateTo('page-login');
+    if (typeof KyncInstall !== 'undefined' && KyncInstall.shouldShow()) KyncInstall.show();
+    else navigateTo('page-login');
   },
 
   /* ════════ 로그인 뒤 화면 정하기 ════════ */
@@ -288,6 +289,7 @@ const KyncAccount = {
       if (!snap.exists || !snap.data().members?.[uid]) { this._familyGone(); return; }
       this.family = snap.data();
       if (role === 'parent') this.renderConsentBanner();
+      if (typeof KyncInbox !== 'undefined') KyncInbox.refresh();
       if (role === 'child' && this.isMinor(this.profile) && !this.family.guardianConsents?.[uid]) {
         if (this._famUnsub) { this._famUnsub(); this._famUnsub = null; }
         this.showGuardianWait();
@@ -468,7 +470,7 @@ const KyncAccount = {
 
     document.getElementById('settings-body').innerHTML = `
       <button class="me-head" onclick="KyncAccount.editName()">
-        <div class="avatar lg ${role === 'child' ? 'child' : ''}">${this.esc((p.name || '?')[0])}</div>
+        <div class="avatar lg" style="background:${KyncUI.avatarColor(this.uid(), role)}">${this.esc((p.name || '?')[0])}</div>
         <span><b>${this.esc(p.name || '이름 없음')}</b><small>${roleLabel}${age !== null ? ` · 만 ${age}세` : ''} · ${this.esc(user?.email || '')}</small></span>
         <span class="chev">${ic('edit', 20)}</span>
       </button>
@@ -502,6 +504,9 @@ const KyncAccount = {
       <div class="list-title">도움</div>
       <div class="list">
         ${this._row({ icon: 'mail', label: '문의하기', val: KYNC_CONFIG.contactEmail, href: `mailto:${KYNC_CONFIG.contactEmail}?subject=${encodeURIComponent('[Kync 문의]')}`, chev: false })}
+        ${KyncInstall.isStandalone() ? '' : this._row({ icon: 'phone', label: '홈 화면에 추가하기', onclick: 'KyncInstall.openSheet()' })}
+        ${this._row({ icon: 'download', label: '내 정보 내려받기', sub: '내 계정과 가족 기록을 파일로 저장해요', onclick: 'KyncAccount.exportData()' })}
+        ${this._row({ icon: 'doc', label: '오픈소스 라이선스', onclick: "KyncAccount.openLegal('oss')" })}
         ${this._row({ icon: 'info', label: '앱 버전', val: KYNC_CONFIG.version, chev: false })}
       </div>
 
@@ -514,27 +519,69 @@ const KyncAccount = {
 
   editName() {
     const p = this.profile || {};
+    let color = KyncUI.avatarColor(this.uid(), p.role);
     const { el, close } = KyncUI.sheet(`
-      <h2>이름 바꾸기</h2>
-      <p class="sheet-sub">가족에게 보이는 이름이에요.</p>
-      <input class="input" id="edit-name" maxlength="12" value="${this.esc(p.name || '')}" aria-label="이름">
-      <button class="btn btn-primary btn-block" id="edit-name-save" style="margin-top:12px">저장</button>`);
-    const input = el.querySelector('#edit-name');
-    setTimeout(() => input.focus(), 250);
+      <h2>프로필 바꾸기</h2>
+      <p class="sheet-sub">가족 화면에 보이는 이름과 색이에요.</p>
+      <div class="field"><label class="label" for="edit-name">이름</label>
+        <input class="input" id="edit-name" maxlength="12" value="${this.esc(p.name || '')}"></div>
+      <div class="field" style="margin-top:16px"><span class="label">프로필 색</span>
+        <div class="color-row" role="radiogroup" aria-label="프로필 색">
+          ${KyncUI.COLORS.map(c => `<button class="color-opt ${c === color ? 'on' : ''}" data-c="${c}" style="background:${c}" role="radio" aria-checked="${c === color}" aria-label="색 ${c}">${c === color ? ic('check', 20) : ''}</button>`).join('')}
+        </div></div>
+      <button class="btn btn-primary btn-block" id="edit-name-save" style="margin-top:20px">저장</button>`);
+    el.querySelectorAll('.color-opt').forEach(b => b.onclick = () => {
+      color = b.dataset.c;
+      el.querySelectorAll('.color-opt').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); x.innerHTML = on ? ic('check', 20) : ''; });
+    });
     el.querySelector('#edit-name-save').onclick = e => KyncUI.busy(e.currentTarget, '저장하는 중', async () => {
-      const name = input.value.trim().slice(0, 12);
+      const name = el.querySelector('#edit-name').value.trim().slice(0, 12);
       if (!name) { toast('이름을 입력해주세요.', 'error'); return; }
       try {
-        await KyncDB.updateUser(this.uid(), { name });
-        if (p.familyCode) await KyncDB.updateFamily(p.familyCode, { [`members.${this.uid()}.name`]: name }).catch(() => {});
-        p.name = name;
+        await KyncDB.updateUser(this.uid(), { name, color });
+        if (p.familyCode) await KyncDB.updateFamily(p.familyCode, { [`members.${this.uid()}.name`]: name, [`members.${this.uid()}.color`]: color }).catch(() => {});
+        Object.assign(p, { name, color });
         localStorage.setItem('kync_user_name', name);
         close();
         this.renderSettings();
         App._setDates?.();
-        toast('이름을 바꿨어요', 'ok');
+        App.renderFamilyInfo?.();
+        toast('프로필을 바꿨어요', 'ok');
       } catch (err) { toast('저장하지 못했어요. 다시 시도해주세요.', 'error'); }
     });
+  },
+
+  // 내 정보 내려받기 (개인정보 열람권)
+  async exportData() {
+    const uid = this.uid(), fc = this.profile?.familyCode || localStorage.getItem('kync_family_code');
+    if (!uid) return;
+    showLoader(true, '파일을 만드는 중이에요');
+    try {
+      const plain = v => JSON.parse(JSON.stringify(v, (k, x) => (x && typeof x.toDate === 'function') ? x.toDate().toISOString() : x));
+      const out = { exportedAt: new Date().toISOString(), app: 'Kync ' + KYNC_CONFIG.version };
+      out.account = plain((await db.collection('users').doc(uid).get()).data() || {});
+      out.account.email = KyncAuth.current?.email || out.account.email;
+      const counsel = await db.collection('users').doc(uid).collection('counsel').get();
+      out.aiCounsel = counsel.docs.map(d => plain({ day: d.id, ...d.data() }));
+      if (fc) {
+        const famRef = db.collection('families').doc(fc);
+        out.family = { code: fc, ...plain((await famRef.get()).data() || {}) };
+        for (const sub of FAMILY_SUBCOLLECTIONS) {
+          const snap = await famRef.collection(sub).get();
+          if (!snap.empty) out.family[sub] = snap.docs.map(d => plain({ id: d.id, ...d.data() }));
+        }
+      }
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `kync-내정보-${todayKey()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast('내 정보를 파일로 저장했어요', 'ok');
+    } catch (e) {
+      console.warn('export:', e);
+      toast('파일을 만들지 못했어요. 다시 시도해주세요.', 'error');
+    } finally { showLoader(false); }
   },
 
   async clearCounsel() {
@@ -654,7 +701,7 @@ const KyncAccount = {
     this.profile = null;
     this.family = null;
     this._consentPrompted = {};
-    ['layer-settings', 'layer-guardian', 'layer-delete', 'layer-legal'].forEach(id => KyncUI.closeLayer(id));
+    ['layer-settings', 'layer-guardian', 'layer-delete', 'layer-legal', 'layer-inbox'].forEach(id => KyncUI.closeLayer(id));
   },
 };
 

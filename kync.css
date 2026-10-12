@@ -712,3 +712,44 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .compat-text { font-size: 14px; color: var(--sub); line-height: 1.6; }
 .compat-text strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }
 .radar-inner { position: relative; height: 260px; display: flex; align-items: center; justify-content: center; }
+
+/* ═══════════ 설치 안내 ═══════════ */
+.install-art { position: relative; display: flex; align-items: flex-end; gap: 18px; }
+.install-phone { width: 128px; height: 200px; border-radius: 26px; background: var(--card); box-shadow: inset 0 0 0 3px var(--ink), var(--float);
+  display: flex; flex-direction: column; align-items: center; padding-top: 34px; gap: 6px; font-size: 12px; font-weight: 700; color: var(--sub); }
+.install-phone img { border-radius: 14px; box-shadow: 0 4px 10px rgba(43, 36, 33, .15); }
+.install-steps { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.install-steps li { display: flex; align-items: center; gap: 12px; font-size: 15px; line-height: 1.5; }
+.install-steps li .ic { display: inline-block; vertical-align: -3px; }
+.install-steps .n { width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+
+/* 인터넷 끊김 */
+.offline-bar { position: fixed; top: calc(8px + var(--safe-t)); left: 50%; transform: translate(-50%, -80px); z-index: 260;
+  display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 20px; background: var(--berry); color: #fff;
+  font-size: 13px; font-weight: 700; transition: transform .25s var(--ease); box-shadow: var(--float); }
+.offline-bar.show { transform: translate(-50%, 0); }
+
+/* 앱 상단 버튼 */
+.appbar-actions { display: flex; align-items: center; }
+.bell { position: relative; }
+.badge-dot { position: absolute; top: 10px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--berry); box-shadow: 0 0 0 2px var(--bg); }
+
+/* ═══════════ 알림함 ═══════════ */
+.inbox-day { font-size: 13px; font-weight: 700; color: var(--muted); margin: 18px 4px 8px; }
+.inbox-day:first-child { margin-top: 4px; }
+.inbox-item { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; background: var(--card); border-radius: var(--r-md); padding: 14px 16px; }
+.inbox-item + .inbox-item { margin-top: 8px; }
+.inbox-item.new { box-shadow: inset 3px 0 0 var(--honey); }
+.inbox-ic { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; }
+.inbox-ic.honey { background: var(--honey-soft); color: var(--honey-ink); }
+.inbox-ic.moss { background: var(--moss-soft); color: var(--moss); }
+.inbox-ic.sky { background: var(--sky-soft); color: var(--sky); }
+.inbox-ic.berry { background: var(--berry-soft); color: var(--berry); }
+.inbox-item b { display: block; font-size: 15px; font-weight: 700; line-height: 1.45; }
+.inbox-item small { display: block; font-size: 13px; color: var(--sub); margin-top: 2px; line-height: 1.5; }
+.inbox-item time { font-size: 12px; color: var(--muted); flex: none; margin-left: auto; padding-left: 6px; }
+
+/* 프로필 색 */
+.color-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.color-opt { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+.color-opt.on { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--ink); }

@@ -103,6 +103,18 @@ const KYNC_LEGAL = {
 <h3>보호자의 권리</h3>
 <p>보호자는 자녀 정보의 열람·정정·삭제와 동의 철회를 요청할 수 있어요. 가족 연결을 끊으면 동의도 함께 사라지고 가족 공간의 기록이 삭제돼요. 문의: ${KYNC_CONFIG.contactEmail}</p>`
   },
+
+  oss: {
+    title: '오픈소스 라이선스',
+    body: `
+<p>Kync는 아래 오픈소스를 사용해요.</p>
+<h3>SUIT</h3>
+<p>글꼴 · SIL Open Font License 1.1<br>Copyright (c) 2022, SUNN (http://sun.fo/suit), with Reserved Font Name SUIT.</p>
+<h3>Firebase JavaScript SDK</h3>
+<p>로그인·데이터 저장 · Apache License 2.0<br>Copyright Google LLC</p>
+<h3>Chart.js</h3>
+<p>대화 유형 검사 그래프 · MIT License<br>Copyright (c) 2014-2024 Chart.js Contributors</p>`
+  },
 };
 
 window.KYNC_LEGAL = KYNC_LEGAL;

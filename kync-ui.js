@@ -53,6 +53,9 @@ const KYNC_CONFIG = {
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/>',
     phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
     refresh: '<path d="M20 11a8 8 0 0 0-14.3-4.6L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.6L20 16"/><path d="M20 20.5V16h-4.5"/>',
+    share: '<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 11v9h14v-9"/>',
+    download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-1.4-1.2-1.6-1.2-2.8 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3z"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     smile: '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5q3.5 3 7 0"/><circle cx="9" cy="10" r=".9" fill="currentColor"/><circle cx="15" cy="10" r=".9" fill="currentColor"/>',
   };
@@ -218,6 +221,87 @@ if (window._returnTab) KyncUI.loader(true);
 if (document.readyState !== 'loading') KyncUI.hydrate();
 else document.addEventListener('DOMContentLoaded', () => KyncUI.hydrate());
 
+/* ── 프로필 색 ── */
+KyncUI.COLORS = ['#7A4E36', '#4F7FAF', '#3D8A5A', '#C98419', '#CF463C', '#8A5DA8'];
+KyncUI.avatarColor = function (uid, role) {
+  const mine = uid && uid === (KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid'));
+  const c = (mine && KyncAccount?.profile?.color) || KyncAccount?.family?.members?.[uid]?.color;
+  return c || (role === 'child' ? '#4F7FAF' : '#7A4E36');
+};
+
+/* ── 홈 화면에 추가 (앱 설치) ── */
+const KyncInstall = {
+  _evt: null,
+  isStandalone() {
+    return window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+  },
+  isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  },
+  // 처음 소개 다음에 한 번 보여줄지
+  shouldShow() {
+    let seen = false;
+    try { seen = !!localStorage.getItem('kync_install_seen'); } catch (e) {}
+    return !seen && !this.isStandalone();
+  },
+  show() {
+    const ios = this.isIOS();
+    document.getElementById('install-ios')?.classList.toggle('hidden', !ios);
+    const btn = document.getElementById('install-btn');
+    if (btn) btn.textContent = ios ? '확인했어요' : '홈 화면에 추가하기';
+    navigateTo('page-install');
+  },
+  done() {
+    try { localStorage.setItem('kync_install_seen', '1'); } catch (e) {}
+    navigateTo('page-login');
+  },
+  skip() { this.done(); },
+  async prompt() {
+    if (this.isIOS()) { this.done(); return; }
+    if (this._evt) {
+      this._evt.prompt();
+      try { await this._evt.userChoice; } catch (e) {}
+      this._evt = null;
+      this.done();
+    } else {
+      KyncUI.alert('브라우저 메뉴(⋮)에서 \'홈 화면에 추가\' 또는 \'앱 설치\'를 눌러주세요.', '홈 화면에 추가하기');
+      this.done();
+    }
+  },
+  // 설정에서 열 때
+  openSheet() {
+    if (this.isStandalone()) { toast('이미 홈 화면에서 쓰고 있어요', 'ok'); return; }
+    if (!this.isIOS() && this._evt) { this.prompt(); return; }
+    KyncUI.sheet(`
+      <h2>홈 화면에 추가하기</h2>
+      <p class="sheet-sub">추가하면 앱처럼 꽉 찬 화면으로 열려요.</p>
+      <ol class="install-steps">
+        ${this.isIOS()
+          ? `<li><span class="n">1</span><span>Safari 화면 아래 <b>공유</b> 버튼 ${ic('share', 18)}을 눌러요</span></li>
+             <li><span class="n">2</span><span><b>홈 화면에 추가</b>를 골라요</span></li>
+             <li><span class="n">3</span><span>오른쪽 위 <b>추가</b>를 눌러요</span></li>`
+          : `<li><span class="n">1</span><span>브라우저 오른쪽 위 메뉴(⋮)를 눌러요</span></li>
+             <li><span class="n">2</span><span><b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 골라요</span></li>`}
+      </ol>
+      <button class="btn btn-primary btn-block" data-close style="margin-top:16px">확인</button>`);
+  },
+};
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); KyncInstall._evt = e; });
+
+/* ── 인터넷 연결 표시 ── */
+(function () {
+  const upd = () => document.getElementById('offline-bar')?.classList.toggle('show', !navigator.onLine);
+  window.addEventListener('online', () => { upd(); });
+  window.addEventListener('offline', upd);
+  if (document.readyState !== 'loading') upd(); else document.addEventListener('DOMContentLoaded', upd);
+})();
+
+/* ── 서비스 워커 (인터넷이 끊겨도 마지막 화면이 열리게) ── */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+window.KyncInstall = KyncInstall;
 window.KYNC_CONFIG = KYNC_CONFIG;
 window.KyncBrand = KyncBrand;
 window.KyncUI = KyncUI;
