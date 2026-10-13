@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 const KYNC_CONFIG = {
-  version: '1.1.1',
+  version: '1.1.2',
   contactEmail: 'xoun148@gmail.com',
   termsVersion: '2026-10-12',   // 약관 내용이 바뀌면 날짜를 바꾸면 다시 동의를 받아요
 };
@@ -228,6 +228,18 @@ KyncUI.avatarColor = function (uid, role) {
   const mine = uid && uid === (KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid'));
   const c = (mine && KyncAccount?.profile?.color) || KyncAccount?.family?.members?.[uid]?.color;
   return c || (role === 'child' ? '#4F7FAF' : '#7A4E36');
+};
+
+// 프로필 그림: 부모는 어른 고슴도치, 자녀는 아기 고슴도치. 배경은 고른 색을 연하게
+KyncUI.tint = function (hex, amt) {
+  const n = parseInt(hex.slice(1), 16), a = amt ?? 0.22;
+  const mix = c => Math.round(255 - (255 - c) * a);
+  return `rgb(${mix(n >> 16)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+};
+KyncUI.avatar = function (uid, role, cls) {
+  const color = KyncUI.avatarColor(uid, role);
+  const src = role === 'child' ? 'images/hog-baby.png' : 'images/hog-adult.png';
+  return `<div class="avatar hog ${cls || ''}" style="background:${KyncUI.tint(color)};box-shadow:inset 0 0 0 2px ${color}"><img src="${src}" alt="${role === 'child' ? '아기 고슴도치' : '어른 고슴도치'}"></div>`;
 };
 
 /* ── 홈 화면에 추가 (앱 설치) ── */
