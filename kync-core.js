@@ -139,7 +139,7 @@ const App = {
       const others = members.filter(m => m.uid !== myUid);
       const html = others.length ? others.map(m => `
         <div class="member">
-          <div class="avatar" style="background:${KyncUI.avatarColor(m.uid, m.role)}">${this._esc((m.name || '?')[0])}</div>
+          ${KyncUI.avatar(m.uid, m.role)}
           <div><b>${this._esc(m.name || '이름 없음')}</b><small>${m.role === 'parent' ? '부모' : '자녀'}</small></div>
         </div>`).join('') : empty;
       listIds.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
@@ -167,8 +167,8 @@ const App = {
     const userName = localStorage.getItem('kync_user_name') || '';
     if (userName) {
       ['p-username','c-username'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = userName; });
-      const myColor = KyncUI.avatarColor(KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid'), this._role());
-      ['p-avatar','c-avatar'].forEach(id => { const el = document.getElementById(id); if (el) { el.textContent = userName[0]; el.style.background = myColor; } });
+      const myUid = KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid');
+      [['p-avatar', 'parent'], ['c-avatar', 'child']].forEach(([id, r]) => { const el = document.getElementById(id); if (el) el.outerHTML = KyncUI.avatar(myUid, r, 'lg').replace('class="avatar', `id="${id}" class="avatar`); });
     }
     const joinDate = localStorage.getItem('kync_join_date');
     if (joinDate) this._renderDays(joinDate);

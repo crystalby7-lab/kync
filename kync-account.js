@@ -470,7 +470,7 @@ const KyncAccount = {
 
     document.getElementById('settings-body').innerHTML = `
       <button class="me-head" onclick="KyncAccount.editName()">
-        <div class="avatar lg" style="background:${KyncUI.avatarColor(this.uid(), role)}">${this.esc((p.name || '?')[0])}</div>
+        ${KyncUI.avatar(this.uid(), role, 'lg')}
         <span><b>${this.esc(p.name || '이름 없음')}</b><small>${roleLabel}${age !== null ? ` · 만 ${age}세` : ''} · ${this.esc(user?.email || '')}</small></span>
         <span class="chev">${ic('edit', 20)}</span>
       </button>

@@ -424,7 +424,7 @@ const KyncDiary = {
           ${e.img ? `<img class="post-img" src="${e.img}" alt="${this._esc(e.name)}의 사진" loading="lazy" onclick="KyncDiary.openImgById('${entryId}')">` : ''}
           <div class="post-body">
             <div class="post-meta">
-              <div class="avatar sm" style="background:${KyncUI.avatarColor(e.uid, e.role)}">${this._esc((e.name || '?')[0])}</div>
+              ${KyncUI.avatar(e.uid, e.role, 'sm')}
               <span class="name">${this._esc(e.name || '')}</span>
               ${emo ? `<span class="pill"><i class="dot" style="width:7px;height:7px;border-radius:50%;background:${emo.dot}"></i>${emo.label}</span>` : ''}
               <span class="date">${time}</span>
