@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 const KYNC_CONFIG = {
-  version: '1.1.2',
+  version: '1.1.3',
   contactEmail: 'xoun148@gmail.com',
   termsVersion: '2026-10-12',   // 약관 내용이 바뀌면 날짜를 바꾸면 다시 동의를 받아요
 };
@@ -69,7 +69,7 @@ const KYNC_CONFIG = {
 /* ── 브랜드: 고슴도치 '도치' — 보영이 직접 그린 그림(선은 그대로, 색만 입힘) ── */
 const KyncBrand = (function () {
   const SRC = 'images/doci.png';
-  const RATIO = 537 / 468;   // 그림 세로/가로 비율
+  const RATIO = 550 / 446;   // 그림 세로/가로 비율
 
   // size = 가로 폭(px). mood는 예전 호출과 맞추려고 받기만 해요 (그림은 하나)
   function mascot(mood, size, opts) {
@@ -81,7 +81,7 @@ const KyncBrand = (function () {
     return mascot('default', size, { cls });
   }
   function wordmark(cls) {
-    return `<span class="wordmark ${cls || ''}" aria-label="kync">${mascot('default', 28, { cls: 'wm-mark' })}<span class="wm-text">kync</span></span>`;
+    return `<button type="button" class="wordmark ${cls || ''}" aria-label="kync 홈으로" onclick="goHome(this)"><span class="wm-mark"><i></i></span><span class="wm-text">kync</span></button>`;
   }
   return { mascot, curled, wordmark, SRC };
 })();
@@ -201,6 +201,14 @@ function selectTab(targetId) {
   if (targetId.endsWith('activityTab') && typeof KyncActivity !== 'undefined') KyncActivity.render();
 }
 window.selectTab = selectTab;
+
+/* 로고 누르면 홈(첫 번째 탭)으로 */
+function goHome(el) {
+  const page = el.closest('.page');
+  const first = page && page.querySelector('.tab-btn[data-target]');
+  if (first) selectTab(first.dataset.target);
+}
+window.goHome = goHome;
 
 /* HTML에 적어둔 자리표시(data-ic, data-mascot 등)를 그림으로 채우기 */
 KyncUI.hydrate = function (root) {
