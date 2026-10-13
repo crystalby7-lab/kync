@@ -66,28 +66,20 @@ const App = {
 
   // 감정 (stressed는 예전 기록 표시용, 고르는 칸에는 안 나옴)
   EMOTIONS_CHILD: [
-    { id:'happy',    label:'좋아',     color:'#F2B53B' },
-    { id:'excited',  label:'신나',     color:'#EE7FA0' },
-    { id:'calm',     label:'괜찮아',   color:'#6DBB8F' },
-    { id:'tired',    label:'피곤해',   color:'#A8B0BD' },
-    { id:'anxious',  label:'불안해',   color:'#EE8B5E' },
-    { id:'sad',      label:'슬퍼',     color:'#7C93C9' },
-    { id:'angry',    label:'화나',     color:'#C9423A' },
-    { id:'lonely',   label:'외로워',   color:'#9B86B5' },
+    { id:'happy', img:'images/emo/happy.png',    label:'좋아',     color:'#F2B53B' },
+    { id:'excited', img:'images/emo/excited.png',  label:'신나',     color:'#EE7FA0' },
+    { id:'calm', img:'images/emo/calm.png',     label:'괜찮아',   color:'#6DBB8F' },
+    { id:'tired', img:'images/emo/tired.png',    label:'피곤해',   color:'#A8B0BD' },
+    { id:'anxious', img:'images/emo/anxious.png',  label:'불안해',   color:'#EE8B5E' },
+    { id:'sad', img:'images/emo/sad.png',      label:'슬퍼',     color:'#7C93C9' },
+    { id:'angry', img:'images/emo/angry.png',    label:'화나',     color:'#C9423A' },
+    { id:'lonely', img:'images/emo/lonely.png',   label:'외로워',   color:'#9B86B5' },
     { id:'stressed', label:'스트레스', color:'#E0645A', legacy:true },
   ],
-
-  // 스트레스·에너지는 5칸 중 하나 고르기 (저장 값은 예전처럼 1~10)
-  LEVELS: {
-    stress: ['거의 없음', '조금', '보통', '많이', '한계'],
-    energy: ['방전', '부족', '보통', '괜찮음', '꽉 참'],
-  },
-  _levelLabel(kind, v) { v = +v || 0; if (!v) return '—'; return this.LEVELS[kind][Math.min(4, Math.max(0, Math.ceil(v / 2) - 1))]; },
 
   REACTIONS: ['공감해', 'ㅋㅋㅋ', '고마워', '이따 얘기해'],
 
   _selectedEmotion: null,
-  _levels: { stress: null, energy: null },
   _week: {},
   _listenersReady: false,
   _todayUnsub: null,
@@ -109,7 +101,6 @@ const App = {
       this._listenersReady = true;
     }
     this._setupEmotionGrid();
-    this._setupLevels();
     this._renderChildCard(null);
     this._renderOpponent(null, null);
     this._initFeatures();
@@ -137,7 +128,6 @@ const App = {
     });
     const ciBtn = document.getElementById('c-checkin-btn');
     if (ciBtn) { ciBtn.disabled = false; ciBtn.textContent = '저장'; ciBtn.classList.remove('done'); }
-    this._levels = { stress: null, energy: null };
     this._week = {};
     const memo = document.getElementById('c-emotionMemo');
     if (memo) memo.value = '';
@@ -232,24 +222,18 @@ const App = {
     });
     document.getElementById('p-submitAnswer')?.addEventListener('click', () => this.submitAnswer('parent'));
     document.getElementById('c-submitAnswer')?.addEventListener('click', () => this.submitAnswer('child'));
-  },
-
-  /* ── 스트레스·에너지 5칸 ── */
-  _setupLevels() {
-    ['stress', 'energy'].forEach(kind => {
-      const row = document.getElementById(`c-${kind}-row`);
-      if (!row) return;
-      row.className = `lv-row ${kind}`;
-      row.innerHTML = this.LEVELS[kind].map((label, i) => {
-        const v = (i + 1) * 2, on = this._levels[kind] === v;
-        return `<button type="button" class="${on ? 'on' : ''}" aria-pressed="${on}" onclick="App._pickLevel('${kind}', ${v})"><i></i>${label}</button>`;
-      }).join('');
+    [['c-stressSlider','c-stress-val'], ['c-energySlider','c-energy-val']].forEach(([s, v]) => {
+      const el = document.getElementById(s);
+      if (el) el.addEventListener('input', () => this._syncSlider(el, v));
+      if (el) this._syncSlider(el, v);
     });
   },
 
-  _pickLevel(kind, v) {
-    this._levels[kind] = this._levels[kind] === v ? null : v;
-    this._setupLevels();
+  _syncSlider(el, valId) {
+    const pct = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--fill', pct + '%');
+    const v = document.getElementById(valId);
+    if (v) v.textContent = el.value;
   },
 
   /* ── 감정 버튼 (자녀) ── */
@@ -258,7 +242,7 @@ const App = {
     if (!grid) return;
     grid.innerHTML = this.EMOTIONS_CHILD.filter(e => !e.legacy).map(e => `
       <button class="emo-btn ${this._selectedEmotion === e.id ? 'on' : ''}" data-id="${e.id}" aria-pressed="${this._selectedEmotion === e.id}"
-        onclick="App._selectEmotion('${e.id}')"><i style="background:${e.color}"></i>${e.label}</button>`).join('');
+        onclick="App._selectEmotion('${e.id}')"><img src="${e.img}" alt="" width="40" height="40" draggable="false">${e.label}</button>`).join('');
   },
 
   _selectEmotion(id) {
@@ -314,8 +298,10 @@ const App = {
     if (role === 'child' && record.checkin) {
       const ci = record.checkin;
       if (ci.emotion) this._selectEmotion(ci.emotion);
-      ['stress', 'energy'].forEach(k => { if (ci[k]) this._levels[k] = Math.min(10, Math.max(2, Math.ceil(ci[k] / 2) * 2)); });
-      this._setupLevels();
+      [['c-stressSlider','c-stress-val', ci.stress], ['c-energySlider','c-energy-val', ci.energy]].forEach(([s, v, val]) => {
+        const el = document.getElementById(s);
+        if (el && val) { el.value = val; this._syncSlider(el, v); }
+      });
       const memoEl = document.getElementById('c-emotionMemo');
       if (memoEl && ci.memo && !memoEl.value) memoEl.value = ci.memo;
       const pill = document.getElementById('c-checkin-pill');
@@ -422,7 +408,7 @@ const App = {
       const d = new Date(); d.setDate(d.getDate() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const emo = this.EMOTIONS_CHILD.find(e => e.id === this._week[key]);
-      cells.push(`<div class="wk ${i === 0 ? 'today' : ''}" title="${emo ? emo.label : '기록 없음'}"><i style="${emo ? `background:${emo.color}` : ''}"></i><span>${i === 0 ? '오늘' : days[d.getDay()]}</span></div>`);
+      cells.push(`<div class="wk ${i === 0 ? 'today' : ''}" title="${emo ? emo.label : '기록 없음'}">${emo?.img ? `<img src="${emo.img}" alt="${emo.label}" width="26" height="26">` : `<i style="${emo ? `background:${emo.color}` : ''}"></i>`}<span>${i === 0 ? '오늘' : days[d.getDay()]}</span></div>`);
     }
     return `<div class="week-strip" aria-label="최근 7일 기분">${cells.join('')}</div>`;
   },
@@ -444,18 +430,18 @@ const App = {
       return;
     }
     const emo = this.EMOTIONS_CHILD.find(e => e.id === ci.emotion);
-    const segs = n => Array.from({ length: 5 }, (_, i) => `<i class="${i < Math.ceil(n / 2) ? 'on' : ''}"></i>`).join('');
+    const segs = n => Array.from({ length: 10 }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('');
     const stress = +ci.stress || 0, energy = +ci.energy || 0;
     el.innerHTML = `
-      <div class="card-head"><h2>${name}의 오늘</h2>${stress >= 8 ? '<span class="pill pill-berry">스트레스 많음</span>' : ''}</div>
+      <div class="card-head"><h2>${name}의 오늘</h2>${stress >= 7 ? '<span class="pill pill-berry">스트레스 높음</span>' : ''}</div>
       <div class="mood-main">
-        <div class="mood-dot"><i style="background:${emo?.color || 'var(--faint)'}"></i></div>
+        <div class="mood-dot">${emo?.img ? `<img src="${emo.img}" alt="" width="40" height="40">` : `<i style="background:${emo?.color || 'var(--faint)'}"></i>`}</div>
         <div class="grow"><div class="mood-label">${this._esc(emo?.label || ci.emotion || '—')}</div>
           ${ci.memo ? `<div class="mood-memo">“${this._esc(ci.memo)}”</div>` : ''}</div>
       </div>
       <div class="meters">
-        <div class="meter stress"><div class="meter-top">스트레스<b>${this._levelLabel('stress', stress)}</b></div><div class="meter-segs">${segs(stress)}</div></div>
-        <div class="meter energy"><div class="meter-top">에너지<b>${this._levelLabel('energy', energy)}</b></div><div class="meter-segs">${segs(energy)}</div></div>
+        <div class="meter stress"><div class="meter-top">스트레스<b>${stress || '—'}</b></div><div class="meter-segs">${segs(stress)}</div></div>
+        <div class="meter energy"><div class="meter-top">에너지<b>${energy || '—'}</b></div><div class="meter-segs">${segs(energy)}</div></div>
       </div>
       ${this._weekStrip()}`;
   },
@@ -496,8 +482,8 @@ const App = {
 
     const checkin = {
       emotion,
-      stress: this._levels.stress || 0,
-      energy: this._levels.energy || 0,
+      stress: parseInt(document.getElementById('c-stressSlider')?.value || '5'),
+      energy: parseInt(document.getElementById('c-energySlider')?.value || '5'),
       memo: document.getElementById('c-emotionMemo')?.value?.trim() || '',
     };
     const btn = document.getElementById('c-checkin-btn');

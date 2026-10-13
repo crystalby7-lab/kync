@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 const KYNC_CONFIG = {
-  version: '1.2.0',
+  version: '1.2.1',
   contactEmail: 'xoun148@gmail.com',
   termsVersion: '2026-10-12',   // 약관 내용이 바뀌면 날짜를 바꾸면 다시 동의를 받아요
 };
