@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 const KYNC_CONFIG = {
-  version: '1.1.3',
+  version: '1.2.0',
   contactEmail: 'xoun148@gmail.com',
   termsVersion: '2026-10-12',   // 약관 내용이 바뀌면 날짜를 바꾸면 다시 동의를 받아요
 };
@@ -81,7 +81,7 @@ const KyncBrand = (function () {
     return mascot('default', size, { cls });
   }
   function wordmark(cls) {
-    return `<button type="button" class="wordmark ${cls || ''}" aria-label="kync 홈으로" onclick="goHome(this)"><span class="wm-mark"><i></i></span><span class="wm-text">kync</span></button>`;
+    return `<button type="button" class="wordmark ${cls || ''}" aria-label="kync 홈으로" onclick="goHomeTab(this)"><span class="wm-mark"><i></i></span><span class="wm-text">kync</span></button>`;
   }
   return { mascot, curled, wordmark, SRC };
 })();
@@ -202,13 +202,17 @@ function selectTab(targetId) {
 }
 window.selectTab = selectTab;
 
+/* 말투: 부모 화면은 존댓말, 자녀 화면은 반말 */
+function tone(polite, casual) { return localStorage.getItem('kync_role') === 'child' ? casual : polite; }
+window.tone = tone;
+
 /* 로고 누르면 홈(첫 번째 탭)으로 */
-function goHome(el) {
+function goHomeTab(el) {
   const page = el.closest('.page');
   const first = page && page.querySelector('.tab-btn[data-target]');
   if (first) selectTab(first.dataset.target);
 }
-window.goHome = goHome;
+window.goHomeTab = goHomeTab;
 
 /* HTML에 적어둔 자리표시(data-ic, data-mascot 등)를 그림으로 채우기 */
 KyncUI.hydrate = function (root) {

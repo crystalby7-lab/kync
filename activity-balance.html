@@ -6,7 +6,7 @@
   <title>Kync — 취향 맞추기</title>
   <meta name="theme-color" content="#F4F1EC" />
   <link rel="icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="kync.css?v=20261013-2" />
+  <link rel="stylesheet" href="kync.css?v=20261013-3" />
 </head>
 <body>
 <div class="sub-app">
@@ -16,19 +16,19 @@
   </header>
   <main class="sub-body">
     <div class="sub-intro">
-      <h2>서로의 취향 알아가기</h2>
-      <p>하루 10문제. 내가 답한 뒤에 상대의 선택이 보여요.</p>
+      <h2>서로 취향 알아보기</h2>
+      <p id="intro-sub"></p>
     </div>
     <section class="card tight">
       <div class="row" style="justify-content:space-between;margin-bottom:10px">
-        <span class="small sub" style="font-weight:700">오늘 진행</span>
+        <span class="small sub" style="font-weight:700">오늘</span>
         <b class="num" id="prog-count">0 / 10</b>
       </div>
       <div class="bar"><div id="prog-fill" style="width:0%"></div></div>
     </section>
     <div id="done-banner" class="done-card hidden">
       <span data-mascot="happy" data-size="52" data-noshadow></span>
-      <div><b>오늘 10문제 모두 했어요</b><small>내일 새 질문이 기다려요.</small></div>
+      <div><b id="done-title"></b><small id="done-sub"></small></div>
     </div>
     <div class="stack" style="gap:8px" id="q-list"></div>
   </main>
@@ -43,7 +43,7 @@
     </header>
     <div class="sub-body">
       <div class="dark-card">
-        <div class="q-label">나의 취향은?</div>
+        <div class="q-label">나는?</div>
         <p class="q-text" id="qs-q-text"></p>
       </div>
       <div class="opt-row" id="qs-opts"></div>
@@ -56,7 +56,7 @@
   <div>
     <div class="sub-body" style="justify-content:center;text-align:center;padding-top:60px">
       <div id="result-art" style="display:flex;justify-content:center"></div>
-      <h2 id="result-title">답했어요</h2>
+      <h2 id="result-title"></h2>
       <div class="kv dark" style="text-align:left"><small>내 선택</small><b id="result-my-val"></b></div>
       <p class="small sub" id="result-hint"></p>
       <div class="row" style="margin-top:12px">
@@ -70,9 +70,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="kync-ui.js?v=20261013-2"></script>
-<script src="firebase-system.js?v=20261013-2"></script>
-<script src="kync-balance.js?v=20261013-2"></script>
+<script src="kync-ui.js?v=20261013-3"></script>
+<script src="firebase-system.js?v=20261013-3"></script>
+<script src="kync-balance.js?v=20261013-3"></script>
 <script>
   const myRole = localStorage.getItem('kync_role') || 'parent';
   const familyCode = localStorage.getItem('kync_family_code') || 'local';
@@ -108,8 +108,8 @@
 
   // 내 답과 상대 답 비교 (내가 답한 뒤에만 상대 답 공개)
   function compareText(mine, theirs) {
-    if (!theirs) return `나: ${esc(mine)}, ${theirLabel} 답 기다리는 중`;
-    return `나: ${esc(mine)}, ${theirLabel}: ${esc(theirs)} (${mine === theirs ? '같아요' : '달라요'})`;
+    if (!theirs) return `나 ${esc(mine)} · ${theirLabel} 아직`;
+    return `나 ${esc(mine)} · ${theirLabel} ${esc(theirs)} · ${mine === theirs ? '같음' : '다름'}`;
   }
 
   function openQuestion(qId) {
@@ -140,7 +140,7 @@
         await db.collection('families').doc(familyCode).collection('balance_answers')
           .doc(`${today}_${myRole}_${currentQId}`)
           .set({ role: myRole, qId: currentQId, answer, day: today, answeredAt: firebase.firestore.FieldValue.serverTimestamp() });
-      } catch (e) { toast('저장하지 못했어요. 인터넷 연결을 확인해주세요.', 'error'); }
+      } catch (e) { toast(tone('저장하지 못했어요. 인터넷 연결을 확인해주세요.', '저장 못 했어. 인터넷 연결 확인해줘'), 'error'); }
     }
   }
 
@@ -148,10 +148,10 @@
     const theirs = theirAnswers[qId];
     document.getElementById('result-my-val').textContent = answer;
     document.getElementById('result-art').innerHTML = theirs ? KyncBrand.mascot(theirs === answer ? 'happy' : 'wow', 96) : KyncBrand.curled(90);
-    document.getElementById('result-title').textContent = theirs ? (theirs === answer ? '같은 취향이에요' : '서로 달랐어요') : '답했어요';
+    document.getElementById('result-title').textContent = theirs ? (theirs === answer ? tone('같은 취향이에요', '같은 취향') : tone('달랐어요', '달랐다')) : tone('골랐어요', '골랐어');
     document.getElementById('result-hint').textContent = theirs
-      ? `${theirLabel}은(는) “${theirs}”를 골랐어요.`
-      : `${theirLabel}도 이 질문에 답하면 비교해서 보여줄게요.`;
+      ? tone(`${theirLabel}은(는) “${theirs}”`, `${theirLabel}은 “${theirs}”`)
+      : tone(`${theirLabel}이(가) 고르면 같이 보여요.`, `${theirLabel}이 고르면 같이 보여.`);
     const { data } = KyncBalance._getTodayState(familyCode);
     document.getElementById('btn-next-q').classList.toggle('hidden', Object.keys(data.answers).length >= MAX);
     document.getElementById('result-screen').classList.add('active');
@@ -165,6 +165,9 @@
     if (next) openQuestion(next.id);
   }
 
+  document.getElementById('intro-sub').textContent = tone('하루 10문제. 내가 고르고 나면 상대가 뭘 골랐는지 보여요.', '하루 10문제. 내가 고르고 나면 상대가 뭘 골랐는지 보여.');
+  document.getElementById('done-title').textContent = '오늘 10문제 끝';
+  document.getElementById('done-sub').textContent = tone('내일 새 문제가 나와요.', '내일 새 문제 나와.');
   renderList();
 
   // 상대의 오늘 답을 실시간으로 불러와 비교

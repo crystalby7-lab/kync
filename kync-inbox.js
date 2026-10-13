@@ -61,7 +61,7 @@ const KyncInbox = {
       .where('to', '==', role).orderBy('sentAt', 'desc').limit(20).get()
       .then(snap => snap.forEach(d => {
         const c = d.data();
-        items.push({ t: this._ms(c.sentAt), ic: 'heart', tone: 'honey', title: `${who} 칭찬 카드를 보냈어요`, sub: `“${c.text}”`, go: 'today' });
+        items.push({ t: this._ms(c.sentAt), ic: 'heart', tone: 'honey', title: tone(`${who} 한마디를 보냈어요`, `${who} 한마디 보냄`), sub: `“${c.text}”`, go: 'today' });
       })).catch(e => console.warn('inbox praise:', e)));
 
     // 최근 7일 오늘의 질문 답변·감정 기록
@@ -73,6 +73,10 @@ const KyncInbox = {
           const mine = !!r[role]?.content;
           items.push({ t: this._ms(r[other].at) || this._ms(d.id), ic: mine ? 'unlock' : 'lock', tone: 'sky',
             title: `${who} 오늘의 질문에 답했어요`, sub: mine ? '답이 열렸어요' : '나도 답하면 볼 수 있어요', go: 'today' });
+        }
+        if (r.react?.[other] && r[role]?.content) {
+          items.push({ t: this._ms(r[other].at) || this._ms(d.id), ic: 'heart', tone: 'honey',
+            title: tone(`${who} 내 답에 반응했어요`, `${who} 내 답에 반응함`), sub: r.react[other], go: 'today' });
         }
         if (role === 'parent' && r.checkin) {
           const emo = App.EMOTIONS_CHILD.find(e => e.id === r.checkin.emotion)?.label || '';
@@ -149,7 +153,7 @@ const KyncInbox = {
     const { uid } = this._ctx();
     const seen = this._seen(uid);
     if (!this._items.length) {
-      body.innerHTML = `<div class="empty" style="padding-top:80px">${KyncBrand.mascot('sleepy', 96)}<b>아직 알림이 없어요</b><p>가족이 칭찬 카드를 보내거나 답을 남기면 여기에 모여요.</p></div>`;
+      body.innerHTML = `<div class="empty" style="padding-top:80px">${KyncBrand.mascot('sleepy', 96)}<b>아직 알림이 없어요</b><p>${tone('가족이 한마디를 보내거나 답을 쓰면 여기 모여요.', '가족이 한마디 보내거나 답 쓰면 여기 모여.')}</p></div>`;
     } else {
       let html = '', lastDay = '';
       this._items.forEach((i, idx) => {

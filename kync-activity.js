@@ -33,22 +33,24 @@ const KyncActivity = {
     // 밸런스 게임
     const bq = KyncTogether.BALANCE_Q[day % KyncTogether.BALANCE_Q.length];
     const bs = this._read(`kync_vs_${fc}_${dateKey}`, {});
-    const balance = !bs[role] ? { pill: '참여하기', cls: 'pill-honey' }
-      : bs[other] ? { pill: '결과 공개', cls: 'pill-moss' } : { pill: `${otherLabel} 기다리는 중`, cls: 'pill-dark' };
+    const balance = !bs[role] ? { pill: tone('고르기', '고르기'), cls: 'pill-honey' }
+      : bs[other] ? { pill: tone('결과 나옴', '결과 나옴'), cls: 'pill-moss' } : { pill: `${otherLabel} 차례`, cls: 'pill-dark' };
 
     // 취향 맞추기
     const tasteCount = Object.keys(KyncBalance._getTodayState(fc).data.answers || {}).length;
     const tasteMax = KyncBalance.MAX_PER_DAY || 10;
 
     // 서로 맞히기
-    const qIdx = Math.floor(day / 3) % KyncTogether.QUIZ_Q.length;
-    const qq = KyncTogether.QUIZ_Q[qIdx];
-    const qs = this._read(`kync_quiz_${fc}_w${Math.floor(day / 7)}_${qIdx}`, {});
-    const quiz = !qs[`${role}_self`] ? '1단계, 내 답 쓰기'
-      : !qs[`${role}_guess`] ? '2단계, 맞혀보기'
-      : qs[`${other}_self`] ? '결과 보기' : `${otherLabel} 기다리는 중`;
+    const period = Math.floor(day / 3);
+    const qq = KyncTogether.QUIZ_Q[period % KyncTogether.QUIZ_Q.length];
+    const qs = this._read(`kync_quiz_${fc}_p${period}`, {});
+    const quiz = !qs[`${role}_self`] ? '내 답 쓰기'
+      : !qs[`${role}_guess`] ? `${otherLabel} 답 맞히기`
+      : qs[`${other}_self`] ? '결과 보기' : `${otherLabel} 차례`;
 
     const result = this._read('kync_quiz_result', null);
+    const myUid = KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid');
+    const theirType = Object.entries(KyncAccount?.family?.members || {}).find(([uid, m]) => uid !== myUid && m.role === other && m.talkType)?.[1]?.talkType;
     const tastePct = Math.round(tasteCount / tasteMax * 100);
 
     el.innerHTML = `
@@ -70,7 +72,7 @@ const KyncActivity = {
           <div class="ax-tile-label">취향 맞추기</div>
           <div class="ax-tile-num"><b>${tasteCount}</b> / ${tasteMax}</div>
           <div class="bar"><div style="width:${tastePct}%"></div></div>
-          <div class="ax-tile-foot">${tasteCount >= tasteMax ? '오늘 완료' : tasteCount ? '이어하기' : '시작하기'}${ic('chev', 15)}</div>
+          <div class="ax-tile-foot">${tasteCount >= tasteMax ? '오늘 끝' : tasteCount ? '이어서' : '시작'}${ic('chev', 15)}</div>
         </button>
         <button class="ax-tile ax-guess" onclick="location.href='activity-quiz.html'">
           <div class="ax-tile-label">서로 맞히기</div>
@@ -84,8 +86,8 @@ const KyncActivity = {
       <button class="ax-row" onclick="location.href='quiz.html'">
         <div class="ax-row-icon">${ic('target', 24)}</div>
         <div class="grow">
-          <b>${result?.type ? this._esc(result.type) : '대화 유형 검사'}</b>
-          <small>${result?.type ? '내 대화 유형이에요. 다시 검사할 수 있어요.' : '20문항으로 알아보는 나의 대화 방식'}</small>
+          <b>${result?.type ? `나는 ${this._esc(result.type)}` : '대화 유형 검사'}</b>
+          <small>${theirType ? `${otherLabel}은(는) ${this._esc(theirType)}` : result?.type ? tone(`${otherLabel}이(가) 하면 여기 같이 떠요`, `${otherLabel}이 하면 여기 같이 떠`) : tone('20문항, 5분쯤 걸려요', '20문항, 5분쯤 걸려')}</small>
         </div>
         <span class="chev">${ic('chev', 20)}</span>
       </button>`;

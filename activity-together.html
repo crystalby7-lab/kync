@@ -6,7 +6,7 @@
   <title>Kync — 밸런스 게임</title>
   <meta name="theme-color" content="#F4F1EC" />
   <link rel="icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="kync.css?v=20261013-2" />
+  <link rel="stylesheet" href="kync.css?v=20261013-3" />
 </head>
 <body>
 <div class="sub-app">
@@ -17,23 +17,23 @@
   <main class="sub-body">
     <div class="sub-intro">
       <h2>오늘의 밸런스 게임</h2>
-      <p>각자 고르고, 둘 다 고르면 서로의 답이 보여요.</p>
+      <p id="intro-sub"></p>
     </div>
     <div class="dark-card">
-      <div class="q-label">오늘의 질문</div>
+      <div class="q-label">둘 중 하나</div>
       <p class="q-text" id="q-text"></p>
     </div>
     <div id="game-ui" class="stack"></div>
-    <p class="small muted center">질문은 매일 자정에 바뀌어요.</p>
+    <p class="small muted center" id="foot-note"></p>
   </main>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="kync-ui.js?v=20261013-2"></script>
-<script src="firebase-system.js?v=20261013-2"></script>
-<script src="kync-features.js?v=20261013-2"></script>
+<script src="kync-ui.js?v=20261013-3"></script>
+<script src="firebase-system.js?v=20261013-3"></script>
+<script src="kync-features.js?v=20261013-3"></script>
 <script>
   const myRole = localStorage.getItem('kync_role') || 'parent';
   const familyCode = localStorage.getItem('kync_family_code') || 'local';
@@ -53,8 +53,11 @@
 
   function render() {
     document.getElementById('q-text').textContent = q.q;
+    document.getElementById('intro-sub').textContent = tone('각자 고르고, 둘 다 고르면 서로 뭘 골랐는지 보여요.', '각자 고르고, 둘 다 고르면 서로 뭘 골랐는지 보여.');
+    document.getElementById('foot-note').textContent = tone('질문은 매일 자정에 바뀌어요.', '질문은 매일 자정에 바뀌어.');
     const saved = getSaved();
     const mine = saved[myRole], theirs = saved[theirRole];
+    const myWhy = saved[`${myRole}_why`], theirWhy = saved[`${theirRole}_why`];
     const ui = document.getElementById('game-ui');
 
     if (!mine) {
@@ -62,15 +65,34 @@
         `<button class="opt-big" data-opt="${esc(o)}" onclick="answer(this.dataset.opt)">${esc(o)}</button>`).join('')}</div>`;
       return;
     }
+    const whyBox = myWhy
+      ? `<small class="why-line">“${esc(myWhy)}”</small>`
+      : `<div class="why-input"><input id="why" class="input" maxlength="30" placeholder="${tone('왜 골랐는지 한 줄 (안 써도 돼요)', '왜 골랐는지 한 줄 (안 써도 돼)')}" aria-label="고른 이유"
+           onkeydown="if(event.key==='Enter') saveWhy()"><button class="btn btn-soft btn-sm" onclick="saveWhy()">남기기</button></div>`;
     ui.innerHTML = `
-      <div class="kv"><small>나의 선택</small><b>${esc(mine)}</b></div>
+      <div class="kv"><small>내 선택</small><b>${esc(mine)}</b>${whyBox}</div>
       ${theirs ? `
-        <div class="kv dark"><small>${theirLabel}의 선택</small><b>${esc(theirs)}</b></div>
+        <div class="kv dark"><small>${theirLabel}의 선택</small><b>${esc(theirs)}</b>${theirWhy ? `<small class="why-line">“${esc(theirWhy)}”</small>` : ''}</div>
         <div class="verdict ${mine === theirs ? 'same' : 'diff'}">
           ${KyncBrand.mascot(mine === theirs ? 'happy' : 'wow', 40, { shadow: false })}
-          ${mine === theirs ? '같은 생각이에요' : '서로 다르게 생각했어요. 이유를 물어볼까요?'}
+          ${mine === theirs ? tone('같은 거 골랐어요', '같은 거 골랐다') : tone('갈렸어요', '갈렸다')}
         </div>` : `
-        <div class="waiting">${KyncBrand.curled(40)}<span><b>${theirLabel}의 선택을 기다리는 중</b>${theirLabel}도 고르면 결과가 열려요.</span></div>`}`;
+        <div class="waiting">${KyncBrand.curled(40)}<span><b>${tone(`${theirLabel}은(는) 아직 안 골랐어요`, `${theirLabel}은 아직 안 골랐어`)}</b>${tone('고르면 바로 여기 떠요.', '고르면 바로 여기 떠.')}</span></div>`}`;
+  }
+
+  async function saveWhy() {
+    const v = document.getElementById('why')?.value?.trim();
+    if (!v) return;
+    const saved = getSaved();
+    saved[`${myRole}_why`] = v;
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+    render();
+    if (familyCode !== 'local') {
+      try {
+        await db.collection('families').doc(familyCode).collection('balance').doc(balanceDay)
+          .set({ [`${myRole}_why`]: v }, { merge: true });
+      } catch (e) { toast(tone('저장하지 못했어요. 인터넷 연결을 확인해주세요.', '저장 못 했어. 인터넷 연결 확인해줘'), 'error'); }
+    }
   }
 
   async function answer(opt) {
@@ -81,8 +103,8 @@
     if (familyCode !== 'local') {
       try {
         await db.collection('families').doc(familyCode).collection('balance').doc(balanceDay)
-          .set({ [myRole]: opt }, { merge: true });
-      } catch (e) { toast('저장하지 못했어요. 인터넷 연결을 확인해주세요.', 'error'); }
+          .set({ [myRole]: opt, [`${myRole}_q`]: q.q }, { merge: true });
+      } catch (e) { toast(tone('저장하지 못했어요. 인터넷 연결을 확인해주세요.', '저장 못 했어. 인터넷 연결 확인해줘'), 'error'); }
     }
   }
 
@@ -97,7 +119,7 @@
           const data = snap.data() || {};
           const s = getSaved();
           let changed = false;
-          ['parent', 'child'].forEach(r => { if (data[r] && s[r] !== data[r]) { s[r] = data[r]; changed = true; } });
+          ['parent', 'child', 'parent_why', 'child_why'].forEach(r => { if (data[r] && s[r] !== data[r]) { s[r] = data[r]; changed = true; } });
           if (changed) { localStorage.setItem(storageKey, JSON.stringify(s)); render(); }
         }, e => console.warn('balance listen:', e));
     });

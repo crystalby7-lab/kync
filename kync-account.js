@@ -21,9 +21,9 @@ const KyncAccount = {
   ],
 
   INTRO: [
-    { art: 'question', title: '답해야 열리는\n오늘의 질문', sub: '같은 질문에 둘 다 답하면 서로의 답이 열려요. 먼저 말하기 어려운 이야기도 조금 편해져요.' },
-    { art: 'feeling',  title: '말로 하기 어려운 마음은\n기록과 카드로',  sub: '오늘 기분을 남기고, 고마운 마음은 칭찬 카드로 보내요.' },
-    { art: 'together', title: '같이 하는\n작은 약속',            sub: '밸런스 게임, 취향 맞추기, 퀘스트로 서로를 조금씩 더 알아가요.' },
+    { art: 'question', title: '같은 질문,\n둘 다 써야 열려요', sub: '하루에 하나. 내가 먼저 써도 상대가 쓰기 전까진 안 보여요.' },
+    { art: 'feeling',  title: '오늘 기분은\n버튼 하나로',      sub: '자녀가 기분을 남기면 부모 화면에 바로 떠요. 짧은 한마디도 보낼 수 있어요.' },
+    { art: 'together', title: '게임하고\n약속하고',            sub: '밸런스 게임, 서로 맞히기, 같이 채우는 퀘스트.' },
   ],
 
   esc(s) { return KyncUI.esc(s); },
