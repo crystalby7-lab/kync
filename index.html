@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Kync" />
   <link rel="preload" href="fonts/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="images/doci.png" as="image" />
-  <link rel="stylesheet" href="kync.css?v=20261013-3" />
+  <link rel="stylesheet" href="kync.css?v=20261013-4" />
   <script>
     // 활동 페이지에서 돌아온 경우: 로그인 확인이 끝나면 그 탭을 열어요 (enterApp에서 처리)
     (function () {
@@ -319,8 +319,16 @@
         <section class="card" id="c-checkin">
           <div class="card-head"><h2>지금 기분</h2><span class="pill hidden" id="c-checkin-pill"></span></div>
           <div class="emo-grid" id="c-emotionGrid"></div>
-          <div class="lv"><div class="lv-top">스트레스</div><div class="lv-row" id="c-stress-row" role="group" aria-label="스트레스"></div></div>
-          <div class="lv"><div class="lv-top">에너지</div><div class="lv-row" id="c-energy-row" role="group" aria-label="에너지"></div></div>
+          <div class="range">
+            <div class="range-top"><span>스트레스</span><b id="c-stress-val">5</b></div>
+            <input type="range" min="1" max="10" value="5" id="c-stressSlider" aria-label="스트레스">
+            <div class="range-ends"><span>낮음</span><span>높음</span></div>
+          </div>
+          <div class="range">
+            <div class="range-top"><span>에너지</span><b id="c-energy-val">5</b></div>
+            <input type="range" min="1" max="10" value="5" id="c-energySlider" aria-label="에너지">
+            <div class="range-ends"><span>방전</span><span>충전</span></div>
+          </div>
           <input type="text" id="c-emotionMemo" class="input" maxlength="60" placeholder="왜 그런지 한 줄 (안 써도 돼)" aria-label="한 줄 메모" style="margin-top:16px">
           <button class="btn btn-primary btn-block" id="c-checkin-btn" onclick="App.saveCheckin()" style="margin-top:12px">저장</button>
         </section>
@@ -433,18 +441,18 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<script src="kync-ui.js?v=20261013-3"></script>
-<script src="kync-legal.js?v=20261013-3"></script>
-<script src="firebase-system.js?v=20261013-3"></script>
-<script src="kync-account.js?v=20261013-3"></script>
-<script src="kync-core.js?v=20261013-3"></script>
-<script src="kync-features.js?v=20261013-3"></script>
-<script src="kync-balance.js?v=20261013-3"></script>
-<script src="kync-diary.js?v=20261013-3"></script>
-<script src="kync-quests2.js?v=20261013-3"></script>
-<script src="kync-counsel.js?v=20261013-3"></script>
-<script src="kync-activity.js?v=20261013-3"></script>
-<script src="kync-inbox.js?v=20261013-3"></script>
+<script src="kync-ui.js?v=20261013-4"></script>
+<script src="kync-legal.js?v=20261013-4"></script>
+<script src="firebase-system.js?v=20261013-4"></script>
+<script src="kync-account.js?v=20261013-4"></script>
+<script src="kync-core.js?v=20261013-4"></script>
+<script src="kync-features.js?v=20261013-4"></script>
+<script src="kync-balance.js?v=20261013-4"></script>
+<script src="kync-diary.js?v=20261013-4"></script>
+<script src="kync-quests2.js?v=20261013-4"></script>
+<script src="kync-counsel.js?v=20261013-4"></script>
+<script src="kync-activity.js?v=20261013-4"></script>
+<script src="kync-inbox.js?v=20261013-4"></script>
 
 <script>
 // 탭 전환 (selectTab은 kync-ui.js에 있어요)
