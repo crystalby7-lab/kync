@@ -6,8 +6,7 @@
   <title>Kync — 대화 유형 검사</title>
   <meta name="theme-color" content="#F4F1EC" />
   <link rel="icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="kync.css?v=20261013-2" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="kync.css?v=20261013-3" />
 </head>
 <body>
 <div class="sub-app">
@@ -20,21 +19,9 @@
   <div class="sub-body qs-step" id="s-role">
     <div class="sub-intro">
       <h2>나는 어떻게 말하는 사람일까?</h2>
-      <p>20개 질문으로 4가지 축의 점수와 6가지 유형 중 나의 대화 방식을 알아봐요.</p>
+      <p id="intro-sub"></p>
     </div>
-    <div class="role-opts" style="margin-top:8px">
-      <button class="role-opt" onclick="Quiz.start('parent')">
-        <span class="role-ic parent" data-ic="heart" data-size="26"></span>
-        <span><b>부모로 검사하기</b><small>자녀와의 대화 패턴을 알아봐요</small></span>
-        <span class="chev" data-ic="chev"></span>
-      </button>
-      <button class="role-opt" onclick="Quiz.start('child')">
-        <span class="role-ic child" data-ic="smile" data-size="26"></span>
-        <span><b>자녀로 검사하기</b><small>부모님과의 소통 방식을 알아봐요</small></span>
-        <span class="chev" data-ic="chev"></span>
-      </button>
-    </div>
-    <div class="note"><span data-ic="clock" data-size="18"></span><span>5~7분 걸려요. 정답은 없으니 평소 모습에 가장 가까운 답을 골라주세요.</span></div>
+    <button class="btn btn-primary btn-block" id="start-btn" onclick="Quiz.start(localStorage.getItem('kync_role') === 'child' ? 'child' : 'parent')">시작</button>
   </div>
 
   <!-- 질문 -->
@@ -54,59 +41,43 @@
     </div>
   </div>
 
-  <!-- 로딩 -->
-  <div class="sub-body qs-step hidden" id="s-loading">
-    <div class="empty" style="padding-top:120px">
-      <span data-curled="96"></span>
-      <b>결과를 정리하고 있어요</b>
-      <p id="loading-msg"></p>
-    </div>
-  </div>
-
   <!-- 결과 -->
   <div class="sub-body qs-step hidden" id="s-result">
     <div class="result-hero">
       <div class="r-eyebrow" id="r-eyebrow">대화 유형 결과</div>
       <div class="r-type-name" id="r-type-name"></div>
       <div class="r-type-sub" id="r-type-sub"></div>
-      <span class="pill pill-dark r-reliability" id="r-reliability"></span>
       <p class="r-summary" id="r-summary"></p>
     </div>
     <section class="card">
-      <div class="card-head"><h2>4개 축 한눈에 보기</h2></div>
-      <div class="radar-inner"><canvas id="radarChart" width="260" height="260" aria-label="4개 축 점수 그래프"></canvas></div>
-    </section>
-    <section class="card">
-      <div class="card-head"><h2>축별 점수</h2></div>
+      <div class="card-head"><h2>4가지 기준</h2></div>
       <div id="axes-display"></div>
     </section>
-    <section class="card">
-      <div class="card-head"><h2>성향 지수</h2></div>
-      <div id="gauge-display"></div>
-    </section>
+    <section class="card hidden" id="r-family"></section>
     <section class="card" id="r-detail-card"></section>
     <section class="card">
-      <div class="card-head"><h2>오늘부터 해볼 것</h2></div>
+      <div class="card-head"><h2>해볼 만한 것</h2></div>
       <div id="r-tips"></div>
     </section>
     <section class="card">
-      <div class="card-head"><h2>다른 유형과의 궁합</h2></div>
+      <div class="card-head"><h2>다른 유형이랑은</h2></div>
       <div id="r-compat"></div>
     </section>
-    <button class="btn btn-primary btn-block" onclick="Quiz.saveAndGoHome()">활동으로 돌아가기</button>
-    <button class="btn btn-soft btn-block" onclick="Quiz.reset()">다시 검사하기</button>
+    <button class="btn btn-primary btn-block" onclick="Quiz.saveAndGoHome()">활동으로</button>
+    <button class="btn btn-soft btn-block" onclick="Quiz.reset()">다시 하기</button>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="kync-ui.js?v=20261013-2"></script>
-<script src="firebase-system.js?v=20261013-2"></script>
+<script src="kync-ui.js?v=20261013-3"></script>
+<script src="firebase-system.js?v=20261013-3"></script>
 <script>
 KyncAuth.onAuthChange(user => { if (!user) location.href = 'index.html'; });
 function goHome(){ Quiz.saveAndGoHome(); }
+document.addEventListener('DOMContentLoaded', () => { const el = document.getElementById('intro-sub'); if (el) el.textContent = tone('20문항, 5분쯤 걸려요. 정답은 없으니 평소 모습에 가까운 걸 고르면 돼요.', '20문항, 5분쯤 걸려. 정답 없으니까 평소 나랑 가까운 걸 고르면 돼.'); });
 </script>
-<script src="quiz.js?v=20261013-2"></script>
+<script src="quiz.js?v=20261013-3"></script>
 </body>
 </html>

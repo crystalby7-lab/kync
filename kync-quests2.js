@@ -11,14 +11,14 @@
 const KyncQuests2 = {
 
   TEMPLATES: [
-    { id:'t1', title:'하루 한 번 안부 묻기',   desc:'공부 얘기 없이 "오늘 어땠어?" 한 마디',   days:3  },
-    { id:'t2', title:'밥 먹을 때 폰 내려놓기', desc:'식사 중 둘 다 폰 없이',                   days:7  },
-    { id:'t3', title:'자기 전 잘 자 인사',      desc:'자기 전 짧은 인사 주고받기',              days:5  },
-    { id:'t4', title:'칭찬 하나씩 매일',        desc:'오늘 상대에게서 좋았던 점 하나 말하기',   days:7  },
-    { id:'t5', title:'성적 얘기 없는 3일',      desc:'성적·공부량·학원 얘기 없이 대화',        days:3  },
-    { id:'t6', title:'10분 경청 타임',          desc:'10분 동안 끊지 않고 들어주기',            days:7  },
-    { id:'t7', title:'좋았던 기억 하나씩',      desc:'함께했던 좋은 기억 하나씩 꺼내기',        days:7  },
-    { id:'t8', title:'마음 편지 쓰기',          desc:'평소 못 했던 말을 짧은 편지로',           days:3  },
+    { id:'t1', title:'밥 먹을 땐 폰 뒤집기',     desc:'같이 먹을 때 둘 다',                 days:7 },
+    { id:'t2', title:'잘 자 인사하고 자기',       desc:'말로 해도, 카톡으로 해도',           days:5 },
+    { id:'t3', title:'오늘 있었던 일 하나씩',     desc:'자기 전에 하나만 얘기하기',          days:7 },
+    { id:'t4', title:'성적·공부 얘기 금지',       desc:'먼저 꺼내는 사람이 지는 거',         days:3 },
+    { id:'t5', title:'10분 같이 걷기',            desc:'동네 한 바퀴라도',                   days:5 },
+    { id:'t6', title:'고마운 거 하나 말하기',     desc:'사소한 거라도',                      days:7 },
+    { id:'t7', title:'노래 한 곡씩 추천하기',     desc:'서로 하나씩 보내고 들어보기',        days:5 },
+    { id:'t8', title:'포스트잇 한 장',            desc:'짧게 써서 눈에 띄는 데 붙이기',      days:3 },
   ],
 
   _quests: [],
@@ -78,12 +78,12 @@ const KyncQuests2 = {
     const role = this._role;
 
     if (!this._fc()) {
-      el.innerHTML = `<div class="qx-empty">${KyncBrand.curled(40)}가족과 연결하면 퀘스트를 시작할 수 있어요.</div>`;
+      el.innerHTML = `<div class="qx-empty">${KyncBrand.curled(40)}${tone('가족과 연결하면 퀘스트를 할 수 있어요.', '가족이랑 연결하면 퀘스트 할 수 있어.')}</div>`;
       return;
     }
 
     const byNew = (a, b) => String(b.id).localeCompare(String(a.id));
-    const qs = this._quests.filter(q => q.status !== 'declined').sort(byNew);
+    const qs = this._quests.filter(q => q.status !== 'declined' && q.status !== 'stopped').sort(byNew);
     const active   = qs.filter(q => q.status === 'active');
     const received = qs.filter(q => q.status === 'pending' && !q.agreed?.[role]);
     const sent     = qs.filter(q => q.status === 'pending' && q.agreed?.[role]);
@@ -94,7 +94,7 @@ const KyncQuests2 = {
     html += `<div class="qx-section">진행 중</div>`;
     html += active.length
       ? active.map(q => this._activeCard(q)).join('')
-      : `<div class="qx-empty">${KyncBrand.mascot('sleepy', 44, { shadow: false })}<span>진행 중인 퀘스트가 없어요.<br>작은 약속 하나로 시작해봐요.</span></div>`;
+      : `<div class="qx-empty">${KyncBrand.mascot('sleepy', 44, { shadow: false })}<span>${tone('진행 중인 퀘스트가 없어요.', '진행 중인 퀘스트 없음.')}<br>${tone('아래에서 하나 골라 제안해보세요.', '아래에서 하나 골라서 제안해봐.')}</span></div>`;
 
     if (received.length) {
       html += `<div class="qx-section">받은 제안 <span class="qx-count">${received.length}</span></div>`;
@@ -106,7 +106,7 @@ const KyncQuests2 = {
       html += sent.map(q => this._sentCard(q)).join('');
     }
 
-    html += `<button class="qx-add" onclick="KyncQuests2.openAddSheet()">${ic('plus', 20)}새 퀘스트 제안하기</button>`;
+    html += `<button class="qx-add" onclick="KyncQuests2.openAddSheet()">${ic('plus', 20)}퀘스트 제안하기</button>`;
 
     if (done.length) {
       html += `<button class="qx-toggle" onclick="KyncQuests2.toggleDone()" aria-expanded="${this._showDone}">
@@ -128,10 +128,10 @@ const KyncQuests2 = {
     const mine = !!today[role], theirs = !!today[other];
 
     let status;
-    if (mine && theirs) status = '오늘 하루 채웠어요!';
-    else if (mine)      status = `${this._otherLabel(role)} 체크를 기다리는 중`;
-    else if (theirs)    status = `${role === 'parent' ? '자녀는' : '부모님은'} 오늘 했어요`;
-    else                status = '둘 다 체크하면 하루가 채워져요';
+    if (mine && theirs) status = tone('오늘 칸 채웠어요', '오늘 칸 채움');
+    else if (mine)      status = tone(`${this._otherLabel(role)}만 체크하면 돼요`, `${this._otherLabel(role)}만 체크하면 돼`);
+    else if (theirs)    status = tone(`${this._otherLabel(role)}은(는) 오늘 했대요`, `${this._otherLabel(role)}은 오늘 했대`);
+    else                status = tone('둘 다 체크해야 하루가 채워져요', '둘 다 체크해야 하루가 채워져');
 
     return `
       <div class="qx-card">
@@ -147,8 +147,9 @@ const KyncQuests2 = {
           <div class="qx-who ${(role === 'child' ? mine : theirs) ? 'on' : ''}">${(role === 'child' ? mine : theirs) ? ic('check', 15) : ''}자녀</div>
         </div>
         <button class="btn btn-block ${mine ? 'done' : 'btn-primary'}" ${mine ? 'disabled' : ''}
-          onclick="KyncQuests2.checkToday('${q.id}')">${mine ? ic('check', 18) + '오늘 체크했어요' : '오늘 했어요'}</button>
+          onclick="KyncQuests2.checkToday('${q.id}')">${mine ? ic('check', 18) + tone('오늘 체크함', '오늘 체크함') : tone('오늘 했어요', '오늘 했어')}</button>
         <div class="qx-status">${status}</div>
+        <button class="text-btn qx-stop" onclick="KyncQuests2.stopQuest('${q.id}')">그만하기</button>
       </div>`;
   },
 
@@ -159,8 +160,8 @@ const KyncQuests2 = {
         <div class="qx-title">${this._esc(q.title)}</div>
         ${q.desc ? `<div class="qx-desc">${this._esc(q.desc)}</div>` : ''}
         <div class="qx-actions">
-          <button class="btn btn-soft" onclick="KyncQuests2.decline('${q.id}')">넘기기</button>
-          <button class="btn btn-primary" onclick="KyncQuests2.accept('${q.id}')">같이 할래요</button>
+          <button class="btn btn-soft" onclick="KyncQuests2.decline('${q.id}')">다음에</button>
+          <button class="btn btn-primary" onclick="KyncQuests2.accept('${q.id}')">${tone('같이 할게요', '같이 할래')}</button>
         </div>
       </div>`;
   },
@@ -169,7 +170,7 @@ const KyncQuests2 = {
     return `
       <div class="qx-card qx-muted">
         <div class="qx-title">${this._esc(q.title)}</div>
-        <div class="qx-desc">${q.days}일 · ${this._otherLabel(this._role)}의 답을 기다리는 중</div>
+        <div class="qx-desc">${q.days}일 · ${this._otherLabel(this._role)} ${tone('대답 기다리는 중', '대답 기다리는 중')}</div>
         <button class="text-btn" style="margin-top:6px" onclick="KyncQuests2.cancel('${q.id}')">제안 취소</button>
       </div>`;
   },
@@ -200,13 +201,18 @@ const KyncQuests2 = {
   },
 
   async decline(id) {
-    if (!await KyncUI.confirm({ title: '이 제안을 넘길까요?', ok: '넘기기' })) return;
+    if (!await KyncUI.confirm({ title: tone('이번엔 안 할까요?', '이번엔 안 할래?'), ok: '다음에' })) return;
     await this._write(id, { status: 'declined', declinedBy: this._role });
   },
 
   async cancel(id) {
-    if (!await KyncUI.confirm({ title: '보낸 제안을 취소할까요?', ok: '취소하기', cancel: '그대로 두기' })) return;
+    if (!await KyncUI.confirm({ title: tone('보낸 제안을 취소할까요?', '보낸 제안 취소할까?'), ok: '취소', cancel: '그대로 두기' })) return;
     await this._write(id, { status: 'declined', declinedBy: this._role });
+  },
+
+  async stopQuest(id) {
+    if (!await KyncUI.confirm({ title: tone('이 퀘스트를 그만할까요?', '이거 그만할까?'), message: tone('채운 날은 지워지고 목록에서 사라져요.', '채운 날은 지워지고 목록에서 없어져.'), ok: '그만하기', danger: true })) return;
+    await this._write(id, { status: 'stopped', stoppedBy: this._role });
   },
 
   async checkToday(id) {
@@ -240,7 +246,7 @@ const KyncQuests2 = {
       checks: {},
     });
     this.closeAddSheet();
-    toast(`${this._otherLabel(role)}에게 제안했어요`, 'ok');
+    toast(tone(`${this._otherLabel(role)}에게 제안했어요`, `${this._otherLabel(role)}한테 제안했어`), 'ok');
   },
 
   addFromTemplate(templateId) {
@@ -252,16 +258,16 @@ const KyncQuests2 = {
     const title = document.getElementById('qx-custom-title')?.value?.trim();
     const desc  = document.getElementById('qx-custom-desc')?.value?.trim();
     const days  = Math.min(30, Math.max(1, parseInt(document.getElementById('qx-custom-days')?.value) || 7));
-    if (!title) { toast('퀘스트 이름을 입력해주세요.', 'error'); return; }
+    if (!title) { toast(tone('이름을 써주세요', '이름 써줘'), 'error'); return; }
     this._addQuest({ title, desc, days });
   },
 
   /* ── 추가 시트 ── */
   openAddSheet() {
     this._sheet = KyncUI.sheet(`
-      <h2>새 퀘스트 제안하기</h2>
-      <p class="sheet-sub">${this._otherLabel(this._role)}이(가) 같이 하겠다고 하면 시작돼요.</p>
-      <div class="label" style="margin-bottom:8px">추천 퀘스트</div>
+      <h2>퀘스트 제안하기</h2>
+      <p class="sheet-sub">${tone(`${this._otherLabel(this._role)}이(가) 같이 한다고 하면 시작돼요.`, `${this._otherLabel(this._role)}이 같이 한다고 하면 시작돼.`)}</p>
+      <div class="label" style="margin-bottom:8px">골라서 바로</div>
       <div class="qx-templates">
         ${this.TEMPLATES.map(t => `
           <button class="qx-template" onclick="KyncQuests2.addFromTemplate('${t.id}')">
@@ -272,7 +278,7 @@ const KyncQuests2 = {
       <div class="label" style="margin:20px 0 8px">직접 만들기</div>
       <div class="stack" style="gap:8px">
         <input id="qx-custom-title" class="input" maxlength="20" placeholder="퀘스트 이름" aria-label="퀘스트 이름">
-        <input id="qx-custom-desc" class="input" maxlength="40" placeholder="어떻게 할지 (선택)" aria-label="어떻게 할지">
+        <input id="qx-custom-desc" class="input" maxlength="40" placeholder="어떻게 할지 (안 써도 됨)" aria-label="어떻게 할지">
         <div class="row">
           <label class="qx-days"><input id="qx-custom-days" type="number" min="1" max="30" value="7" aria-label="기간(일)">일</label>
           <button class="btn btn-primary grow" onclick="KyncQuests2.addCustom()">제안하기</button>
@@ -284,10 +290,10 @@ const KyncQuests2 = {
 
   /* ── 알림 ── */
   _popStarted(title) {
-    KyncUI.confirm({ title: '퀘스트를 시작했어요', message: `“${title}”\n둘 다 체크한 날이 하루로 채워져요.`, ok: '좋아요', cancel: null, mascot: 'happy' });
+    KyncUI.confirm({ title: tone('시작했어요', '시작!'), message: `“${title}”\n${tone('둘 다 체크한 날만 하루로 쳐요.', '둘 다 체크한 날만 하루로 쳐.')}`, ok: tone('확인', '오케이'), cancel: null, mascot: 'happy' });
   },
   _popDone(title) {
-    KyncUI.confirm({ title: '퀘스트 완료!', message: `“${title}”\n끝까지 함께 해냈어요.`, ok: '좋아요', cancel: null, mascot: 'happy' });
+    KyncUI.confirm({ title: tone('다 채웠어요', '다 채웠다'), message: `“${title}”`, ok: tone('확인', '오케이'), cancel: null, mascot: 'happy' });
   },
 };
 

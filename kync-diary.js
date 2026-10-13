@@ -143,6 +143,7 @@ const KyncDiary = {
       savedAt: iso,
       uid:     x.uid || '',
       name:    x.name || '',
+      likes:   x.likes || {},
     };
     entry.dateKey = x.dateKey || this._entryDate(entry);
     return entry;
@@ -235,8 +236,8 @@ const KyncDiary = {
       <div class="photo-pick" id="kd-photo-area" role="button" tabindex="0" aria-label="사진 추가"
         onclick="KyncDiary.pickPhoto()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();KyncDiary.pickPhoto()}">
         ${ic('camera', 30)}
-        <span>사진 추가</span>
-        <small>찍거나 앨범에서 골라요</small>
+        <span>사진</span>
+        <small>${tone('찍거나 앨범에서', '찍거나 앨범에서')}</small>
       </div>
       <input type="file" id="kd-file-input" accept="image/*" class="hidden" onchange="KyncDiary.onPhotoSelected(this)">
       <div class="compose-body">
@@ -244,8 +245,8 @@ const KyncDiary = {
           ${this.EMOTIONS.map(e => `<button type="button" class="chip" id="kd-emo-${e.id}" aria-pressed="false"
             onclick="KyncDiary.selectEmotion('${e.id}')"><i class="dot" style="background:${e.dot}"></i>${e.label}</button>`).join('')}
         </div>
-        <input id="kd-memo" class="input" type="text" maxlength="60" placeholder="오늘 하루 한 줄로" aria-label="한 줄 메모">
-        <button id="kd-save-btn" class="btn btn-primary btn-block" onclick="KyncDiary.save('${this._myRole}')">기록하기</button>
+        <input id="kd-memo" class="input" type="text" maxlength="60" placeholder="${tone('한 줄 남기기', '한 줄 남기기')}" aria-label="한 줄 메모">
+        <button id="kd-save-btn" class="btn btn-primary btn-block" onclick="KyncDiary.save('${this._myRole}')">올리기</button>
       </div>
     </section>`;
   },
@@ -300,7 +301,7 @@ const KyncDiary = {
         area.appendChild(rm);
       }
     } else {
-      area.innerHTML = `${ic('camera', 30)}<span>사진 추가</span><small>찍거나 앨범에서 골라요</small>`;
+      area.innerHTML = `${ic('camera', 30)}<span>사진</span><small>찍거나 앨범에서</small>`;
     }
   },
 
@@ -318,7 +319,7 @@ const KyncDiary = {
   async save(myRole) {
     if (this._saving) return;
     const memo = document.getElementById('kd-memo')?.value?.trim();
-    if (!this._img && !memo) { toast('사진이나 한 줄 메모를 남겨주세요.', 'error'); return; }
+    if (!this._img && !memo) { toast(tone('사진이나 한 줄 중 하나는 있어야 해요', '사진이나 한 줄 중 하나는 있어야 해'), 'error'); return; }
 
     this._saving = true;
     const btn = document.getElementById('kd-save-btn');
@@ -368,20 +369,20 @@ const KyncDiary = {
       this._sel = null; this.selectEmotion(null);
       const memoInput = document.getElementById('kd-memo');
       if (memoInput) memoInput.value = '';
-      toast('기록했어요', 'ok');
+      toast(tone('올렸어요', '올렸어'), 'ok');
       this._renderViewArea();
     } catch(e) {
       console.warn('diary save:', e);
-      toast('저장하지 못했어요. 인터넷 연결을 확인해주세요.', 'error');
+      toast(tone('못 올렸어요. 인터넷 연결을 확인해주세요.', '못 올렸어. 인터넷 연결 확인해줘'), 'error');
     } finally {
       this._saving = false;
-      if (btn) { btn.disabled = false; btn.textContent = '기록하기'; }
+      if (btn) { btn.disabled = false; btn.textContent = '올리기'; }
     }
   },
 
   /* ── 삭제 ── */
   async deleteEntry(entryId) {
-    const ok = await KyncUI.confirm({ title: '이 기록을 지울까요?', message: '가족 화면에서도 사라져요.', ok: '지우기', danger: true });
+    const ok = await KyncUI.confirm({ title: tone('이 기록을 지울까요?', '이거 지울까?'), message: tone('가족 화면에서도 사라져요.', '가족 화면에서도 없어져.'), ok: '지우기', danger: true });
     if (!ok) return;
     const fc = this._fc();
     if (fc !== 'local' && this._hasDB()) {
@@ -392,7 +393,7 @@ const KyncDiary = {
     this._entries = next;
     this._entriesFc = fc;
     this._writeCache(fc, next, fc === 'local');
-    toast('기록을 지웠어요', 'ok');
+    toast(tone('지웠어요', '지웠어'), 'ok');
     this._renderViewArea();
   },
 
@@ -407,8 +408,8 @@ const KyncDiary = {
       feed.innerHTML = `
         <div class="empty">
           ${KyncBrand.mascot(filterDate ? 'sleepy' : 'default', 84)}
-          <b>${filterDate ? '이 날은 기록이 없어요' : '아직 기록이 없어요'}</b>
-          ${filterDate ? '' : '<p>오늘 첫 장면을 남겨봐요.</p>'}
+          <b>${filterDate ? tone('이 날은 기록이 없어요', '이 날은 기록 없음') : tone('아직 기록이 없어요', '아직 기록 없음')}</b>
+          ${filterDate ? '' : `<p>${tone('사진 한 장이나 한 줄이면 돼요.', '사진 한 장이나 한 줄이면 돼.')}</p>`}
         </div>`;
       return;
     }
@@ -431,9 +432,35 @@ const KyncDiary = {
               ${isMe ? `<button class="icon-btn sm" onclick="KyncDiary.deleteEntry('${entryId}')" aria-label="기록 지우기">${ic('trash', 18)}</button>` : ''}
             </div>
             ${e.memo ? `<p class="post-memo">${this._esc(e.memo)}</p>` : ''}
+            ${this._likeRow(e, isMe)}
           </div>
         </article>`;
     }).join('');
+  },
+
+  /* ── 좋아요 (상대 글에만 누를 수 있음) ── */
+  _likeRow(e, isMe) {
+    const me = this._myRole, other = me === 'parent' ? 'child' : 'parent';
+    const otherLabel = me === 'parent' ? '자녀' : '부모님';
+    if (isMe) return e.likes?.[other] ? `<div class="post-liked">${ic('heart', 14)}${otherLabel}이(가) 좋아해요</div>` : '';
+    if (this._fc() === 'local') return '';
+    const on = !!e.likes?.[me];
+    return `<button class="like-btn ${on ? 'on' : ''}" aria-pressed="${on}" onclick="KyncDiary.toggleLike('${this._esc(e.id)}')">${ic('heart', 17)}${on ? '좋아함' : '좋아요'}</button>`;
+  },
+
+  async toggleLike(id) {
+    const e = this._getEntries().find(x => x.id === id);
+    if (!e || !this._hasDB()) return;
+    const me = this._myRole, on = !!e.likes?.[me];
+    e.likes = { ...(e.likes || {}), [me]: !on };
+    this._renderViewArea();
+    try {
+      await db.collection('families').doc(this._fc()).collection('diary').doc(id)
+        .update({ [`likes.${me}`]: on ? firebase.firestore.FieldValue.delete() : true });
+    } catch (err) {
+      e.likes[me] = on; this._renderViewArea();
+      toast(tone('못 눌렀어요. 다시 해주세요.', '안 눌렸어. 다시 해줘'), 'error');
+    }
   },
 
   /* ── 캘린더 ── */
@@ -472,7 +499,7 @@ const KyncDiary = {
       <div id="kd-calendar-feed" class="stack"></div>`;
 
     if (this._selectedDate) this.renderFeed(this._myRole, this._selectedDate, 'kd-calendar-feed');
-    else document.getElementById('kd-calendar-feed').innerHTML = `<p class="small sub center" style="padding:8px">날짜를 누르면 그날의 기록을 볼 수 있어요.</p>`;
+    else document.getElementById('kd-calendar-feed').innerHTML = `<p class="small sub center" style="padding:8px">${tone('날짜를 누르면 그날 기록이 보여요.', '날짜 누르면 그날 기록 보여.')}</p>`;
   },
 
   changeMonth(delta) {
