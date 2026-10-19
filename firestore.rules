@@ -11,9 +11,10 @@ service cloud.firestore {
     }
 
     // 내 계정 정보 (나만 읽고 씀)
+    // 하위: counsel(AI 상담), journal(일기) — 전부 본인만
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
-      match /counsel/{day} {
+      match /{sub}/{doc} {
         allow read, write: if signedIn() && request.auth.uid == uid;
       }
     }
@@ -39,7 +40,9 @@ service cloud.firestore {
       );
       allow delete: if isMember(code);
 
-      // 가족 공간 안의 기록 (답변, 감정, 사진, 칭찬 카드, 활동, 퀘스트)
+      // 가족 공간 안의 기록
+      // records(질문·기분), diary(기록), praise(한마디), quests2(퀘스트), balance_answers(취향),
+      // manual(사용 설명서 공개본), journal_shared(보낸 일기), events(사용 기록) 등 — 가족 멤버만
       match /{sub}/{doc} {
         allow read, write: if isMember(code);
       }
