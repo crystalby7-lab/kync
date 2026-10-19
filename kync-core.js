@@ -117,6 +117,7 @@ const App = {
     if (typeof KyncDiary !== 'undefined') KyncDiary.stop?.();
     if (typeof KyncQuests2 !== 'undefined') KyncQuests2.stop?.();
     if (typeof KyncManual !== 'undefined') KyncManual.stop?.();
+    if (typeof KyncJournal !== 'undefined') KyncJournal.stop?.();
     this._lastRecord = null;
     this._selectedEmotion = null;
     ['p','c'].forEach(pre => {
@@ -147,6 +148,7 @@ const App = {
     if (typeof KyncDiary !== 'undefined') KyncDiary.render(`${pre}-diary-container`, role);
     if (typeof KyncCounsel !== 'undefined') KyncCounsel.init(role);
     if (role === 'parent' && typeof KyncManual !== 'undefined') KyncManual.listenParent();
+    if (typeof KyncJournal !== 'undefined') { if (role === 'parent') KyncJournal.listenParent(); else KyncJournal.renderTodayCard(); }
     if (typeof KyncActivity !== 'undefined') KyncActivity.render();
 
     if (fc && typeof KyncPraise !== 'undefined') {

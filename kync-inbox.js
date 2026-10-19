@@ -90,6 +90,9 @@ const KyncInbox = {
         const n = KyncManual.SECTIONS.filter(s => x[s.id]).length;
         if (n) items.push({ t: this._ms(x.updatedAt), ic: 'doc', tone: 'honey', title: '아이가 사용 설명서를 보여줬어요', sub: `${n}개 항목`, go: 'today' });
       });
+      (typeof KyncJournal !== 'undefined' ? KyncJournal._sharedDocs || [] : []).slice(0, 10).forEach(d => {
+        items.push({ t: this._ms(d.at) || +String(d.id).replace('j_', ''), ic: 'edit', tone: 'sky', title: '아이가 일기를 보냈어요', sub: (d.text || '').slice(0, 40), go: 'today' });
+      });
     } else {
       jobs.push(db.collection('families').doc(fc).collection('manual').doc(this._ctx().uid).get().then(d => {
         const th = d.exists ? d.data().thanks || {} : {};

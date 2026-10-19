@@ -471,7 +471,7 @@ auth.onAuthStateChanged(async (user) => {
 /* ════════════════════════════════════════
    KyncDB — Firestore 데이터
 ════════════════════════════════════════ */
-const FAMILY_SUBCOLLECTIONS = ['records', 'diary', 'praise', 'balance', 'balance_answers', 'scenes', 'together_quiz', 'quests', 'quests2', 'manual', 'events'];
+const FAMILY_SUBCOLLECTIONS = ['records', 'diary', 'praise', 'balance', 'balance_answers', 'scenes', 'together_quiz', 'quests', 'quests2', 'manual', 'events', 'journal_shared'];
 
 const KyncDB = {
 
@@ -597,6 +597,7 @@ const KyncDB = {
   async deleteUserData(uid) {
     const userRef = db.collection('users').doc(uid);
     await this._deleteCollection(userRef.collection('counsel'));
+    await this._deleteCollection(userRef.collection('journal'));
     await this._deleteCollection(db.collection('diary').doc(uid).collection('entries'));
     await userRef.delete();
   },

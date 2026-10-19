@@ -563,6 +563,8 @@ const KyncAccount = {
       out.account.email = KyncAuth.current?.email || out.account.email;
       const counsel = await db.collection('users').doc(uid).collection('counsel').get();
       out.aiCounsel = counsel.docs.map(d => plain({ day: d.id, ...d.data() }));
+      const journal = await db.collection('users').doc(uid).collection('journal').get().catch(() => null);
+      out.journal = (journal?.docs || []).map(d => plain({ id: d.id, ...d.data() }));
       if (fc) {
         const famRef = db.collection('families').doc(fc);
         out.family = { code: fc, ...plain((await famRef.get()).data() || {}) };
@@ -701,7 +703,7 @@ const KyncAccount = {
     this.profile = null;
     this.family = null;
     this._consentPrompted = {};
-    ['layer-settings', 'layer-guardian', 'layer-delete', 'layer-legal', 'layer-inbox', 'layer-manual'].forEach(id => KyncUI.closeLayer(id));
+    ['layer-settings', 'layer-guardian', 'layer-delete', 'layer-legal', 'layer-inbox', 'layer-manual', 'layer-journal'].forEach(id => KyncUI.closeLayer(id));
   },
 };
 
