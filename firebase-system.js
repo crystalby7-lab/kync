@@ -471,7 +471,7 @@ auth.onAuthStateChanged(async (user) => {
 /* ════════════════════════════════════════
    KyncDB — Firestore 데이터
 ════════════════════════════════════════ */
-const FAMILY_SUBCOLLECTIONS = ['records', 'diary', 'praise', 'balance', 'balance_answers', 'scenes', 'together_quiz', 'quests', 'quests2'];
+const FAMILY_SUBCOLLECTIONS = ['records', 'diary', 'praise', 'balance', 'balance_answers', 'scenes', 'together_quiz', 'quests', 'quests2', 'manual', 'events'];
 
 const KyncDB = {
 
