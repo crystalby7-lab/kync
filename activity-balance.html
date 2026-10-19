@@ -6,7 +6,7 @@
   <title>Kync — 취향 맞추기</title>
   <meta name="theme-color" content="#F4F1EC" />
   <link rel="icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="kync.css?v=20261019-1" />
+  <link rel="stylesheet" href="kync.css?v=20261019-2" />
 </head>
 <body>
 <div class="sub-app">
@@ -16,7 +16,7 @@
   </header>
   <main class="sub-body">
     <div class="sub-intro">
-      <h2>서로 취향 알아보기</h2>
+      <h2>취향 맞추기</h2>
       <p id="intro-sub"></p>
     </div>
     <section class="card tight">
@@ -70,9 +70,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="kync-ui.js?v=20261019-1"></script>
-<script src="firebase-system.js?v=20261019-1"></script>
-<script src="kync-balance.js?v=20261019-1"></script>
+<script src="kync-ui.js?v=20261019-2"></script>
+<script src="firebase-system.js?v=20261019-2"></script>
+<script src="kync-balance.js?v=20261019-2"></script>
 <script>
   const myRole = localStorage.getItem('kync_role') || 'parent';
   const familyCode = localStorage.getItem('kync_family_code') || 'local';
@@ -150,8 +150,8 @@
     document.getElementById('result-art').innerHTML = theirs ? KyncBrand.mascot(theirs === answer ? 'happy' : 'wow', 96) : KyncBrand.curled(90);
     document.getElementById('result-title').textContent = theirs ? (theirs === answer ? tone('같은 취향이에요', '같은 취향') : tone('달랐어요', '달랐다')) : tone('골랐어요', '골랐어');
     document.getElementById('result-hint').textContent = theirs
-      ? tone(`${theirLabel}은(는) “${theirs}”`, `${theirLabel}은 “${theirs}”`)
-      : tone(`${theirLabel}이(가) 고르면 같이 보여요.`, `${theirLabel}이 고르면 같이 보여.`);
+      ? tone(`${josa(theirLabel, '은/는')} “${theirs}”`, `${theirLabel}은 “${theirs}”`)
+      : tone(`${josa(theirLabel, '이/가')} 고르면 같이 보여요.`, `${theirLabel}이 고르면 같이 보여.`);
     const { data } = KyncBalance._getTodayState(familyCode);
     document.getElementById('btn-next-q').classList.toggle('hidden', Object.keys(data.answers).length >= MAX);
     document.getElementById('result-screen').classList.add('active');
@@ -165,7 +165,7 @@
     if (next) openQuestion(next.id);
   }
 
-  document.getElementById('intro-sub').textContent = tone('하루 10문제. 내가 고르고 나면 상대가 뭘 골랐는지 보여요.', '하루 10문제. 내가 고르고 나면 상대가 뭘 골랐는지 보여.');
+  document.getElementById('intro-sub').textContent = tone('하루 10문제. 고르면 같은 문제에 자녀가 고른 답도 보여요.', '하루 10문제. 고른 답은 내 사용 설명서 성향에 쌓여.');
   document.getElementById('done-title').textContent = '오늘 10문제 끝';
   document.getElementById('done-sub').textContent = tone('내일 새 문제가 나와요.', '내일 새 문제 나와.');
   renderList();

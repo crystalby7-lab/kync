@@ -442,7 +442,7 @@ const KyncDiary = {
   _likeRow(e, isMe) {
     const me = this._myRole, other = me === 'parent' ? 'child' : 'parent';
     const otherLabel = me === 'parent' ? '자녀' : '부모님';
-    if (isMe) return e.likes?.[other] ? `<div class="post-liked">${ic('heart', 14)}${otherLabel}이(가) 좋아해요</div>` : '';
+    if (isMe) return e.likes?.[other] ? `<div class="post-liked">${ic('heart', 14)}${josa(otherLabel, '이/가')} 좋아해요</div>` : '';
     if (this._fc() === 'local') return '';
     const on = !!e.likes?.[me];
     return `<button class="like-btn ${on ? 'on' : ''}" aria-pressed="${on}" onclick="KyncDiary.toggleLike('${this._esc(e.id)}')">${ic('heart', 17)}${on ? '좋아함' : '좋아요'}</button>`;

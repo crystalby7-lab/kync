@@ -331,15 +331,15 @@ const App = {
             <div class="react-row" role="group" aria-label="반응">
               ${this.REACTIONS.map(r => `<button type="button" class="${myReact === r ? 'on' : ''}" aria-pressed="${myReact === r}" onclick="App.react('${r}')">${r}</button>`).join('')}
             </div>
-            ${theirReact ? `<div class="react-got">${label}이(가) 내 답에 <b>${this._esc(theirReact)}</b></div>` : ''}
+            ${theirReact ? `<div class="react-got">${josa(label, '이/가')} 내 답에 <b>${this._esc(theirReact)}</b></div>` : ''}
           </div>
         </div>`;
       return;
     }
     wrap.dataset.state = 'locked';
     const sub = !mine?.content
-      ? (theirs?.content ? tone(`${label}은(는) 벌써 썼어요. 나도 쓰면 바로 보여요.`, `${label}은(는) 벌써 썼어. 나도 쓰면 바로 보여.`) : tone('둘 다 쓰면 열려요', '둘 다 쓰면 열려'))
-      : tone(`${label}이(가) 쓰면 열려요`, `${label}이(가) 쓰면 열려`);
+      ? (theirs?.content ? tone(`${josa(label, '은/는')} 썼어요. 내 답을 올리면 보여요.`, `${josa(label, '은/는')} 썼어. 내 답 올리면 보여.`) : tone('아직 둘 다 안 썼어요', '아직 둘 다 안 썼어'))
+      : tone(`${josa(label, '은/는')} 아직 안 썼어요`, `${josa(label, '은/는')} 아직 안 썼어`);
     wrap.innerHTML = `
       <div class="their locked">
         ${KyncBrand.curled(44)}
@@ -426,7 +426,7 @@ const App = {
         <div class="card-head"><h2>${name}의 오늘</h2><span class="pill">아직</span></div>
         <div class="mood-main">
           <div class="mood-dot"><i></i></div>
-          <div><div class="mood-label muted">아직 안 남겼어요</div><div class="mood-memo">${name}이(가) 기분을 남기면 바로 여기 떠요.</div></div>
+          <div><div class="mood-label muted">아직 안 남겼어요</div><div class="mood-memo">${josa(name, '이/가')} 기분을 남기면 여기 떠요.</div></div>
         </div>
         ${this._weekStrip()}`;
       return;

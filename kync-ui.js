@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 const KYNC_CONFIG = {
-  version: '1.3.0',
+  version: '1.4.0',
   contactEmail: 'xoun148@gmail.com',
   termsVersion: '2026-10-12',   // 약관 내용이 바뀌면 날짜를 바꾸면 다시 동의를 받아요
 };
@@ -206,6 +206,18 @@ window.selectTab = selectTab;
 function tone(polite, casual) { return localStorage.getItem('kync_role') === 'child' ? casual : polite; }
 window.tone = tone;
 
+/* 조사 붙이기: josa('자녀', '이/가') → '자녀가' */
+function josa(word, pair) {
+  word = String(word ?? '');
+  const [a, b] = pair.split('/');
+  const c = word.charCodeAt(word.length - 1) - 0xAC00;
+  const has = c >= 0 && c <= 11171 && c % 28 !== 0;
+  // '으로/로'는 받침 ㄹ이면 '로'
+  if (a === '으로' && c % 28 === 8) return word + b;
+  return word + (has ? a : b);
+}
+window.josa = josa;
+
 /* 로고 누르면 홈(첫 번째 탭)으로 */
 function goHomeTab(el) {
   const page = el.closest('.page');
@@ -299,7 +311,7 @@ const KyncInstall = {
     if (!this.isIOS() && this._evt) { this.prompt(); return; }
     KyncUI.sheet(`
       <h2>홈 화면에 추가하기</h2>
-      <p class="sheet-sub">추가하면 앱처럼 꽉 찬 화면으로 열려요.</p>
+      <p class="sheet-sub">추가하면 주소창 없이 전체 화면으로 열려요.</p>
       <ol class="install-steps">
         ${this.isIOS()
           ? `<li><span class="n">1</span><span>Safari 화면 아래 <b>공유</b> 버튼 ${ic('share', 18)}을 눌러요</span></li>

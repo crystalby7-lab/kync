@@ -12,13 +12,13 @@ const KyncQuests2 = {
 
   TEMPLATES: [
     { id:'t1', title:'밥 먹을 땐 폰 뒤집기',     desc:'같이 먹을 때 둘 다',                 days:7 },
-    { id:'t2', title:'잘 자 인사하고 자기',       desc:'말로 해도, 카톡으로 해도',           days:5 },
+    { id:'t2', title:'자기 전에 인사하기',        desc:'말로 해도, 메시지로 해도',           days:5 },
     { id:'t3', title:'오늘 있었던 일 하나씩',     desc:'자기 전에 하나만 얘기하기',          days:7 },
     { id:'t4', title:'성적·공부 얘기 금지',       desc:'먼저 꺼내는 사람이 지는 거',         days:3 },
     { id:'t5', title:'10분 같이 걷기',            desc:'동네 한 바퀴라도',                   days:5 },
     { id:'t6', title:'고마운 거 하나 말하기',     desc:'사소한 거라도',                      days:7 },
     { id:'t7', title:'노래 한 곡씩 추천하기',     desc:'서로 하나씩 보내고 들어보기',        days:5 },
-    { id:'t8', title:'포스트잇 한 장',            desc:'짧게 써서 눈에 띄는 데 붙이기',      days:3 },
+    { id:'t8', title:'쪽지 한 장',                desc:'짧게 써서 보이는 곳에 두기',         days:3 },
   ],
 
   _quests: [],
@@ -130,7 +130,7 @@ const KyncQuests2 = {
     let status;
     if (mine && theirs) status = tone('오늘 칸 채웠어요', '오늘 칸 채움');
     else if (mine)      status = tone(`${this._otherLabel(role)}만 체크하면 돼요`, `${this._otherLabel(role)}만 체크하면 돼`);
-    else if (theirs)    status = tone(`${this._otherLabel(role)}은(는) 오늘 했대요`, `${this._otherLabel(role)}은 오늘 했대`);
+    else if (theirs)    status = tone(`${josa(this._otherLabel(role), '은/는')} 오늘 했대요`, `${this._otherLabel(role)}은 오늘 했대`);
     else                status = tone('둘 다 체크해야 하루가 채워져요', '둘 다 체크해야 하루가 채워져');
 
     return `
@@ -266,7 +266,7 @@ const KyncQuests2 = {
   openAddSheet() {
     this._sheet = KyncUI.sheet(`
       <h2>퀘스트 제안하기</h2>
-      <p class="sheet-sub">${tone(`${this._otherLabel(this._role)}이(가) 같이 한다고 하면 시작돼요.`, `${this._otherLabel(this._role)}이 같이 한다고 하면 시작돼.`)}</p>
+      <p class="sheet-sub">${tone(`${josa(this._otherLabel(this._role), '이/가')} 같이 한다고 하면 시작돼요.`, `${this._otherLabel(this._role)}이 같이 한다고 하면 시작돼.`)}</p>
       <div class="label" style="margin-bottom:8px">골라서 바로</div>
       <div class="qx-templates">
         ${this.TEMPLATES.map(t => `
