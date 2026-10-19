@@ -14,6 +14,7 @@ const KyncManual = {
   SECTIONS: [
     { id: 'mood',    title: '요즘 기분',            parent: '요즘 기분' },
     { id: 'energy',  title: '에너지',               parent: '에너지' },
+    { id: 'journal', title: '일기에서 보이는 것',    parent: '일기에서 보이는 것' },
     { id: 'traits',  title: '성향',                 parent: '성향' },
     { id: 'needs',   title: '힘들 때 필요한 것',     parent: '힘들 때 필요한 것' },
     { id: 'talkhow', title: '나랑 대화하는 법',      parent: '대화하는 법' },
@@ -107,12 +108,13 @@ const KyncManual = {
     // 어떤 하나가 실패해도 나머지로 화면을 그림
     this._mine = this._mine || { needs: [], needsNote: '', times: [], avoid: '', wish: '', share: {} };
     this._data = this._data || { mood: { need: 3, n: 0 }, energy: { need: 7, n: 0 }, traits: { count: 0, dims: [], others: [] }, talk: null };
-    const [recSnap, tasteSnap, user, shared] = await Promise.all([
+    const [recSnap, tasteSnap, user, shared, journal] = await Promise.all([
       famRef.collection('records').orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(30).get()
         .catch(() => famRef.collection('records').limit(60).get()).catch(fail('records')),
       famRef.collection('balance_answers').where('role', '==', 'child').limit(300).get().catch(fail('taste')),
       KyncDB.getUser(uid).catch(fail('user')),
       this._sharedRef(uid).get().catch(fail('shared')),
+      (typeof KyncJournal !== 'undefined' ? KyncJournal.load() : Promise.resolve([])).catch(fail('journal')),
     ]);
     this._mine = { needs: [], needsNote: '', times: [], avoid: '', wish: '', share: {}, ...(user?.manual || {}) };
     this._shared = shared?.exists ? shared.data() : {};
@@ -136,6 +138,9 @@ const KyncManual = {
       mood: this._calcMood(checkins),
       energy: this._calcEnergy(checkins),
       traits: this._calcTraits(answers),
+      journal: typeof KyncJournal !== 'undefined'
+        ? KyncJournal.analyze(journal || [], Object.fromEntries(checkins.map(c => [c.day, c])))
+        : { need: 3, n: 0 },
       talk,
     };
   },
@@ -301,6 +306,24 @@ const KyncManual = {
         ${lines.map(l => `<p class="mn-note">${l}</p>`).join('')}`);
     }
 
+    // 일기에서 보이는 것
+    const j = d.journal || { need: 3, n: 0 };
+    const writeBtn = `<button class="btn btn-soft btn-sm mn-write" onclick="KyncJournal.open()">${ic('edit', 16)}일기 쓰기</button>`;
+    const journal = j.need ? sec('journal', `<p class="mn-wait">일기가 ${j.need}개 더 있으면 보여. 지금 ${j.n}개.</p>${writeBtn}`, false)
+      : sec('journal', `
+        ${j.topThemes.length ? `<div class="mn-bars">${j.topThemes.map(t => `
+          <div class="mn-bar"><span class="mn-bar-l">${e(t.theme)}</span><span class="mn-bar-t"><i style="width:${t.pct}%"></i></span><span class="mn-bar-v">${t.count}번</span></div>`).join('')}</div>
+          ${j.topThemes.filter(t => t.stress != null).slice(0, 2).map(t => `<p class="mn-note">${e(t.theme)} 얘기를 쓴 날 평균 스트레스 <b>${t.stress}</b></p>`).join('')}`
+          : `<p class="mn-note">아직 뚜렷한 주제는 없어.</p>`}
+        <div class="mn-tone">
+          <div class="mn-tone-bar"><i class="neg" style="width:${j.negPct}%"></i><i class="pos" style="width:${j.posPct}%"></i></div>
+          <div class="mn-tone-legend"><span><i class="neg"></i>힘든 얘기 ${j.negPct}%</span><span><i class="pos"></i>괜찮은 얘기 ${j.posPct}%</span></div>
+        </div>
+        ${j.repeated.length ? `<p class="mn-note">여러 번 나온 말: ${j.repeated.map(r => `<b>${e(r.w)}</b>`).join(', ')}</p>` : ''}
+        ${j.lift.length ? `<p class="mn-note">괜찮았던 날 글에 자주 나온 것: ${j.lift.map(w => `<b>${e(w)}</b>`).join(', ')}</p>` : ''}
+        ${j.month.count ? `<p class="mn-note">이번 달 ${j.month.count}개${j.month.lastCount ? `, 지난달 ${j.month.lastCount}개` : ''}.${j.month.negRate != null && j.month.lastNegRate != null ? ` 힘든 얘기 비율 ${j.month.lastNegRate}% → ${j.month.negRate}%.` : ''}</p>` : ''}
+        ${writeBtn}`, true, `일기 ${j.n}개 기준 · 공개하면 내용 말고 주제랑 비율만 보여`);
+
     // 성향
     const t = d.traits;
     const traits = t.dims.length ? sec('traits', `
@@ -351,7 +374,7 @@ const KyncManual = {
         <div class="mn-count">${ic('lock', 14)}${sharedCount ? `${sharedCount}개 공개 중` : '전부 나만 보는 중'}</div>
         ${this._loadError ? `<p class="mn-err">일부 기록을 못 불러왔어 (${this._esc(this._loadError)})</p>` : ''}
       </div>
-      ${mood}${energy}${traits}${needs}${talkhow}${wish}${talk}
+      ${mood}${energy}${journal}${traits}${needs}${talkhow}${wish}${talk}
       <p class="mn-foot">기록을 정리한 거라 진단은 아니야. 기록이 쌓일수록 정확해져.</p>`;
   },
 
@@ -400,6 +423,7 @@ const KyncManual = {
     const label = (list, ids) => (ids || []).map(x => list.find(n => n.id === x)?.label).filter(Boolean);
     if (id === 'mood')    return d.mood && !d.mood.need ? { n: d.mood.n, top: d.mood.top.map(({ id, label, count }) => ({ id, label, count })), stress: d.mood.stress, energy: d.mood.energy, trend: d.mood.trend } : null;
     if (id === 'energy')  return d.energy && !d.energy.need ? { high: d.energy.high || null, low: d.energy.low || null, drain: d.energy.drain, recover: d.energy.recover, stressWords: d.energy.stressWords, goodWords: d.energy.goodWords } : null;
+    if (id === 'journal') return d.journal && !d.journal.need ? { n: d.journal.n, themes: d.journal.topThemes.map(({ theme, pct }) => ({ theme, pct })), negPct: d.journal.negPct, posPct: d.journal.posPct } : null;
     if (id === 'traits')  return d.traits?.dims?.length ? { dims: d.traits.dims.map(({ title, label }) => ({ title, label })) } : null;
     if (id === 'needs')   return m.needs?.length ? { items: label(this.NEEDS, m.needs), note: m.needsNote || '' } : null;
     if (id === 'talkhow') return (m.times?.length || m.avoid) ? { times: label(this.TIMES, m.times), avoid: m.avoid || '' } : null;
@@ -456,6 +480,7 @@ const KyncManual = {
           v.recover != null ? `<p class="mn-note">스트레스가 높았다가 내려오기까지 평균 ${v.recover}일.</p>` : '',
           v.stressWords?.length ? `<p class="mn-note">스트레스 높은 날 자주 나온 말: ${v.stressWords.map(e).join(', ')}</p>` : '',
         ].join('');
+        if (s.id === 'journal') inner = `<p>${v.themes?.length ? `자주 쓴 주제: <b>${v.themes.map(t => e(t.theme)).join(', ')}</b>` : '뚜렷한 주제 없음'}</p><p class="mn-note">일기 ${v.n}개 중 힘든 얘기 ${v.negPct}%, 괜찮은 얘기 ${v.posPct}%. 내용은 보이지 않아요.</p>`;
         if (s.id === 'traits') inner = `<div class="mn-list">${v.dims.map(t => `<div><small>${e(t.title)}</small><b>${e(t.label)}</b></div>`).join('')}</div>`;
         if (s.id === 'needs') inner = `<div class="mn-chips">${v.items.map(t => `<span class="mn-chip">${e(t)}</span>`).join('')}</div>${v.note ? `<p class="mn-note">“${e(v.note)}”</p>` : ''}`;
         if (s.id === 'talkhow') inner = `${v.times?.length ? `<p>말 걸기 편한 때: <b>${v.times.map(e).join(', ')}</b></p>` : ''}${v.avoid ? `<p class="mn-note">듣기 힘든 말: “${e(v.avoid)}”</p>` : ''}`;

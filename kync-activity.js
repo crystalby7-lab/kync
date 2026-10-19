@@ -49,6 +49,12 @@ const KyncActivity = {
     el.innerHTML = `
       <div class="qx-section">나를 알기</div>
       ${hero}
+      ${role === 'child' ? `
+      <button class="ax-row" onclick="KyncJournal.open()">
+        <div class="ax-row-icon">${ic('edit', 24)}</div>
+        <div class="grow"><b>일기</b><small>이번 주 ${KyncJournal.weekCount()}/3 · 나만 보기, 보낼 것만 골라서</small></div>
+        <span class="chev">${ic('chev', 20)}</span>
+      </button>` : ''}
 
       <button class="ax-row" onclick="location.href='activity-balance.html'">
         <div class="ax-row-icon">${ic('target', 24)}</div>
