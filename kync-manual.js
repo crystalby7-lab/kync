@@ -78,31 +78,48 @@ const KyncManual = {
     KyncUI.openLayer('layer-manual');
     const body = document.getElementById('manual-body');
     body.innerHTML = `<div class="mn-loading">${KyncBrand.curled(56)}<span>기록 모으는 중</span></div>`;
+    if (!this._fc() || !this._uid()) {
+      body.innerHTML = `<div class="empty"><b>가족이랑 연결하면 쓸 수 있어</b></div>`;
+      return;
+    }
     this.log('manual_open');
     try {
       await this._load();
-      this.render();
-      await this._syncShared();
     } catch (e) {
-      console.warn('manual:', e);
-      body.innerHTML = `<div class="empty"><b>불러오지 못했어</b><p>인터넷 연결 확인하고 다시 열어줘.</p></div>`;
+      console.warn('manual load:', e);
+      this._loadError = e?.code || e?.message || 'unknown';
     }
+    try {
+      this.render();
+    } catch (e) {
+      console.error('manual render:', e);
+      body.innerHTML = `<div class="empty"><b>화면을 그리지 못했어</b><p>이 화면을 캡처해서 알려줘. (${this._esc(e?.message || e)})</p></div>`;
+      return;
+    }
+    this._syncShared().catch(() => {});
   },
 
   async _load() {
     const fc = this._fc(), uid = this._uid();
     const famRef = db.collection('families').doc(fc);
+    this._loadError = null;
+    const fail = name => e => { console.warn(`manual ${name}:`, e); this._loadError = this._loadError || `${name}: ${e?.code || e?.message}`; return null; };
+    // 어떤 하나가 실패해도 나머지로 화면을 그림
+    this._mine = this._mine || { needs: [], needsNote: '', times: [], avoid: '', wish: '', share: {} };
+    this._data = this._data || { mood: { need: 3, n: 0 }, energy: { need: 7, n: 0 }, traits: { count: 0, dims: [], others: [] }, talk: null };
     const [recSnap, tasteSnap, user, shared] = await Promise.all([
-      famRef.collection('records').orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(30).get(),
-      famRef.collection('balance_answers').where('role', '==', 'child').limit(300).get().catch(() => null),
-      KyncDB.getUser(uid).catch(() => null),
-      this._sharedRef(uid).get().catch(() => null),
+      famRef.collection('records').orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(30).get()
+        .catch(() => famRef.collection('records').limit(60).get()).catch(fail('records')),
+      famRef.collection('balance_answers').where('role', '==', 'child').limit(300).get().catch(fail('taste')),
+      KyncDB.getUser(uid).catch(fail('user')),
+      this._sharedRef(uid).get().catch(fail('shared')),
     ]);
     this._mine = { needs: [], needsNote: '', times: [], avoid: '', wish: '', share: {}, ...(user?.manual || {}) };
     this._shared = shared?.exists ? shared.data() : {};
 
     // 최신순 체크인
-    const checkins = recSnap.docs.map(d => ({ day: d.id, ...(d.data().checkin || {}) })).filter(c => c.emotion);
+    const checkins = (recSnap?.docs || []).map(d => ({ day: d.id, ...(d.data().checkin || {}) })).filter(c => c.emotion)
+      .sort((a, b) => b.day.localeCompare(a.day)).slice(0, 30);
 
     // 취향 답 → 성향 축 + 그 밖의 답
     const answers = [];
@@ -332,6 +349,7 @@ const KyncManual = {
         <p class="mn-h">나 사용 설명서</p>
         <p>내 기록을 모아서 정리했어. 기본은 나만 보고, 공개를 켠 항목만 부모님 화면에 떠.</p>
         <div class="mn-count">${ic('lock', 14)}${sharedCount ? `${sharedCount}개 공개 중` : '전부 나만 보는 중'}</div>
+        ${this._loadError ? `<p class="mn-err">일부 기록을 못 불러왔어 (${this._esc(this._loadError)})</p>` : ''}
       </div>
       ${mood}${energy}${traits}${needs}${talkhow}${wish}${talk}
       <p class="mn-foot">기록을 정리한 거라 진단은 아니야. 기록이 쌓일수록 정확해져.</p>`;

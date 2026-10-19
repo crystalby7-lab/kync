@@ -903,3 +903,4 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .mn-dim-bar span:last-child { text-align: right; }
 .mn-dim-bar i { position: relative; height: 6px; border-radius: 3px; background: var(--honey); overflow: hidden; }
 .mn-dim-bar em { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); }
+.mn-err { font-size: 12px; color: var(--berry); margin-top: 8px; }
