@@ -21,9 +21,9 @@ const KyncAccount = {
   ],
 
   INTRO: [
-    { art: 'question', title: '같은 질문,\n둘 다 써야 열려요', sub: '하루에 하나. 내가 먼저 써도 상대가 쓰기 전까진 안 보여요.' },
-    { art: 'feeling',  title: '오늘 기분은\n버튼 하나로',      sub: '자녀가 기분을 남기면 부모 화면에 바로 떠요. 짧은 한마디도 보낼 수 있어요.' },
-    { art: 'together', title: '게임하고\n약속하고',            sub: '밸런스 게임, 서로 맞히기, 같이 채우는 퀘스트.' },
+    { art: 'question', title: '하루 한 질문,\n각자 답하기',   sub: '상대 답은 둘 다 쓴 다음에 보여요.' },
+    { art: 'feeling',  title: '기분은\n버튼 하나로',          sub: '자녀가 남긴 기분은 부모 화면에 떠요.' },
+    { art: 'together', title: '나 사용 설명서',                sub: '기록이 쌓이면 기분, 에너지, 성향을 정리해줘요. 무엇을 보여줄지는 자녀가 정해요.' },
   ],
 
   esc(s) { return KyncUI.esc(s); },
@@ -59,14 +59,14 @@ const KyncAccount = {
   _introArt(kind) {
     if (kind === 'question') {
       return `<div class="stage">${KyncBrand.curled(170)}
-        <div class="bubble" style="top:0;left:8px">${ic('lock', 16)}서로 답하면 열려요</div></div>`;
+        <div class="bubble" style="top:0;left:8px">${ic('lock', 16)}오늘의 질문</div></div>`;
     }
     if (kind === 'feeling') {
       return `<div class="stage">${KyncBrand.mascot('default', 200)}
-        <div class="bubble" style="top:0;right:0">${ic('heart', 16)}오늘도 고마워</div></div>`;
+        <div class="bubble" style="top:0;right:0">${ic('smile', 16)}지금 기분</div></div>`;
     }
     return `<div class="stage">${KyncBrand.mascot('happy', 200)}
-      <div class="bubble" style="top:0;left:-8px">${ic('flag', 16)}밥 먹을 때 폰 내려놓기</div></div>`;
+      <div class="bubble" style="top:0;left:-8px">${ic('doc', 16)}나 사용 설명서</div></div>`;
   },
 
   renderIntro() {
@@ -263,7 +263,7 @@ const KyncAccount = {
       if (fam.guardianConsents?.[uid]) {
         this._stopWait();
         this.family = fam;
-        toast('부모님이 동의했어요. 이제 시작해요!', 'ok');
+        toast('부모님 동의 완료', 'ok');
         enterApp('child');
       }
     }, e => console.warn('guardian wait:', e));
@@ -350,7 +350,7 @@ const KyncAccount = {
     body.innerHTML = `
       <div class="center" style="margin:8px 0 6px">${KyncBrand.mascot('default', 96)}</div>
       <h2 class="center">${name}의 보호자 동의</h2>
-      <p class="screen-sub center" style="margin:6px 0 20px">${name}은(는) 만 14세 미만이라<br>보호자(법정대리인)가 동의해야 Kync를 쓸 수 있어요.</p>
+      <p class="screen-sub center" style="margin:6px 0 20px">${josa(name, '은/는')} 만 14세 미만이라<br>보호자(법정대리인)가 동의해야 Kync를 쓸 수 있어요.</p>
       <div class="card tight">
         <div class="agree-row">
           <label class="check"><input type="checkbox" data-g="consent"><span class="box">${ic('check', 16)}</span>
@@ -368,7 +368,7 @@ const KyncAccount = {
           <button type="button" class="view" onclick="KyncAccount.openLegal('ai')">보기</button>
         </div>
       </div>
-      <p class="hint" style="margin-top:14px">동의하지 않으면 ${name}은(는) 앱을 쓸 수 없어요. 설정에서 가족 연결을 끊을 수 있어요.</p>`;
+      <p class="hint" style="margin-top:14px">동의하지 않으면 ${josa(name, '은/는')} 앱을 쓸 수 없어요. 설정에서 가족 연결을 끊을 수 있어요.</p>`;
     const submit = document.getElementById('guardian-submit');
     const boxes = [...body.querySelectorAll('[data-g]')];
     const sync = () => { submit.disabled = !(body.querySelector('[data-g="consent"]').checked && body.querySelector('[data-g="transfer"]').checked); };
@@ -600,7 +600,7 @@ const KyncAccount = {
     const other = this.profile?.role === 'parent' ? '자녀' : '부모님';
     const ok = await KyncUI.confirm({
       title: '가족 연결을 끊을까요?',
-      message: `함께 쓴 답변, 감정 기록, 사진, 칭찬 카드, 활동·퀘스트 기록이 모두 삭제돼요. ${other}도 더 이상 볼 수 없고, 되돌릴 수 없어요.`,
+      message: `함께 쓴 답, 기분 기록, 사진, 한마디, 사용 설명서, 퀘스트 기록이 모두 삭제돼요. ${other}도 더 이상 볼 수 없고, 되돌릴 수 없어요.`,
       ok: '연결 끊기', danger: true,
     });
     if (!ok) return;
@@ -633,7 +633,7 @@ const KyncAccount = {
       <h2 class="center">탈퇴하기 전에 확인해주세요</h2>
       <ul class="del-list">
         <li>${ic('x', 18)}<span>계정 정보, 대화 유형 검사 결과, AI 상담 기록이 모두 삭제돼요.</span></li>
-        <li>${ic('x', 18)}<span>가족 공간이 사라지고, 함께 쓴 답변·감정 기록·사진·칭찬 카드·퀘스트도 모두 삭제돼요. ${other}도 더 이상 볼 수 없어요.</span></li>
+        <li>${ic('x', 18)}<span>가족 공간이 사라지고, 함께 쓴 답·기분 기록·사진·한마디·사용 설명서·퀘스트도 모두 삭제돼요. ${other}도 더 이상 볼 수 없어요.</span></li>
         <li>${ic('x', 18)}<span>삭제한 정보는 되돌릴 수 없어요.</span></li>
       </ul>
       ${isPassword ? `<div class="field" style="margin-bottom:8px"><label class="label" for="del-pw">본인 확인을 위해 비밀번호를 입력해주세요</label>
@@ -685,7 +685,7 @@ const KyncAccount = {
       App.reset?.();
       ['layer-delete', 'layer-settings'].forEach(id => KyncUI.closeLayer(id));
       navigateTo('page-login');
-      KyncUI.confirm({ title: '탈퇴했어요', message: '그동안 Kync를 써줘서 고마워요.', cancel: null, mascot: 'sleepy' });
+      KyncUI.confirm({ title: '탈퇴했어요', message: '계정과 기록을 모두 지웠어요.', cancel: null, mascot: 'sleepy' });
     } catch (e) {
       console.warn('delete account:', e);
       toast('탈퇴하지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요.', 'error');

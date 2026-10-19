@@ -72,7 +72,7 @@ const KyncInbox = {
         if (r[other]?.content) {
           const mine = !!r[role]?.content;
           items.push({ t: this._ms(r[other].at) || this._ms(d.id), ic: mine ? 'unlock' : 'lock', tone: 'sky',
-            title: `${who} 오늘의 질문에 답했어요`, sub: mine ? '답이 열렸어요' : '나도 답하면 볼 수 있어요', go: 'today' });
+            title: `${who} 오늘의 질문에 답했어요`, sub: mine ? '답 보기' : '내 답을 올리면 보여요', go: 'today' });
         }
         if (r.react?.[other] && r[role]?.content) {
           items.push({ t: this._ms(r[other].at) || this._ms(d.id), ic: 'heart', tone: 'honey',

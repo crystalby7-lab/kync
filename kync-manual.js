@@ -1,49 +1,62 @@
 /* ═══════════════════════════════════════════════════════════
    kync-manual.js — 나 사용 설명서
-   - 자녀의 기록(기분·에너지·메모·취향·대화 유형)을 규칙으로 정리해 자녀에게만 보여줌
+   - 자녀 기록(기분·스트레스·에너지·메모·취향 답·대화 유형)을 규칙으로 정리. 기본은 자녀만 봄
    - 자녀가 켠 항목만 families/{코드}/manual/{자녀uid} 에 요약본으로 올라가 부모 화면에 보임
-   - 부모는 '고마워'만 누를 수 있음 (캐묻는 기능 없음)
+   - 부모는 '고마워'만 누를 수 있음
    - 효과 측정용 사용 기록: families/{코드}/events
    데이터
-     users/{uid}.manual = { needs:[id], needsNote, wish, share:{섹션:true} }
-     families/{코드}/manual/{자녀uid} = { mood, energy, taste, talk, needs, wish, updatedAt, thanks:{섹션:시각} }
+     users/{uid}.manual = { needs:[id], needsNote, times:[id], avoid, wish, share:{섹션:true} }
+     families/{코드}/manual/{자녀uid} = { 섹션별 요약, any, name, updatedAt, thanks:{섹션:시각} }
 ═══════════════════════════════════════════════════════════ */
 
 const KyncManual = {
 
   SECTIONS: [
-    { id: 'mood',   title: '요즘 내 기분' },
-    { id: 'energy', title: '에너지가 차고 빠지는 때' },
-    { id: 'needs',  title: '힘들 때 나한테 필요한 것' },
-    { id: 'wish',   title: '부모님이 알아줬으면 하는 것' },
-    { id: 'taste',  title: '내 취향' },
-    { id: 'talk',   title: '내 대화 방식' },
+    { id: 'mood',    title: '요즘 기분',            parent: '요즘 기분' },
+    { id: 'energy',  title: '에너지',               parent: '에너지' },
+    { id: 'traits',  title: '성향',                 parent: '성향' },
+    { id: 'needs',   title: '힘들 때 필요한 것',     parent: '힘들 때 필요한 것' },
+    { id: 'talkhow', title: '나랑 대화하는 법',      parent: '대화하는 법' },
+    { id: 'wish',    title: '알아줬으면 하는 것',    parent: '알아줬으면 하는 것' },
+    { id: 'talk',    title: '대화 유형',            parent: '대화 유형' },
   ],
 
   NEEDS: [
-    { id: 'alone',   label: '혼자 있을 시간' },
-    { id: 'listen',  label: '조언 말고 그냥 들어주기' },
-    { id: 'solve',   label: '같이 해결 방법 찾기' },
-    { id: 'later',   label: '나중에 다시 물어봐 주기' },
-    { id: 'noask',   label: '아무것도 묻지 않기' },
-    { id: 'beside',  label: '말없이 옆에 있어 주기' },
-    { id: 'food',    label: '맛있는 거' },
-    { id: 'sleep',   label: '푹 자기' },
+    { id: 'alone',  label: '혼자 있을 시간' },
+    { id: 'listen', label: '조언 없이 듣기만' },
+    { id: 'solve',  label: '같이 방법 찾기' },
+    { id: 'later',  label: '나중에 다시 물어보기' },
+    { id: 'noask',  label: '아무것도 안 묻기' },
+    { id: 'beside', label: '말없이 옆에 있기' },
+    { id: 'food',   label: '맛있는 거' },
+    { id: 'sleep',  label: '잠' },
   ],
 
-  STOP: new Set(['그냥','너무','진짜','오늘','내일','어제','조금','좀','많이','엄청','계속','그리고','근데','그래서','하고','해서','있어','없어','있음','없음','같아','같은','나는','내가','이제','아직','다시','정말','완전','약간']),
+  TIMES: [
+    { id: 'morning', label: '아침' },
+    { id: 'meal',    label: '밥 먹을 때' },
+    { id: 'move',    label: '차 타고 이동할 때' },
+    { id: 'evening', label: '저녁에 쉴 때' },
+    { id: 'night',   label: '자기 전' },
+    { id: 'weekend', label: '주말' },
+    { id: 'chat',    label: '메시지로' },
+  ],
+
+  STOP: new Set(['그냥','너무','진짜','오늘','내일','어제','조금','좀','많이','엄청','계속','그리고','근데','그래서','하고','해서','있어','없어','있음','없음','같아','같은','나는','내가','이제','아직','다시','정말','완전','약간','했음','했다','해야','하는','되는','같음']),
   DAYS: ['일','월','화','수','목','금','토'],
 
-  _data: null,     // 계산 결과
-  _mine: null,     // users/{uid}.manual
-  _shared: null,   // families/.../manual/{uid}
-  _loading: false,
+  _data: null,
+  _mine: null,
+  _shared: null,
+  _parentDocs: [],
+  _unsub: null,
 
   _esc(s) { return KyncUI.esc(s); },
   _fc() { return localStorage.getItem('kync_family_code'); },
   _uid() { return KyncAuth?.current?.uid || localStorage.getItem('kync_user_uid'); },
   _role() { return localStorage.getItem('kync_role'); },
   _sharedRef(childUid) { return db.collection('families').doc(this._fc()).collection('manual').doc(childUid); },
+  _emo(id) { return App.EMOTIONS_CHILD.find(e => e.id === id); },
 
   /* ── 사용 기록 (효과 측정) ── */
   log(type, meta = {}) {
@@ -54,7 +67,6 @@ const KyncManual = {
       at: firebase.firestore.FieldValue.serverTimestamp(),
     }).catch(() => {});
   },
-  // 하루 한 번만 남기는 기록
   logOnce(type, meta) {
     const k = `kync_ev_${type}_${todayKey()}`;
     try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch (e) {}
@@ -80,23 +92,24 @@ const KyncManual = {
   async _load() {
     const fc = this._fc(), uid = this._uid();
     const famRef = db.collection('families').doc(fc);
-    const [recSnap, tasteSnap, balSnap, user, shared] = await Promise.all([
+    const [recSnap, tasteSnap, user, shared] = await Promise.all([
       famRef.collection('records').orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(30).get(),
-      famRef.collection('balance_answers').where('role', '==', 'child').limit(120).get().catch(() => null),
-      famRef.collection('balance').limit(60).get().catch(() => null),
+      famRef.collection('balance_answers').where('role', '==', 'child').limit(300).get().catch(() => null),
       KyncDB.getUser(uid).catch(() => null),
       this._sharedRef(uid).get().catch(() => null),
     ]);
-    this._mine = { needs: [], needsNote: '', wish: '', share: {}, ...(user?.manual || {}) };
+    this._mine = { needs: [], needsNote: '', times: [], avoid: '', wish: '', share: {}, ...(user?.manual || {}) };
     this._shared = shared?.exists ? shared.data() : {};
 
+    // 최신순 체크인
     const checkins = recSnap.docs.map(d => ({ day: d.id, ...(d.data().checkin || {}) })).filter(c => c.emotion);
-    const taste = [];
+
+    // 취향 답 → 성향 축 + 그 밖의 답
+    const answers = [];
     tasteSnap?.forEach(d => {
-      const v = d.data(); const q = KyncBalance.QUESTIONS.find(x => x.id === v.qId);
-      if (q) taste.push({ q: q.q, a: v.answer, t: String(v.day || '') });
+      const v = d.data(), q = KyncBalance.QUESTIONS.find(x => x.id === v.qId);
+      if (q) answers.push({ q, a: v.answer, day: String(v.day || '') });
     });
-    balSnap?.forEach(d => { const v = d.data(); if (v.child && v.child_q) taste.push({ q: v.child_q, a: v.child, t: d.id }); });
 
     let talk = null;
     const qr = user?.quizResult || (() => { try { return JSON.parse(localStorage.getItem('kync_quiz_result') || 'null'); } catch (e) { return null; } })();
@@ -105,33 +118,47 @@ const KyncManual = {
     this._data = {
       mood: this._calcMood(checkins),
       energy: this._calcEnergy(checkins),
-      taste: taste.slice(-200).reverse().slice(0, 8),
-      tasteCount: taste.length,
+      traits: this._calcTraits(answers),
       talk,
     };
   },
 
-  /* ── 규칙 기반 계산 ── */
+  /* ── 계산: 기분 ── */
   _calcMood(list) {
     const n = list.length;
     if (n < 3) return { need: 3 - n, n };
     const count = {};
     list.forEach(c => { count[c.emotion] = (count[c.emotion] || 0) + 1; });
-    const top = Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, c]) => {
-      const e = App.EMOTIONS_CHILD.find(x => x.id === id);
-      return { id, label: e?.label || id, count: c, pct: Math.round(c / n * 100) };
-    });
-    const avg = k => { const v = list.map(c => +c[k]).filter(Boolean); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
-    // 최근 7일 vs 그 전 기록 스트레스 비교
+    const top = Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 3)
+      .map(([id, c]) => ({ id, label: this._emo(id)?.label || id, count: c, pct: Math.round(c / n * 100) }));
+    const avgOf = (arr, k) => { const v = arr.map(c => +c[k]).filter(Boolean); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
     const recent = list.slice(0, 7), before = list.slice(7);
-    const avgOf = (arr, k) => { const v = arr.map(c => +c[k]).filter(Boolean); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
-    const sNow = avgOf(recent, 'stress'), sBefore = avgOf(before, 'stress');
     let trend = null;
+    const sNow = avgOf(recent, 'stress'), sBefore = avgOf(before, 'stress');
     if (sNow != null && sBefore != null && before.length >= 3) {
-      const d = Math.round((sNow - sBefore) * 10) / 10;
+      const d = sNow - sBefore;
       trend = Math.abs(d) < 0.8 ? 'same' : d > 0 ? 'up' : 'down';
     }
-    return { n, top, stress: avg('stress'), energy: avg('energy'), trend };
+    // 최근 30일 칸 (오래된 날 → 오늘)
+    const byDay = Object.fromEntries(list.map(c => [c.day, c.emotion]));
+    const strip = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      strip.push({ key, emo: byDay[key] || null, dow: d.getDay(), date: d.getDate() });
+    }
+    return { n, top, stress: avgOf(list, 'stress'), energy: avgOf(list, 'energy'), trend, strip };
+  },
+
+  /* ── 계산: 에너지·스트레스 ── */
+  _words(list) {
+    const words = {};
+    list.filter(c => c.memo).forEach(c => {
+      new Set(String(c.memo).replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
+        .map(w => w.replace(/(이랑|에서|까지|부터|이라|해서|하고|이야|이고|은|는|이|가|을|를|에|도|만|랑|와|과|의|로)$/, ''))
+        .filter(w => w.length >= 2 && !this.STOP.has(w))).forEach(w => { words[w] = (words[w] || 0) + 1; });
+    });
+    return Object.entries(words).filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([w]) => w);
   },
 
   _calcEnergy(list) {
@@ -147,106 +174,167 @@ const KyncManual = {
     const days = Object.entries(byDay).map(([wd, v]) => ({ day: this.DAYS[wd], avg: Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 }))
       .sort((a, b) => b.avg - a.avg);
     const high = days[0], low = days[days.length - 1];
-    // 스트레스 높은 날(7 이상) 메모에 2번 이상 나온 말
-    const words = {};
-    list.filter(c => +c.stress >= 7 && c.memo).forEach(c => {
-      new Set(String(c.memo).replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
-        .map(w => w.replace(/(이랑|에서|까지|부터|이라|해서|하고|이야|이고|은|는|이|가|을|를|에|도|만|랑|와|과|의|로)$/, ''))
-        .filter(w => w.length >= 2 && !this.STOP.has(w))).forEach(w => { words[w] = (words[w] || 0) + 1; });
+
+    // 스트레스 높은 날(7 이상)에 에너지가 얼마나 떨어지는지
+    const hi = list.filter(c => +c.stress >= 7), lo = list.filter(c => c.stress && +c.stress < 7);
+    const avgE = arr => arr.length ? arr.reduce((a, c) => a + (+c.energy || 0), 0) / arr.length : null;
+    const eHi = avgE(hi), eLo = avgE(lo);
+    const drain = eHi != null && eLo != null && hi.length >= 2 ? Math.round((eLo - eHi) * 10) / 10 : null;
+
+    // 회복: 스트레스 7 이상인 날 이후 4 이하로 내려오기까지 걸린 날 (기록된 날 기준)
+    const asc = list.slice().sort((a, b) => a.day.localeCompare(b.day));
+    const gaps = [];
+    asc.forEach((c, i) => {
+      if (+c.stress < 7) return;
+      const j = asc.findIndex((x, k) => k > i && +x.stress <= 4);
+      if (j > 0) {
+        const t = (new Date(asc[j].day) - new Date(c.day)) / 86400000;
+        if (t > 0 && t <= 14) gaps.push(t);
+      }
     });
-    const stressWords = Object.entries(words).filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([w]) => w);
-    return { n, high, low: low !== high ? low : null, spread: high && low ? Math.round((high.avg - low.avg) * 10) / 10 : 0, stressWords };
+    const recover = gaps.length >= 2 ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length * 10) / 10 : null;
+
+    return {
+      n, high, low: low !== high ? low : null, spread: high && low ? Math.round((high.avg - low.avg) * 10) / 10 : 0,
+      stressWords: this._words(hi), goodWords: this._words(list.filter(c => +c.energy >= 7)),
+      drain, recover,
+    };
   },
 
-  /* ════════ 자녀 화면 그리기 ════════ */
+  /* ── 계산: 성향 (취향 맞추기 답) ── */
+  _calcTraits(answers) {
+    // 같은 질문에 여러 번 답했으면 마지막 답만
+    const last = {};
+    answers.sort((a, b) => a.day.localeCompare(b.day)).forEach(x => { last[x.q.id] = x; });
+    const list = Object.values(last);
+    const dims = [];
+    Object.entries(KyncBalance.DIMS).forEach(([key, def]) => {
+      const qs = list.filter(x => x.q.dim === key);
+      if (qs.length < 2) return;
+      const left = qs.filter(x => x.a === x.q.opts[0]).length, right = qs.length - left;
+      const side = left === right ? null : left > right ? 0 : 1;
+      dims.push({ key, title: def.title, poles: def.poles, short: def.short || def.poles, left, right, total: qs.length, side, label: side == null ? '반반' : def.poles[side] });
+    });
+    const others = list.filter(x => !x.q.dim).slice(-6).reverse().map(x => ({ q: x.q.q, a: x.a }));
+    return { count: list.length, dims, others };
+  },
+
+  /* ════════ 자녀 화면 ════════ */
   render() {
     const body = document.getElementById('manual-body');
     if (!body || !this._data) return;
-    const d = this._data;
-    const sec = (id, inner, canShare = true) => {
+    const d = this._data, e = this._esc.bind(this);
+    const sec = (id, inner, canShare = true, sub = '') => {
       const s = this.SECTIONS.find(x => x.id === id);
       const on = !!this._mine.share?.[id];
       const thanked = this._shared?.thanks?.[id];
       return `
         <section class="mn-sec" id="mnsec-${id}">
           <div class="mn-sec-head">
-            <h3>${s.title}</h3>
-            ${canShare ? `<label class="mn-share"><span>${on ? '부모님께 보임' : '나만 보기'}</span>
-              <span class="switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="KyncManual.toggleShare('${id}', this.checked)" aria-label="${s.title} 부모님께 보이기"><span class="track"></span></span></label>` : ''}
+            <div><h3>${s.title}</h3>${sub ? `<p class="mn-sub">${sub}</p>` : ''}</div>
+            ${canShare ? `<label class="mn-share"><span>${on ? '공개' : '나만'}</span>
+              <span class="switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="KyncManual.toggleShare('${id}', this.checked)" aria-label="${s.title} 부모님께 공개"><span class="track"></span></span></label>` : ''}
           </div>
           ${inner}
-          ${on && thanked ? `<div class="mn-thanks">${ic('heart', 14)}부모님이 고마워했어</div>` : ''}
+          ${on && thanked ? `<div class="mn-thanks">${ic('heart', 14)}부모님이 고마워함</div>` : ''}
         </section>`;
     };
-    const wait = (need, what) => `<p class="mn-wait">${what} ${need}번 더 남기면 보여.</p>`;
+    const wait = (need) => `<p class="mn-wait">기분 기록이 ${need}일 더 있으면 보여.</p>`;
 
-    // 기분
+    // 요즘 기분
     let mood;
     if (d.mood.need) mood = sec('mood', wait(d.mood.need, '기분을'), false);
     else {
       const m = d.mood;
-      const trendTxt = m.trend === 'up' ? '지난주보다 스트레스가 올라갔어' : m.trend === 'down' ? '지난주보다 스트레스가 내려갔어' : m.trend === 'same' ? '스트레스는 지난주랑 비슷해' : '';
+      const trendTxt = { up: '최근 7일 스트레스가 그 전보다 높아.', down: '최근 7일 스트레스가 그 전보다 낮아.', same: '최근 7일 스트레스는 그 전이랑 비슷해.' }[m.trend] || '';
       mood = sec('mood', `
-        <p class="mn-lead">최근 기록 ${m.n}일 중 제일 많았던 기분은 <b>‘${this._esc(m.top[0].label)}’</b></p>
+        <div class="mn-strip" aria-label="최근 30일 기분">${m.strip.map(c => {
+          const em = c.emo && this._emo(c.emo);
+          return `<i class="${c.dow === 0 ? 'sun' : ''}" title="${c.key}${em ? ' ' + em.label : ''}" style="${em ? `background:${em.color}` : ''}"></i>`;
+        }).join('')}</div>
+        <div class="mn-strip-legend"><span>30일 전</span><span>오늘</span></div>
         <div class="mn-bars">${m.top.map(t => {
-          const e = App.EMOTIONS_CHILD.find(x => x.id === t.id);
-          return `<div class="mn-bar"><span class="mn-bar-l">${e?.img ? `<img src="${e.img}" alt="" width="22" height="22">` : ''}${this._esc(t.label)}</span>
+          const em = this._emo(t.id);
+          return `<div class="mn-bar"><span class="mn-bar-l"><i style="background:${em?.color || 'var(--faint)'}"></i>${e(t.label)}</span>
             <span class="mn-bar-t"><i style="width:${t.pct}%"></i></span><span class="mn-bar-v">${t.count}일</span></div>`;
         }).join('')}</div>
         <div class="mn-stats">
           <div><small>평균 스트레스</small><b>${m.stress ?? '—'}</b></div>
           <div><small>평균 에너지</small><b>${m.energy ?? '—'}</b></div>
         </div>
-        ${trendTxt ? `<p class="mn-note">${trendTxt}</p>` : ''}`);
+        ${trendTxt ? `<p class="mn-note">${trendTxt}</p>` : ''}`, true, `기록 ${m.n}일`);
     }
 
     // 에너지
     let energy;
     if (d.energy.need) energy = sec('energy', wait(d.energy.need, '기분을'), false);
     else {
-      const e = d.energy;
+      const x = d.energy;
+      const lines = [];
+      if (x.drain != null && x.drain >= 1) lines.push(`스트레스가 7 이상인 날은 에너지가 평균 <b>${x.drain}</b> 낮아.`);
+      if (x.recover != null) lines.push(`스트레스가 높았던 날부터 다시 4 이하로 내려오기까지 평균 <b>${x.recover}일</b>.`);
+      if (x.goodWords.length) lines.push(`에너지 높은 날 메모에 자주 나온 말: ${x.goodWords.map(w => `<b>${e(w)}</b>`).join(', ')}`);
+      if (x.stressWords.length) lines.push(`스트레스 높은 날 메모에 자주 나온 말: ${x.stressWords.map(w => `<b>${e(w)}</b>`).join(', ')}`);
+      if (x.spread < 1) lines.push('요일별 차이는 거의 없어.');
       energy = sec('energy', `
         <div class="mn-stats">
-          <div><small>에너지 높은 요일</small><b>${e.high ? `${e.high.day}요일` : '—'}</b><em>${e.high ? `평균 ${e.high.avg}` : ''}</em></div>
-          <div><small>에너지 낮은 요일</small><b>${e.low ? `${e.low.day}요일` : '—'}</b><em>${e.low ? `평균 ${e.low.avg}` : ''}</em></div>
+          <div><small>높은 요일</small><b>${x.high ? `${x.high.day}` : '—'}</b><em>${x.high ? `평균 ${x.high.avg}` : ''}</em></div>
+          <div><small>낮은 요일</small><b>${x.low ? `${x.low.day}` : '—'}</b><em>${x.low ? `평균 ${x.low.avg}` : ''}</em></div>
         </div>
-        ${e.stressWords.length ? `<p class="mn-note">스트레스 높은 날 메모에 자주 나온 말: ${e.stressWords.map(w => `<b>${this._esc(w)}</b>`).join(', ')}</p>` : ''}
-        ${e.spread < 1 ? `<p class="mn-note">요일마다 큰 차이는 없어.</p>` : ''}`);
+        ${lines.map(l => `<p class="mn-note">${l}</p>`).join('')}`);
     }
 
-    // 필요한 것 (직접 고름)
+    // 성향
+    const t = d.traits;
+    const traits = t.dims.length ? sec('traits', `
+      <div class="mn-dims">${t.dims.map(x => `
+        <div class="mn-dim">
+          <div class="mn-dim-top"><small>${e(x.title)}</small><b>${e(x.label)}</b></div>
+          <div class="mn-dim-bar"><span>${e(x.short[0])}</span>
+            <i><em style="width:${Math.round(x.left / x.total * 100)}%"></em></i>
+            <span>${e(x.short[1])}</span></div>
+        </div>`).join('')}</div>
+      ${t.others.length ? `<div class="mn-list">${t.others.map(o => `<div><small>${e(o.q)}</small><b>${e(o.a)}</b></div>`).join('')}</div>` : ''}`,
+      true, `취향 맞추기 답 ${t.count}개 기준`)
+      : sec('traits', `<p class="mn-wait">활동 탭 취향 맞추기를 하면 쌓여. 축마다 답이 2개 이상 모이면 보여.</p>`, false);
+
+    // 힘들 때 필요한 것
     const needs = sec('needs', `
-      <p class="mn-sub">최대 3개</p>
       <div class="mn-chips">${this.NEEDS.map(n => {
         const on = this._mine.needs.includes(n.id);
-        return `<button type="button" class="mn-chip ${on ? 'on' : ''}" aria-pressed="${on}" onclick="KyncManual.toggleNeed('${n.id}')">${n.label}</button>`;
+        return `<button type="button" class="mn-chip ${on ? 'on' : ''}" aria-pressed="${on}" onclick="KyncManual.toggleList('needs', '${n.id}')">${n.label}</button>`;
       }).join('')}</div>
-      <input id="mn-needs-note" class="input" maxlength="60" placeholder="덧붙일 말 (안 써도 돼)" value="${this._esc(this._mine.needsNote || '')}" onchange="KyncManual.saveText('needsNote', this.value)">`);
+      <input class="input" maxlength="60" placeholder="덧붙일 말 (선택)" value="${e(this._mine.needsNote || '')}" onchange="KyncManual.saveText('needsNote', this.value)" aria-label="덧붙일 말">`,
+      true, '3개까지');
+
+    // 나랑 대화하는 법
+    const talkhow = sec('talkhow', `
+      <div class="label mn-label">말 걸기 편한 때</div>
+      <div class="mn-chips">${this.TIMES.map(n => {
+        const on = this._mine.times.includes(n.id);
+        return `<button type="button" class="mn-chip ${on ? 'on' : ''}" aria-pressed="${on}" onclick="KyncManual.toggleList('times', '${n.id}')">${n.label}</button>`;
+      }).join('')}</div>
+      <div class="label mn-label">듣기 힘든 말</div>
+      <input class="input" maxlength="60" placeholder="선택" value="${e(this._mine.avoid || '')}" onchange="KyncManual.saveText('avoid', this.value)" aria-label="듣기 힘든 말">`,
+      true, '3개까지');
 
     // 알아줬으면 하는 것
     const wish = sec('wish', `
-      <textarea id="mn-wish" class="textarea mn-wish" maxlength="120" placeholder="요즘 나에 대해 부모님이 알아줬으면 하는 것" onchange="KyncManual.saveText('wish', this.value)">${this._esc(this._mine.wish || '')}</textarea>
-      <div class="count"><span>${(this._mine.wish || '').length}</span>/120</div>`);
+      <textarea id="mn-wish" class="textarea mn-wish" maxlength="120" placeholder="요즘 나에 대해" onchange="KyncManual.saveText('wish', this.value)" aria-label="알아줬으면 하는 것">${e(this._mine.wish || '')}</textarea>`);
 
-    // 취향
-    const taste = d.taste.length ? sec('taste', `
-      <div class="mn-list">${d.taste.map(t => `<div><small>${this._esc(t.q)}</small><b>${this._esc(t.a)}</b></div>`).join('')}</div>
-      ${d.tasteCount > d.taste.length ? `<p class="mn-note">최근 ${d.taste.length}개만 보여줘.</p>` : ''}`)
-      : sec('taste', `<p class="mn-wait">활동 탭에서 취향 맞추기나 밸런스 게임을 하면 여기 모여.</p>`, false);
-
-    // 대화 방식
-    const talk = d.talk ? sec('talk', `<p class="mn-lead"><b>${this._esc(d.talk.type)}</b></p><p class="mn-note">${this._esc(d.talk.sub)}</p>`)
-      : sec('talk', `<p class="mn-wait">활동 탭에서 대화 유형 검사를 하면 여기 들어가.</p>`, false);
+    // 대화 유형
+    const talk = d.talk ? sec('talk', `<p class="mn-lead"><b>${e(d.talk.type)}</b></p><p class="mn-note">${e(d.talk.sub)}</p>`)
+      : sec('talk', `<p class="mn-wait">활동 탭 대화 유형 검사를 하면 들어가.</p>`, false);
 
     const sharedCount = Object.values(this._mine.share || {}).filter(Boolean).length;
     body.innerHTML = `
       <div class="mn-intro">
-        <p>내 기록에서 찾은 나.</p>
-        <p>처음엔 전부 나만 보여. 부모님께 보여줄 건 항목마다 내가 골라.</p>
-        <div class="mn-count">${ic('lock', 14)}${sharedCount ? `${sharedCount}개 항목을 부모님께 보여주는 중` : '지금은 전부 나만 보기'}</div>
+        <p class="mn-h">나 사용 설명서</p>
+        <p>내 기록을 모아서 정리했어. 기본은 나만 보고, 공개를 켠 항목만 부모님 화면에 떠.</p>
+        <div class="mn-count">${ic('lock', 14)}${sharedCount ? `${sharedCount}개 공개 중` : '전부 나만 보는 중'}</div>
       </div>
-      ${mood}${energy}${needs}${wish}${taste}${talk}
-      <p class="mn-foot">기록을 정리한 거지 성격 진단은 아니야. 기록이 쌓일수록 정확해져.</p>`;
+      ${mood}${energy}${traits}${needs}${talkhow}${wish}${talk}
+      <p class="mn-foot">기록을 정리한 거라 진단은 아니야. 기록이 쌓일수록 정확해져.</p>`;
   },
 
   /* ── 자녀 입력 ── */
@@ -256,14 +344,15 @@ const KyncManual = {
     catch (e) { toast('저장 못 했어. 인터넷 연결 확인해줘', 'error'); }
   },
 
-  async toggleNeed(id) {
-    const cur = this._mine.needs || [];
-    let next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
-    if (next.length > 3) { toast('3개까지만 고를 수 있어', 'error'); return; }
-    await this._saveMine({ needs: next });
-    this.log('manual_needs', { count: next.length });
+  async toggleList(key, id) {
+    const cur = this._mine[key] || [];
+    const next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
+    if (next.length > 3) { toast('3개까지 고를 수 있어', 'error'); return; }
+    await this._saveMine({ [key]: next });
+    this.log('manual_pick', { key, count: next.length });
     this.render();
-    if (this._mine.share?.needs) this._syncShared();
+    const sec = key === 'needs' ? 'needs' : 'talkhow';
+    if (this._mine.share?.[sec]) this._syncShared();
   },
 
   async saveText(key, value) {
@@ -271,40 +360,41 @@ const KyncManual = {
     if ((this._mine[key] || '') === value) return;
     await this._saveMine({ [key]: value });
     this.log('manual_text', { key, len: value.length });
-    const sec = key === 'wish' ? 'wish' : 'needs';
+    const sec = { wish: 'wish', needsNote: 'needs', avoid: 'talkhow' }[key];
     if (this._mine.share?.[sec]) this._syncShared();
     toast('저장했어', 'ok');
     this.render();
   },
 
   async toggleShare(id, on) {
-    if (on && !this._sectionValue(id)) { toast('아직 보여줄 내용이 없어', 'error'); this.render(); return; }
+    if (on && !this._sectionValue(id)) { toast('아직 공개할 내용이 없어', 'error'); this.render(); return; }
     const share = { ...(this._mine.share || {}), [id]: on };
     await this._saveMine({ share });
     this.log(on ? 'manual_share_on' : 'manual_share_off', { section: id });
     await this._syncShared();
-    toast(on ? '부모님 화면에 보여' : '다시 나만 보기로 바꿨어', 'ok');
+    toast(on ? '공개했어' : '다시 나만 보기', 'ok');
     this.render();
   },
 
-  // 부모에게 올라갈 요약본 (섹션별)
+  // 부모에게 올라갈 요약본
   _sectionValue(id) {
     const d = this._data || {}, m = this._mine || {};
-    if (id === 'mood')   return d.mood && !d.mood.need ? { n: d.mood.n, top: d.mood.top.map(({ id, label, count }) => ({ id, label, count })), stress: d.mood.stress, energy: d.mood.energy, trend: d.mood.trend } : null;
-    if (id === 'energy') return d.energy && !d.energy.need ? { high: d.energy.high || null, low: d.energy.low || null, stressWords: d.energy.stressWords } : null;
-    if (id === 'needs')  return m.needs?.length ? { items: m.needs.map(x => this.NEEDS.find(n => n.id === x)?.label).filter(Boolean), note: m.needsNote || '' } : null;
-    if (id === 'wish')   return m.wish ? m.wish : null;
-    if (id === 'taste')  return d.taste?.length ? d.taste.map(({ q, a }) => ({ q, a })) : null;
-    if (id === 'talk')   return d.talk || null;
+    const label = (list, ids) => (ids || []).map(x => list.find(n => n.id === x)?.label).filter(Boolean);
+    if (id === 'mood')    return d.mood && !d.mood.need ? { n: d.mood.n, top: d.mood.top.map(({ id, label, count }) => ({ id, label, count })), stress: d.mood.stress, energy: d.mood.energy, trend: d.mood.trend } : null;
+    if (id === 'energy')  return d.energy && !d.energy.need ? { high: d.energy.high || null, low: d.energy.low || null, drain: d.energy.drain, recover: d.energy.recover, stressWords: d.energy.stressWords, goodWords: d.energy.goodWords } : null;
+    if (id === 'traits')  return d.traits?.dims?.length ? { dims: d.traits.dims.map(({ title, label }) => ({ title, label })) } : null;
+    if (id === 'needs')   return m.needs?.length ? { items: label(this.NEEDS, m.needs), note: m.needsNote || '' } : null;
+    if (id === 'talkhow') return (m.times?.length || m.avoid) ? { times: label(this.TIMES, m.times), avoid: m.avoid || '' } : null;
+    if (id === 'wish')    return m.wish || null;
+    if (id === 'talk')    return d.talk || null;
     return null;
   },
 
-  // 켜진 항목만 요약본을 가족 문서에 반영 (꺼진 항목은 지움)
   async _syncShared() {
     const fc = this._fc(), uid = this._uid();
     if (!fc || !uid) return;
     const del = firebase.firestore.FieldValue.delete();
-    const data = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), name: localStorage.getItem('kync_user_name') || '' };
+    const data = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), name: localStorage.getItem('kync_user_name') || '', taste: del };
     let any = false;
     this.SECTIONS.forEach(s => {
       const v = this._mine.share?.[s.id] ? this._sectionValue(s.id) : null;
@@ -315,22 +405,19 @@ const KyncManual = {
     try { await this._sharedRef(uid).set(data, { merge: true }); } catch (e) { console.warn('manual share:', e); }
   },
 
-  /* ════════ 부모 화면: 아이가 알려준 것 ════════ */
-  _unsub: null,
+  /* ════════ 부모 화면 ════════ */
   listenParent() {
     const fc = this._fc();
-    const el = document.getElementById('p-manual-card');
-    if (!fc || !el || typeof db === 'undefined') return;
+    if (!fc || typeof db === 'undefined' || !document.getElementById('p-manual-card')) return;
     if (this._unsub) { try { this._unsub(); } catch (e) {} }
     this._unsub = db.collection('families').doc(fc).collection('manual').onSnapshot(snap => {
-      const docs = snap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(x => x.any);
-      this._parentDocs = docs;
+      this._parentDocs = snap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(x => x.any);
       this.renderParent();
       if (typeof KyncActivity !== 'undefined') KyncActivity.render();
       if (typeof KyncInbox !== 'undefined') KyncInbox.refresh();
     }, e => console.warn('manual listen:', e));
   },
-  stop() { if (this._unsub) { try { this._unsub(); } catch (e) {} this._unsub = null; } },
+  stop() { if (this._unsub) { try { this._unsub(); } catch (e) {} this._unsub = null; } this._parentDocs = []; },
 
   renderParent() {
     const el = document.getElementById('p-manual-card');
@@ -339,24 +426,30 @@ const KyncManual = {
     if (!docs.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
     el.classList.remove('hidden');
     this.logOnce('manual_parent_view', { sections: docs.reduce((n, x) => n + this.SECTIONS.filter(s => x[s.id]).length, 0) });
+    const e = this._esc.bind(this);
     el.innerHTML = docs.map(x => {
-      const name = this._esc(x.name || '아이');
       const parts = this.SECTIONS.filter(s => x[s.id]).map(s => {
         const v = x[s.id], thanked = !!x.thanks?.[s.id];
         let inner = '';
-        if (s.id === 'mood') inner = `<p>최근 ${v.n}일 중 가장 많았던 기분은 <b>‘${this._esc(v.top?.[0]?.label || '')}’</b>예요. 평균 스트레스 ${v.stress ?? '—'}, 에너지 ${v.energy ?? '—'}.</p>`;
-        if (s.id === 'energy') inner = `<p>${v.high ? `에너지가 높은 날은 <b>${v.high.day}요일</b>` : ''}${v.low ? `, 낮은 날은 <b>${v.low.day}요일</b>이에요.` : '.'}</p>${v.stressWords?.length ? `<p class="mn-note">스트레스가 높았던 날 자주 나온 말: ${v.stressWords.map(w => this._esc(w)).join(', ')}</p>` : ''}`;
-        if (s.id === 'needs') inner = `<div class="mn-chips">${v.items.map(t => `<span class="mn-chip on">${this._esc(t)}</span>`).join('')}</div>${v.note ? `<p class="mn-note">“${this._esc(v.note)}”</p>` : ''}`;
-        if (s.id === 'wish') inner = `<p class="mn-quote">“${this._esc(v)}”</p>`;
-        if (s.id === 'taste') inner = `<div class="mn-list">${v.slice(0, 4).map(t => `<div><small>${this._esc(t.q)}</small><b>${this._esc(t.a)}</b></div>`).join('')}</div>`;
-        if (s.id === 'talk') inner = `<p><b>${this._esc(v.type)}</b> <span class="mn-note">${this._esc(v.sub)}</span></p>`;
+        if (s.id === 'mood') inner = `<p>최근 ${v.n}일 중 가장 많았던 기분은 <b>‘${e(v.top?.[0]?.label || '')}’</b>. 평균 스트레스 ${v.stress ?? '—'}, 에너지 ${v.energy ?? '—'}.</p>`;
+        if (s.id === 'energy') inner = [
+          v.high ? `<p>에너지가 높은 요일 <b>${v.high.day}</b>${v.low ? `, 낮은 요일 <b>${v.low.day}</b>` : ''}.</p>` : '',
+          v.drain >= 1 ? `<p class="mn-note">스트레스가 높은 날은 에너지가 평균 ${v.drain} 낮아요.</p>` : '',
+          v.recover != null ? `<p class="mn-note">스트레스가 높았다가 내려오기까지 평균 ${v.recover}일.</p>` : '',
+          v.stressWords?.length ? `<p class="mn-note">스트레스 높은 날 자주 나온 말: ${v.stressWords.map(e).join(', ')}</p>` : '',
+        ].join('');
+        if (s.id === 'traits') inner = `<div class="mn-list">${v.dims.map(t => `<div><small>${e(t.title)}</small><b>${e(t.label)}</b></div>`).join('')}</div>`;
+        if (s.id === 'needs') inner = `<div class="mn-chips">${v.items.map(t => `<span class="mn-chip">${e(t)}</span>`).join('')}</div>${v.note ? `<p class="mn-note">“${e(v.note)}”</p>` : ''}`;
+        if (s.id === 'talkhow') inner = `${v.times?.length ? `<p>말 걸기 편한 때: <b>${v.times.map(e).join(', ')}</b></p>` : ''}${v.avoid ? `<p class="mn-note">듣기 힘든 말: “${e(v.avoid)}”</p>` : ''}`;
+        if (s.id === 'wish') inner = `<p class="mn-quote">“${e(v)}”</p>`;
+        if (s.id === 'talk') inner = `<p><b>${e(v.type)}</b> <span class="mn-note">${e(v.sub)}</span></p>`;
         return `<div class="mn-p-sec">
-          <div class="mn-p-head"><h4>${s.title.replace('나한테', '아이에게').replace('내 ', '').replace('요즘 ', '')}</h4>
-            <button class="mn-thx ${thanked ? 'on' : ''}" ${thanked ? 'disabled' : ''} onclick="KyncManual.thank('${x.uid}','${s.id}')">${ic('heart', 14)}${thanked ? '고마워 보냄' : '고마워'}</button></div>
+          <div class="mn-p-head"><h4>${s.parent}</h4>
+            <button class="mn-thx ${thanked ? 'on' : ''}" ${thanked ? 'disabled' : ''} onclick="KyncManual.thank('${x.uid}','${s.id}')">${ic('heart', 14)}${thanked ? '보냄' : '고마워'}</button></div>
           ${inner}</div>`;
       }).join('');
-      return `<div class="card-head"><h2>${name}의 사용 설명서</h2></div>
-        <p class="mn-p-sub">아이가 직접 고른 것만 보여요.</p>${parts}`;
+      return `<div class="card-head"><h2>${e(x.name || '아이')}의 사용 설명서</h2></div>
+        <p class="mn-p-sub">아이가 공개한 항목만 보여요.</p>${parts}`;
     }).join('');
   },
 

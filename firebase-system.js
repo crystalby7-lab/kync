@@ -288,7 +288,7 @@ function watchChildJoin(code) {
     const child = Object.entries(fam.members || {}).map(([uid, m]) => ({ uid, ...m })).find(m => m.role === 'child');
     if (child) {
       const needConsent = child.minor && !fam.guardianConsents?.[child.uid];
-      setConnectStatus(needConsent ? `${child.name || '자녀'}와(과) 연결됐어요. 보호자 동의가 필요해요.` : `${child.name || '자녀'}와(과) 연결됐어요`, true);
+      setConnectStatus(needConsent ? `${josa(child.name || '자녀', '와/과')} 연결됐어요. 보호자 동의가 필요해요.` : `${josa(child.name || '자녀', '와/과')} 연결됐어요`, true);
       doneBtn.textContent = needConsent ? '보호자 동의하고 시작하기' : '시작하기';
       doneBtn.dataset.consentFor = needConsent ? child.uid : '';
     } else {

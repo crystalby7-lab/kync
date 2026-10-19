@@ -332,7 +332,7 @@ const Quiz = (() => {
       const other=Object.entries(fam?.members||{}).find(([id,m])=>id!==uid&&m.role!==role&&m.talkType);
       const label=role==='parent'?'자녀':'부모님';
       if(!other){
-        el.innerHTML=`<div class="card-head"><h2>우리 가족</h2></div><p class="small sub">${tone(`${label}이(가) 검사하면 여기서 둘을 같이 볼 수 있어요.`,`${label}이 검사하면 여기서 둘이 같이 보여.`)}</p>`;
+        el.innerHTML=`<div class="card-head"><h2>우리 가족</h2></div><p class="small sub">${tone(`${josa(label, '이/가')} 검사하면 여기서 둘을 같이 볼 수 있어요.`,`${label}이 검사하면 여기서 둘이 같이 보여.`)}</p>`;
       } else {
         const t=other[1].talkType, name=KyncUI.esc(other[1].name||label);
         const match=type.compat.find(c=>c.type===t||c.type.startsWith(t)||t.startsWith(c.type.split(' ')[0]));

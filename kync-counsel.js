@@ -56,7 +56,7 @@ const KyncCounsel = {
     if (status === 'consent') {
       body = `
         <div class="cs-gate">
-          <p class="small sub">AI 상담을 쓰려면 동의가 필요해요. 상담 메시지는 답변을 만들기 위해 미국의 Anthropic으로 전송돼요.</p>
+          <p class="small sub">AI 상담은 동의 후 쓸 수 있어요. 상담 메시지는 미국 Anthropic으로 전송돼요.</p>
           <div class="row">
             <button class="btn btn-soft btn-sm" onclick="KyncAccount.openLegal('ai')">내용 보기</button>
             <button class="btn btn-primary btn-sm grow" onclick="KyncAccount.setAgreement('ai', true)">동의하고 시작하기</button>
@@ -68,15 +68,15 @@ const KyncCounsel = {
       body = `
         <div class="cs-bubble cs-me">${this._esc(todayItem.message)}</div>
         <div class="cs-bubble cs-ai">${this._esc(todayItem.reply)}</div>
-        <div class="cs-note">오늘 상담은 여기까지예요. 내일 또 이야기해요.</div>`;
+        <div class="cs-note">${this._role === 'child' ? '상담은 하루 한 번. 내일 다시 쓸 수 있어.' : '상담은 하루 한 번이에요. 내일 다시 쓸 수 있어요.'}</div>`;
     } else if (this._sending) {
       body = `
         <div class="cs-bubble cs-me">${this._esc(this._pending)}</div>
-        <div class="cs-bubble cs-ai cs-typing">답변을 쓰고 있어요</div>`;
+        <div class="cs-bubble cs-ai cs-typing">답변 작성 중</div>`;
     } else {
       body = `
         <textarea id="cs-input" class="textarea" maxlength="${this.MAX}" ${ready ? '' : 'disabled'} aria-label="상담 내용"
-          placeholder="${ready ? (this._role === 'parent' ? '자녀와 관련된 고민을 편하게 적어주세요' : '요즘 고민을 편하게 적어봐') : '상담 기능을 준비하고 있어요'}"
+          placeholder="${ready ? (this._role === 'parent' ? '자녀와 관련된 고민' : '요즘 고민') : '상담 기능을 준비하고 있어요'}"
           oninput="document.getElementById('cs-count').textContent=this.value.length"></textarea>
         <div class="cs-row">
           <span class="count"><span id="cs-count">0</span>/${this.MAX}</span>
