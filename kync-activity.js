@@ -83,6 +83,18 @@ const KyncActivity = {
 
       <div class="qx-section">나를 알아보기</div>
 
+      ${role === 'child' ? `
+      <button class="ax-row ax-manual" onclick="KyncManual.open()">
+        <div class="ax-row-icon">${ic('doc', 24)}</div>
+        <div class="grow"><b>나 사용 설명서</b><small>내 기록에서 찾은 나. 보여줄 건 내가 골라.</small></div>
+        <span class="chev">${ic('chev', 20)}</span>
+      </button>` : `
+      <button class="ax-row ax-manual" onclick="selectTab('p-todayTab'); setTimeout(() => document.getElementById('p-manual-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)">
+        <div class="ax-row-icon">${ic('doc', 24)}</div>
+        <div class="grow"><b>아이가 알려준 것</b><small>${(KyncManual._parentDocs || []).length ? '오늘 탭에서 볼 수 있어요' : '아이가 사용 설명서를 공유하면 오늘 탭에 보여요'}</small></div>
+        <span class="chev">${ic('chev', 20)}</span>
+      </button>`}
+
       <button class="ax-row" onclick="location.href='quiz.html'">
         <div class="ax-row-icon">${ic('target', 24)}</div>
         <div class="grow">

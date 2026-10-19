@@ -701,7 +701,7 @@ const KyncAccount = {
     this.profile = null;
     this.family = null;
     this._consentPrompted = {};
-    ['layer-settings', 'layer-guardian', 'layer-delete', 'layer-legal', 'layer-inbox'].forEach(id => KyncUI.closeLayer(id));
+    ['layer-settings', 'layer-guardian', 'layer-delete', 'layer-legal', 'layer-inbox', 'layer-manual'].forEach(id => KyncUI.closeLayer(id));
   },
 };
 

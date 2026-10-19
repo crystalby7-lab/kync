@@ -84,6 +84,21 @@ const KyncInbox = {
             title: `${who} 오늘 기분을 남겼어요`, sub: [emo, r.checkin.memo].filter(Boolean).join(', '), go: 'today' });
         }
       })).catch(e => console.warn('inbox records:', e)));
+    // 나 사용 설명서: 부모는 공유 소식, 자녀는 고마워 반응
+    if (role === 'parent') {
+      (typeof KyncManual !== 'undefined' ? (KyncManual._parentDocs || []) : []).forEach(x => {
+        const n = KyncManual.SECTIONS.filter(s => x[s.id]).length;
+        if (n) items.push({ t: this._ms(x.updatedAt), ic: 'doc', tone: 'honey', title: '아이가 사용 설명서를 보여줬어요', sub: `${n}개 항목`, go: 'today' });
+      });
+    } else {
+      jobs.push(db.collection('families').doc(fc).collection('manual').doc(this._ctx().uid).get().then(d => {
+        const th = d.exists ? d.data().thanks || {} : {};
+        Object.entries(th).forEach(([sec, t]) => {
+          const title = KyncManual.SECTIONS.find(s => s.id === sec)?.title || '';
+          items.push({ t: +t || 0, ic: 'heart', tone: 'honey', title: '부모님이 고마워했어', sub: title, go: () => KyncManual.open() });
+        });
+      }).catch(() => {}));
+    }
     await Promise.all(jobs);
 
     // 퀘스트 (퀘스트 탭이 이미 실시간으로 받아둔 것)
