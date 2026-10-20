@@ -58,14 +58,14 @@ const KyncAccount = {
 
   _introArt(kind) {
     if (kind === 'question') {
-      return `<div class="stage">${KyncBrand.curled(170)}
+      return `<div class="stage"><img src="images/char/cheer.png" alt="" width="200">
         <div class="bubble" style="top:0;left:8px">${ic('lock', 16)}오늘의 질문</div></div>`;
     }
     if (kind === 'feeling') {
-      return `<div class="stage">${KyncBrand.mascot('default', 200)}
+      return `<div class="stage"><img src="images/char/love.png" alt="" width="200">
         <div class="bubble" style="top:0;right:0">${ic('smile', 16)}지금 기분</div></div>`;
     }
-    return `<div class="stage">${KyncBrand.mascot('happy', 200)}
+    return `<div class="stage"><img src="images/char/pair.png" alt="" width="260">
       <div class="bubble" style="top:0;left:-8px">${ic('doc', 16)}나 사용 설명서</div></div>`;
   },
 

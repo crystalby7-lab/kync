@@ -66,14 +66,14 @@ const App = {
 
   // 감정 (stressed는 예전 기록 표시용, 고르는 칸에는 안 나옴)
   EMOTIONS_CHILD: [
-    { id:'happy', img:'images/emo/happy.png',    label:'좋아',     color:'#F2B53B' },
-    { id:'excited', img:'images/emo/excited.png',  label:'신나',     color:'#EE7FA0' },
-    { id:'calm', img:'images/emo/calm.png',     label:'괜찮아',   color:'#6DBB8F' },
-    { id:'tired', img:'images/emo/tired.png',    label:'피곤해',   color:'#A8B0BD' },
-    { id:'anxious', img:'images/emo/anxious.png',  label:'불안해',   color:'#EE8B5E' },
-    { id:'sad', img:'images/emo/sad.png',      label:'슬퍼',     color:'#7C93C9' },
-    { id:'angry', img:'images/emo/angry.png',    label:'화나',     color:'#C9423A' },
-    { id:'lonely', img:'images/emo/lonely.png',   label:'외로워',   color:'#9B86B5' },
+    { id:'happy', label:'좋아',     color:'#F2B53B' },
+    { id:'excited', label:'신나',     color:'#EE7FA0' },
+    { id:'calm', label:'괜찮아',   color:'#6DBB8F' },
+    { id:'tired', label:'피곤해',   color:'#A8B0BD' },
+    { id:'anxious', label:'불안해',   color:'#EE8B5E' },
+    { id:'sad', label:'슬퍼',     color:'#7C93C9' },
+    { id:'angry', label:'화나',     color:'#C9423A' },
+    { id:'lonely', label:'외로워',   color:'#9B86B5' },
     { id:'stressed', label:'스트레스', color:'#E0645A', legacy:true },
   ],
 
@@ -246,7 +246,7 @@ const App = {
     if (!grid) return;
     grid.innerHTML = this.EMOTIONS_CHILD.filter(e => !e.legacy).map(e => `
       <button class="emo-btn ${this._selectedEmotion === e.id ? 'on' : ''}" data-id="${e.id}" aria-pressed="${this._selectedEmotion === e.id}"
-        onclick="App._selectEmotion('${e.id}')"><img src="${e.img}" alt="" width="40" height="40" draggable="false">${e.label}</button>`).join('');
+        onclick="App._selectEmotion('${e.id}')"><i style="background:${e.color}"></i>${e.label}</button>`).join('');
   },
 
   _selectEmotion(id) {
