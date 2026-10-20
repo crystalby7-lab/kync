@@ -51,29 +51,42 @@ const KyncActivity = {
     el.innerHTML = `
       <div class="qx-section">나를 알기</div>
       ${hero}
-      ${role === 'child' ? `
-      <button class="ax-row" onclick="KyncJournal.open()">
-        <div class="ax-row-icon">${ic('edit', 24)}</div>
-        <div class="grow"><b>일기</b><small>이번 주 ${KyncJournal.weekCount()}/3 · 나만 보기, 보낼 것만 골라서</small></div>
-        <span class="chev">${ic('chev', 20)}</span>
-      </button>` : ''}
 
-      <button class="ax-row" onclick="location.href='activity-balance.html'">
-        <div class="ax-row-icon">${ic('target', 24)}</div>
-        <div class="grow">
-          <b>취향 맞추기</b>
-          <small>오늘 ${tasteCount}/${tasteMax}${role === 'child' ? ' · 답이 사용 설명서 성향에 쌓여' : ' · 같은 문제에 자녀 답이 같이 보여요'}</small>
-        </div>
-        <span class="chev">${ic('chev', 20)}</span>
-      </button>
+      <div class="qx-section">오늘 해볼 것</div>
+      <div class="ax-tiles">
+        ${role === 'child' ? (() => {
+          const wc = KyncJournal.weekCount();
+          return `
+        <button class="ax-card honey" onclick="KyncJournal.open()">
+          <div class="ax-card-top"><b>일기</b><span class="ax-card-sub">이번 주</span></div>
+          <div class="ax-dots">${[0, 1, 2].map(i => `<i class="${i < wc ? 'on' : ''}"></i>`).join('')}<em>${wc}/3</em></div>
+          ${KyncBrand.mascot('sleepy', 74, { role: 'child', cls: 'ax-card-char' })}
+          <div class="ax-card-cta">${wc >= 3 ? '이번 주 다 썼어' : '쓰러 가기'}${ic('chev', 15)}</div>
+        </button>`;
+        })() : `
+        <button class="ax-card honey" onclick="selectTab('p-todayTab'); setTimeout(() => document.getElementById('p-journal-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)">
+          <div class="ax-card-top"><b>아이가 보낸 일기</b></div>
+          <div class="ax-big">${(KyncJournal._sharedDocs || []).length}<small>개</small></div>
+          ${KyncBrand.mascot('work', 74, { role: 'parent', cls: 'ax-card-char' })}
+          <div class="ax-card-cta">보기${ic('chev', 15)}</div>
+        </button>`}
+        <button class="ax-card moss" onclick="location.href='activity-balance.html'">
+          <div class="ax-card-top"><b>취향 맞추기</b><span class="ax-card-sub">오늘</span></div>
+          <div class="ax-big">${tasteCount}<small>/${tasteMax}</small></div>
+          <div class="ax-bar"><i style="width:${Math.round(tasteCount / tasteMax * 100)}%"></i></div>
+          ${KyncBrand.mascot('happy', 70, { cls: 'ax-card-char' })}
+          <div class="ax-card-cta">${tasteCount >= tasteMax ? '오늘 끝' : tasteCount ? '이어서' : '시작'}${ic('chev', 15)}</div>
+        </button>
+      </div>
 
-      <button class="ax-row" onclick="location.href='quiz.html'">
-        <div class="ax-row-icon">${ic('chat', 24)}</div>
-        <div class="grow">
-          <b>${result?.type ? this._esc(result.type) : '대화 유형 검사'}</b>
-          <small>${theirType ? `${otherLabel}: ${this._esc(theirType)}` : result?.type ? tone('다시 할 수 있어요', '다시 할 수 있어') : tone('20문항, 5분', '20문항, 5분')}</small>
+      <button class="ax-card sky wide" onclick="location.href='quiz.html'">
+        <div class="ax-card-top"><b>대화 유형 검사</b><span class="ax-card-sub">20문항 · 5분</span></div>
+        <div class="ax-types">
+          <div><small>나</small><b>${result?.type ? this._esc(result.type) : '아직'}</b></div>
+          <div><small>${otherLabel}</small><b>${theirType ? this._esc(theirType) : '아직'}</b></div>
         </div>
-        <span class="chev">${ic('chev', 20)}</span>
+        ${KyncBrand.pair(118, 'ax-card-char')}
+        <div class="ax-card-cta">${result?.type ? tone('다시 하기', '다시 하기') : tone('검사하기', '검사하기')}${ic('chev', 15)}</div>
       </button>`;
   },
 };

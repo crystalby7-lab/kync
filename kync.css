@@ -992,3 +992,30 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .emo-btn.on { color: #fff; box-shadow: none; transform: translateY(-1px); }
 .emo-btn.on i { transform: none; background: #fff !important; box-shadow: none; }
 .emo-btn:active { transform: scale(.96); }
+
+/* 활동 탭 카드 */
+.ax-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ax-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-height: 168px; padding: 16px; border-radius: 22px; color: var(--ink); transition: transform .12s; }
+.ax-card:active { transform: scale(.98); }
+.ax-card.honey { background: #FDEBC8; }
+.ax-card.moss { background: #DDF0E3; }
+.ax-card.sky { background: #E1ECF8; }
+.ax-card.wide { min-height: 150px; padding-right: 140px; }
+.ax-card-top { display: flex; flex-direction: column; gap: 2px; }
+.ax-card-top b { font-size: 16px; font-weight: 850; letter-spacing: -0.02em; }
+.ax-card-sub { font-size: 12px; font-weight: 700; color: rgba(43, 36, 33, .55); }
+.ax-card-char { position: absolute; right: 6px; bottom: 6px; pointer-events: none; }
+.ax-card.wide .ax-card-char { right: 10px; bottom: 8px; }
+.ax-card-cta { margin-top: auto; display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 800; padding: 7px 10px 7px 12px; border-radius: 12px; background: rgba(255, 255, 255, .75); position: relative; z-index: 1; }
+.ax-big { font-size: 34px; font-weight: 900; letter-spacing: -0.04em; margin: 8px 0 4px; line-height: 1; }
+.ax-big small { font-size: 15px; font-weight: 750; color: rgba(43, 36, 33, .5); margin-left: 2px; }
+.ax-bar { width: 58%; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .8); overflow: hidden; margin-bottom: 10px; }
+.ax-bar i { display: block; height: 100%; background: var(--moss); border-radius: 4px; }
+.ax-dots { display: flex; align-items: center; gap: 6px; margin: 12px 0 10px; }
+.ax-dots i { width: 18px; height: 18px; border-radius: 50%; background: rgba(255, 255, 255, .85); box-shadow: inset 0 0 0 2px rgba(43, 36, 33, .08); }
+.ax-dots i.on { background: var(--honey); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .12); }
+.ax-dots em { font-style: normal; font-size: 13px; font-weight: 800; margin-left: 2px; color: rgba(43, 36, 33, .6); }
+.ax-types { display: flex; gap: 8px; margin: 10px 0 12px; }
+.ax-types > div { background: rgba(255, 255, 255, .75); border-radius: 12px; padding: 8px 10px; min-width: 76px; }
+.ax-types small { display: block; font-size: 11px; font-weight: 700; color: var(--sub); }
+.ax-types b { font-size: 13px; font-weight: 800; }
