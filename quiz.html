@@ -6,7 +6,7 @@
   <title>Kync — 대화 유형 검사</title>
   <meta name="theme-color" content="#F4F1EC" />
   <link rel="icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="kync.css?v=20261020-3" />
+  <link rel="stylesheet" href="kync.css?v=20261020-5" />
 </head>
 <body>
 <div class="sub-app">
@@ -17,9 +17,11 @@
 
   <!-- 역할 선택 -->
   <div class="sub-body qs-step" id="s-role">
-    <div class="sub-intro">
+    <div class="qz-hero">
+      <div id="qz-hero-char"></div>
       <h2>나는 어떻게 말하는 사람일까?</h2>
       <p id="intro-sub"></p>
+      <div class="qz-chips"><span>20문항</span><span>5분</span><span>정답 없음</span></div>
     </div>
     <button class="btn btn-primary btn-block" id="start-btn" onclick="Quiz.start(localStorage.getItem('kync_role') === 'child' ? 'child' : 'parent')">시작</button>
   </div>
@@ -30,7 +32,8 @@
       <div class="bar"><div id="q-prog-bar" style="width:5%"></div></div>
       <span id="q-prog-text">1 / 20</span>
     </div>
-    <div class="dark-card">
+    <div class="dark-card qz-card">
+      <div class="qz-peek" id="qz-peek"></div>
       <div class="q-label" id="q-axis-pill"></div>
       <p class="q-text" id="q-text"></p>
     </div>
@@ -48,6 +51,7 @@
       <div class="r-type-name" id="r-type-name"></div>
       <div class="r-type-sub" id="r-type-sub"></div>
       <p class="r-summary" id="r-summary"></p>
+      <div class="qz-r-char" id="qz-r-char"></div>
     </div>
     <section class="card">
       <div class="card-head"><h2>4가지 기준</h2></div>
@@ -71,13 +75,13 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="kync-ui.js?v=20261020-3"></script>
-<script src="firebase-system.js?v=20261020-3"></script>
+<script src="kync-ui.js?v=20261020-5"></script>
+<script src="firebase-system.js?v=20261020-5"></script>
 <script>
 KyncAuth.onAuthChange(user => { if (!user) location.href = 'index.html'; });
 function goHome(){ Quiz.saveAndGoHome(); }
-document.addEventListener('DOMContentLoaded', () => { const el = document.getElementById('intro-sub'); if (el) el.textContent = tone('20문항, 5분쯤 걸려요. 정답은 없으니 평소 모습에 가까운 걸 고르면 돼요.', '20문항, 5분쯤 걸려. 정답 없으니까 평소 나랑 가까운 걸 고르면 돼.'); });
+document.addEventListener('DOMContentLoaded', () => { const hc = document.getElementById('qz-hero-char'); if (hc) hc.innerHTML = KyncBrand.pair(230, 'qz-pair'); const el = document.getElementById('intro-sub'); if (el) el.textContent = tone('20문항, 5분쯤 걸려요. 정답은 없으니 평소 모습에 가까운 걸 고르면 돼요.', '20문항, 5분쯤 걸려. 정답 없으니까 평소 나랑 가까운 걸 고르면 돼.'); });
 </script>
-<script src="quiz.js?v=20261020-3"></script>
+<script src="quiz.js?v=20261020-5"></script>
 </body>
 </html>

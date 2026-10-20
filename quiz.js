@@ -248,6 +248,8 @@ const Quiz = (() => {
     document.getElementById('q-axis-pill').textContent=q.tag;
     document.getElementById('q-prog-bar').style.width=`${((cur+1)/tot)*100}%`;
     document.getElementById('q-text').textContent=q.q;
+    const pk=document.getElementById('qz-peek');
+    if(pk){ const mood=cur===tot-1?'happy':cur>=tot/2?'work':'default'; if(pk.dataset.mood!==mood){ pk.dataset.mood=mood; pk.innerHTML=KyncBrand.mascot(mood,96,{role}); } }
 
     document.getElementById('q-opts').innerHTML=q.opts.map((o,i)=>{
       const sel=ans[cur]===o.s?'on':'';
@@ -279,6 +281,7 @@ const Quiz = (() => {
     document.getElementById('r-type-name').textContent=type.name;
     document.getElementById('r-type-sub').textContent=type.sub;
     document.getElementById('r-summary').textContent=type.summary;
+    const rc=document.getElementById('qz-r-char'); if(rc) rc.innerHTML=KyncBrand.mascot('happy',110,{role});
     show('s-result');
 
     /* 축 점수 */
