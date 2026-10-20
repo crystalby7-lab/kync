@@ -129,6 +129,7 @@ const KyncJournal = {
     const wc = this.weekCount();
     body.innerHTML = `
       <div class="jr-head">
+        ${KyncBrand.mascot('wait', 64, { role: 'child', cls: 'jr-char' })}
         <div class="jr-week-big">이번 주 <b>${wc}</b>/3</div>
         <p>월·수·금에 질문이 와. 그 외에도 쓰고 싶을 때 써.</p>
       </div>

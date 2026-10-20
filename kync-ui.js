@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 const KYNC_CONFIG = {
-  version: '1.6.0',
+  version: '1.6.1',
   contactEmail: 'xoun148@gmail.com',
   termsVersion: '2026-10-12',   // 약관 내용이 바뀌면 날짜를 바꾸면 다시 동의를 받아요
 };
@@ -66,35 +66,33 @@ const KYNC_CONFIG = {
   window.GOOGLE_G = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
 })();
 
-/* ── 브랜드: 고슴도치 '도치' (images/char) ── */
+/* ── 브랜드: 고슴도치 '도치' (images/char) ──
+   부모 화면은 어른 고슴도치, 자녀 화면은 아기 고슴도치가 기본으로 나와요. */
 const KyncBrand = (function () {
-  // 기분(mood) → 그림, 세로/가로 비율
-  const CHAR = {
-    default: ['p_basic', 0.854],
-    happy:   ['p_smile', 0.891],
-    wow:     ['p_surprise', 0.951],
-    sleepy:  ['c_sleepy', 1.0],
-    love:    ['p_love', 0.883],
-    cheer:   ['p_cheer', 0.887],
-    curious: ['p_curious', 0.931],
-    child:   ['c_basic', 0.816],
+  const R = {'rest': 0.868, 'love': 0.984, 'study': 0.979, 'pair': 0.702, 'child': 0.963, 'school': 1.011, 'laptop': 0.953, 'talk': 0.708, 'peek': 0.562, 'cheer': 0.877, 'parent': 0.99, 'explore': 0.932, 'play': 0.934};
+  // 역할별 기분(mood) → 그림
+  const SET = {
+    parent: { default: 'parent', happy: 'cheer', love: 'love', wow: 'parent', sleepy: 'rest', wait: 'rest', work: 'laptop' },
+    child:  { default: 'child',  happy: 'play',  love: 'child', wow: 'explore', sleepy: 'study', wait: 'study', work: 'school' },
   };
-  const SRC = 'images/char/p_basic.png';
+  const SRC = 'images/char/parent.png';
+  const role = r => r || (localStorage.getItem('kync_role') === 'child' ? 'child' : 'parent');
 
-  // size = 가로 폭(px)
+  // size = 가로 폭(px). opts.role로 역할을 직접 정할 수 있어요
   function mascot(mood, size, opts) {
     opts = opts || {};
-    const [name, ratio] = CHAR[mood] || CHAR.default;
-    return `<img class="mascot ${opts.cls || ''}" src="images/char/${name}.png" width="${size}" height="${Math.round(size * ratio)}" alt="" aria-hidden="true" draggable="false">`;
+    const set = SET[role(opts.role)];
+    const name = set[mood] || set.default;
+    return `<img class="mascot ${opts.cls || ''}" src="images/char/${name}.png" width="${size}" height="${Math.round(size * (R[name] || 1))}" alt="" aria-hidden="true" draggable="false">`;
   }
   // 기다리는 중·로딩
-  function curled(size, cls) {
-    return mascot('curious', size, { cls });
-  }
+  function curled(size, cls) { return mascot('wait', size, { cls }); }
+  // 부모·아이 같이
+  function pair(size, cls) { return `<img class="mascot ${cls || ''}" src="images/char/pair.png" width="${size}" height="${Math.round(size * R.pair)}" alt="" aria-hidden="true" draggable="false">`; }
   function wordmark(cls) {
     return `<button type="button" class="wordmark ${cls || ''}" aria-label="kync 홈으로" onclick="goHomeTab(this)"><span class="wm-mark"><i></i></span><span class="wm-text">kync</span></button>`;
   }
-  return { mascot, curled, wordmark, SRC };
+  return { mascot, curled, pair, wordmark, SRC };
 })();
 
 /* ── 화면 도구 ── */
@@ -180,6 +178,8 @@ const KyncUI = {
   loader(on, text) {
     const el = document.getElementById('kync-global-loader');
     if (!el) return;
+    // 그때 역할에 맞는 캐릭터로 다시 그림 (부모: 어른, 자녀: 아기)
+    if (on) { const m = el.querySelector('.mascot, [data-curled]'); if (m) m.outerHTML = KyncBrand.curled(72); }
     const t = el.querySelector('.loader-text');
     if (t) t.textContent = text || '';
     el.classList.toggle('show', !!on);

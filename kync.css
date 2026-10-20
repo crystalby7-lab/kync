@@ -969,3 +969,26 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .q-card .peek { width: 124px; height: 70px; top: -70px; right: 14px; }
 .q-card .peek img { display: block; width: 124px; height: auto; }
 .stage img { display: block; margin: 0 auto; height: auto; }
+
+/* 캐릭터 배치 */
+.today-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.th-char { margin-bottom: -6px; }
+.q-card .peek { left: 18px; right: auto; width: 104px; height: 64px; top: -64px; overflow: hidden; }
+.q-card .peek img { width: 100%; height: auto; display: block; }
+#c-todayTab .q-card .peek { width: 96px; }
+.mood-dot .mascot { width: 40px; height: auto; }
+.mn-intro { position: relative; padding-right: 84px; }
+.mn-char { position: absolute; right: 0; top: -4px; }
+.jr-head { position: relative; padding-right: 72px; }
+.jr-char { position: absolute; right: 0; top: -6px; }
+.ax-hero { position: relative; overflow: hidden; padding-right: 104px; }
+.ax-hero-char { position: absolute; right: 10px; bottom: 8px; }
+#kync-global-loader .mascot { transform-origin: 50% 90%; }
+
+/* 기분 버튼: 색을 크게 */
+.emo-grid { gap: 8px; }
+.emo-btn { position: relative; gap: 8px; padding: 14px 4px 11px; border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1.5px var(--line); font-size: 13px; color: var(--ink); }
+.emo-btn i { width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .12); }
+.emo-btn.on { color: #fff; box-shadow: none; transform: translateY(-1px); }
+.emo-btn.on i { transform: none; background: #fff !important; box-shadow: none; }
+.emo-btn:active { transform: scale(.96); }

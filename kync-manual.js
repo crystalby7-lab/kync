@@ -369,6 +369,7 @@ const KyncManual = {
     const sharedCount = Object.values(this._mine.share || {}).filter(Boolean).length;
     body.innerHTML = `
       <div class="mn-intro">
+        ${KyncBrand.mascot('wow', 76, { role: 'child', cls: 'mn-char' })}
         <p class="mn-h">나 사용 설명서</p>
         <p>내 기록을 모아서 정리했어. 기본은 나만 보고, 공개를 켠 항목만 부모님 화면에 떠.</p>
         <div class="mn-count">${ic('lock', 14)}${sharedCount ? `${sharedCount}개 공개 중` : '전부 나만 보는 중'}</div>

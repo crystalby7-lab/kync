@@ -34,12 +34,14 @@ const KyncActivity = {
 
     const hero = role === 'child' ? `
       <button class="ax-hero" onclick="KyncManual.open()">
+        ${KyncBrand.mascot('wow', 84, { role: 'child', cls: 'ax-hero-char' })}
         <div class="ax-hero-label">나 사용 설명서</div>
         <div class="ax-hero-q">내 기록으로 정리한 나</div>
         <div class="ax-hero-sub">기분, 에너지, 성향, 대화하는 법. 부모님께 보여줄 건 항목마다 직접 고르면 돼.</div>
         <div class="ax-hero-cta">열기${ic('chev', 16)}</div>
       </button>` : `
       <button class="ax-hero" onclick="selectTab('p-todayTab'); setTimeout(() => document.getElementById('p-manual-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)">
+        ${KyncBrand.mascot('default', 80, { role: 'child', cls: 'ax-hero-char' })}
         <div class="ax-hero-label">아이의 사용 설명서</div>
         <div class="ax-hero-q">${shared ? `공개된 항목 ${shared}개` : '아직 공개된 항목 없음'}</div>
         <div class="ax-hero-sub">아이가 직접 공개한 항목만 오늘 탭에 보여요.</div>
