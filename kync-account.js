@@ -290,6 +290,7 @@ const KyncAccount = {
       this.family = snap.data();
       if (role === 'parent') this.renderConsentBanner();
       if (typeof KyncInbox !== 'undefined') KyncInbox.refresh();
+      window.KyncDaily?.refresh?.();
       if (role === 'child' && this.isMinor(this.profile) && !this.family.guardianConsents?.[uid]) {
         if (this._famUnsub) { this._famUnsub(); this._famUnsub = null; }
         this.showGuardianWait();

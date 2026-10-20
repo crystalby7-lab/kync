@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Kync" />
   <link rel="preload" href="fonts/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="images/char/pair.png" as="image" />
-  <link rel="stylesheet" href="kync.css?v=20261020-3" />
+  <link rel="stylesheet" href="kync.css?v=20261020-4" />
   <script>
     // 활동 페이지에서 돌아온 경우: 로그인 확인이 끝나면 그 탭을 열어요 (enterApp에서 처리)
     (function () {
@@ -248,7 +248,9 @@
     </header>
     <main class="app-main">
       <section id="p-todayTab" class="tab-panel active" aria-label="오늘">
+        <div class="st-row" id="p-stories"></div>
         <div class="today-hero" id="p-todayDate"></div>
+        <section class="card dl-card" id="p-daily"></section>
         <div id="p-consent-banner"></div>
         <section class="card" id="p-child-card"></section>
         <section class="card hidden mn-p-card" id="p-manual-card"></section>
@@ -317,7 +319,9 @@
     </header>
     <main class="app-main">
       <section id="c-todayTab" class="tab-panel active" aria-label="오늘">
+        <div class="st-row" id="c-stories"></div>
         <div class="today-hero" id="c-todayDate"></div>
+        <section class="card dl-card" id="c-daily"></section>
         <section class="card" id="c-checkin">
           <div class="card-head"><h2>지금 기분</h2><span class="pill hidden" id="c-checkin-pill"></span></div>
           <div class="emo-grid" id="c-emotionGrid"></div>
@@ -471,20 +475,21 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<script src="kync-ui.js?v=20261020-3"></script>
-<script src="kync-legal.js?v=20261020-3"></script>
-<script src="firebase-system.js?v=20261020-3"></script>
-<script src="kync-account.js?v=20261020-3"></script>
-<script src="kync-core.js?v=20261020-3"></script>
-<script src="kync-features.js?v=20261020-3"></script>
-<script src="kync-balance.js?v=20261020-3"></script>
-<script src="kync-diary.js?v=20261020-3"></script>
-<script src="kync-quests2.js?v=20261020-3"></script>
-<script src="kync-counsel.js?v=20261020-3"></script>
-<script src="kync-activity.js?v=20261020-3"></script>
-<script src="kync-inbox.js?v=20261020-3"></script>
-<script src="kync-manual.js?v=20261020-3"></script>
-<script src="kync-journal.js?v=20261020-3"></script>
+<script src="kync-ui.js?v=20261020-4"></script>
+<script src="kync-legal.js?v=20261020-4"></script>
+<script src="firebase-system.js?v=20261020-4"></script>
+<script src="kync-account.js?v=20261020-4"></script>
+<script src="kync-core.js?v=20261020-4"></script>
+<script src="kync-features.js?v=20261020-4"></script>
+<script src="kync-balance.js?v=20261020-4"></script>
+<script src="kync-diary.js?v=20261020-4"></script>
+<script src="kync-quests2.js?v=20261020-4"></script>
+<script src="kync-counsel.js?v=20261020-4"></script>
+<script src="kync-activity.js?v=20261020-4"></script>
+<script src="kync-inbox.js?v=20261020-4"></script>
+<script src="kync-manual.js?v=20261020-4"></script>
+<script src="kync-daily.js?v=20261020-4"></script>
+<script src="kync-journal.js?v=20261020-4"></script>
 
 <script>
 // 탭 전환 (selectTab은 kync-ui.js에 있어요)

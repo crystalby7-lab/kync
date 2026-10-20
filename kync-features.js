@@ -84,6 +84,7 @@ const KyncPraise = {
         });
         this._sheet?.close();
         toast(tone('보냈어요', '보냈어'), 'ok');
+        window.KyncDaily?.refresh?.();
       } catch(e) {
         console.error(e);
         toast(tone('못 보냈어요. 인터넷 연결을 확인해주세요.', '못 보냈어. 인터넷 연결 확인해줘'), 'error');
