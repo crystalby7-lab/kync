@@ -198,8 +198,8 @@ const App = {
   _setDates() {
     const now = new Date();
     const days = ['일','월','화','수','목','금','토'];
-    const html = `<div class="th-day">${days[now.getDay()]}요일</div><div class="th-date">${now.getMonth()+1}월 ${now.getDate()}일</div>`;
-    ['p-todayDate','c-todayDate'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+    const html = role => `<div class="th-text"><div class="th-day">${days[now.getDay()]}요일</div><div class="th-date">${now.getMonth()+1}월 ${now.getDate()}일</div></div>${KyncBrand.mascot('default', 66, { role, cls: 'th-char' })}`;
+    [['p-todayDate', 'parent'], ['c-todayDate', 'child']].forEach(([id, r]) => { const el = document.getElementById(id); if (el) el.innerHTML = html(r); });
 
     const userName = localStorage.getItem('kync_user_name') || '';
     if (userName) {
@@ -245,7 +245,7 @@ const App = {
     const grid = document.getElementById('c-emotionGrid');
     if (!grid) return;
     grid.innerHTML = this.EMOTIONS_CHILD.filter(e => !e.legacy).map(e => `
-      <button class="emo-btn ${this._selectedEmotion === e.id ? 'on' : ''}" data-id="${e.id}" aria-pressed="${this._selectedEmotion === e.id}"
+      <button class="emo-btn ${this._selectedEmotion === e.id ? 'on' : ''}" style="${this._selectedEmotion === e.id ? `background:${e.color}` : ''}" data-id="${e.id}" aria-pressed="${this._selectedEmotion === e.id}"
         onclick="App._selectEmotion('${e.id}')"><i style="background:${e.color}"></i>${e.label}</button>`).join('');
   },
 
@@ -255,6 +255,7 @@ const App = {
       const on = b.dataset.id === id;
       b.classList.toggle('on', on);
       b.setAttribute('aria-pressed', on);
+      b.style.background = on ? (this.EMOTIONS_CHILD.find(e => e.id === b.dataset.id)?.color || '') : '';
     });
   },
 
@@ -427,7 +428,7 @@ const App = {
       el.innerHTML = `
         <div class="card-head"><h2>${name}의 오늘</h2><span class="pill">아직</span></div>
         <div class="mood-main">
-          <div class="mood-dot"><i></i></div>
+          <div class="mood-dot">${KyncBrand.mascot('wait', 40, { role: 'child' })}</div>
           <div><div class="mood-label muted">아직 안 남겼어요</div><div class="mood-memo">${josa(name, '이/가')} 기분을 남기면 여기 떠요.</div></div>
         </div>
         ${this._weekStrip()}`;
