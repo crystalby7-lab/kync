@@ -1,6 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
    kync-daily.js — 오늘 탭 위쪽
-   1) 스토리 줄: 가족 동그라미. 오늘 뭔가 남긴 사람은 테두리에 색. 누르면 그 사람 오늘 기록을 한 장씩
    2) 오늘 할 일 3개 (듀오링고 퀘스트처럼)
    3) 3개 다 하면 축하 화면 (하루 한 번)
 ═══════════════════════════════════════════════════════════ */
@@ -65,9 +64,7 @@ const KyncDaily = {
   /* ════════ 그리기 ════════ */
   render() {
     const role = this._role(), pre = role === 'parent' ? 'p' : 'c';
-    const stories = document.getElementById(`${pre}-stories`);
     const card = document.getElementById(`${pre}-daily`);
-    if (stories) stories.innerHTML = this._storiesHtml();
     if (!card) return;
     const tasks = this.tasks();
     const n = tasks.filter(t => t.done).length;
@@ -88,79 +85,6 @@ const KyncDaily = {
   },
 
   go(i) { this.tasks()[i]?.go?.(); },
-
-  _storiesHtml() {
-    const fam = KyncAccount?.family?.members || {};
-    const me = this._uid();
-    const list = Object.entries(fam).map(([uid, m]) => ({ uid, ...m }))
-      .sort((a, b) => (b.uid === me) - (a.uid === me));
-    if (!list.length) return '';
-    return list.map(m => {
-      const active = this._activeFor(m);
-      return `<button class="st-item" onclick="KyncDaily.openStory('${m.uid}')">
-        <span class="st-ring ${active ? 'on' : ''}">${KyncUI.avatar(m.uid, m.role, 'st-av')}</span>
-        <span class="st-name">${m.uid === me ? '나' : this._esc(m.name || (m.role === 'parent' ? '부모님' : '자녀'))}</span>
-      </button>`;
-    }).join('');
-  },
-
-  _activeFor(m) {
-    const r = this._record || {};
-    if (r[m.role]?.content) return true;
-    if (m.role === 'child' && r.checkin) return true;
-    return this._diaryToday.some(e => e.uid === m.uid);
-  },
-
-  /* ── 스토리 보기 ── */
-  openStory(uid) {
-    const fam = KyncAccount?.family?.members || {};
-    const m = { uid, ...(fam[uid] || {}) };
-    const me = this._uid(), mine = uid === me, myRole = this._role();
-    const r = this._record || {}, slides = [];
-    const label = mine ? '나' : (m.name || (m.role === 'parent' ? '부모님' : '자녀'));
-    if (m.role === 'child' && r.checkin) {
-      const emo = App.EMOTIONS_CHILD.find(e => e.id === r.checkin.emotion);
-      slides.push(`<div class="sv-slide" style="background:${emo?.color || '#7A5A48'}">
-        <small>지금 기분</small><b class="sv-big">${this._esc(emo?.label || '')}</b>
-        <div class="sv-meta">스트레스 ${r.checkin.stress || '—'} · 에너지 ${r.checkin.energy || '—'}</div>
-        ${r.checkin.memo ? `<p>“${this._esc(r.checkin.memo)}”</p>` : ''}</div>`);
-    }
-    const ans = r[m.role]?.content;
-    if (ans) {
-      const open = mine || r[myRole]?.content;
-      slides.push(`<div class="sv-slide dark"><small>오늘의 질문</small><b>${this._esc(r[m.role].question || '')}</b>
-        ${open ? `<p class="sv-ans">${this._esc(ans)}</p>` : `<p class="sv-lock">${ic('lock', 18)}${tone('내 답을 올리면 보여요', '내 답 올리면 보여')}</p>`}</div>`);
-    }
-    this._diaryToday.filter(e => e.uid === uid).forEach(e => {
-      slides.push(`<div class="sv-slide photo" ${e.img ? `style="background-image:url('${e.img}')"` : ''}>
-        <small>기록</small>${e.memo ? `<p class="sv-cap">${this._esc(e.memo)}</p>` : ''}</div>`);
-    });
-    if (!slides.length) slides.push(`<div class="sv-slide empty">${KyncBrand.mascot('sleepy', 120, { role: m.role })}<b>${tone('아직 오늘 남긴 게 없어요', '아직 오늘 남긴 거 없어')}</b></div>`);
-
-    const view = document.createElement('div');
-    view.className = 'sv';
-    view.innerHTML = `
-      <div class="sv-bars">${slides.map(() => '<i><em></em></i>').join('')}</div>
-      <div class="sv-top">${KyncUI.avatar(m.uid, m.role, 'sm')}<b>${this._esc(label)}</b><span>오늘</span>
-        <button class="sv-x" aria-label="닫기">${ic('x', 22)}</button></div>
-      <div class="sv-stage">${slides.join('')}</div>
-      <button class="sv-prev" aria-label="이전"></button><button class="sv-next" aria-label="다음"></button>`;
-    document.body.appendChild(view);
-    let i = 0, t = null;
-    const show = k => {
-      if (k >= slides.length) return close();
-      i = Math.max(0, k);
-      view.querySelectorAll('.sv-slide').forEach((s, j) => s.classList.toggle('on', j === i));
-      view.querySelectorAll('.sv-bars i').forEach((b, j) => { b.className = j < i ? 'done' : j === i ? 'run' : ''; });
-      clearTimeout(t); t = setTimeout(() => show(i + 1), 5000);
-    };
-    const close = () => { clearTimeout(t); view.classList.add('out'); setTimeout(() => view.remove(), 200); };
-    view.querySelector('.sv-x').onclick = close;
-    view.querySelector('.sv-prev').onclick = () => show(i - 1);
-    view.querySelector('.sv-next').onclick = () => show(i + 1);
-    requestAnimationFrame(() => { view.classList.add('in'); show(0); });
-    window.KyncManual?.log?.('story_view', { mine, slides: slides.length });
-  },
 
   /* ── 축하 ── */
   _maybeCelebrate(allDone) {
