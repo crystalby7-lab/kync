@@ -2,7 +2,7 @@
    - 항상 인터넷에서 먼저 받아요 (업데이트가 바로 보이게)
    - 인터넷이 끊겼을 때만 마지막으로 받아둔 파일을 보여줘요
    - 같은 사이트 파일만 다뤄요 (Firebase 등 다른 주소는 건드리지 않음) */
-const CACHE = 'kync-v11';
+const CACHE = 'kync-v12';
 const CORE = ['./', './index.html', './kync.css', './images/char/pair.png', './images/char/parent.png', './images/char/child.png', './icons/icon-192.png', './fonts/SUIT-Variable.woff2'];
 
 self.addEventListener('install', e => {

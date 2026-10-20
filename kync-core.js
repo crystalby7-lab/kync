@@ -150,6 +150,7 @@ const App = {
     if (role === 'parent' && typeof KyncManual !== 'undefined') KyncManual.listenParent();
     if (typeof KyncJournal !== 'undefined') { if (role === 'parent') KyncJournal.listenParent(); else KyncJournal.renderTodayCard(); }
     if (typeof KyncActivity !== 'undefined') KyncActivity.render();
+    if (typeof KyncDaily !== 'undefined') KyncDaily.refresh();
 
     if (fc && typeof KyncPraise !== 'undefined') {
       if (this._praiseUnsub) { try { this._praiseUnsub(); } catch(e) {} }
@@ -278,6 +279,7 @@ const App = {
     if (!record || (role !== 'parent' && role !== 'child')) return;
     if (this._lastRecord && JSON.stringify(this._lastRecord) !== JSON.stringify(record)) { if (typeof KyncInbox !== 'undefined') KyncInbox.refresh(); }
     this._lastRecord = record;
+    if (typeof KyncDaily !== 'undefined') { KyncDaily._record = record; KyncDaily.refresh(); }
     const pre = role[0];
 
     const mine = record[role], theirs = record[role === 'parent' ? 'child' : 'parent'];

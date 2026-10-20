@@ -204,6 +204,7 @@ const KyncJournal = {
     this.render();
     this.renderTodayCard();
     toast(share ? '저장하고 부모님께 보냈어' : '저장했어', 'ok');
+    window.KyncDaily?.refresh?.();
     if (document.getElementById('layer-manual')?.classList.contains('open')) KyncManual.open();
     if (this._risky(text)) this._riskSheet();
   },

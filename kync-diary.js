@@ -370,6 +370,7 @@ const KyncDiary = {
       const memoInput = document.getElementById('kd-memo');
       if (memoInput) memoInput.value = '';
       toast(tone('올렸어요', '올렸어'), 'ok');
+      window.KyncDaily?.refresh?.();
       this._renderViewArea();
     } catch(e) {
       console.warn('diary save:', e);
