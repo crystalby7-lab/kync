@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Kync" />
   <link rel="preload" href="fonts/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="images/doci.png" as="image" />
-  <link rel="stylesheet" href="kync.css?v=20261019-4" />
+  <link rel="preload" href="images/char/pair.png" as="image" />
+  <link rel="stylesheet" href="kync.css?v=20261020-1" />
   <script>
     // 활동 페이지에서 돌아온 경우: 로그인 확인이 끝나면 그 탭을 열어요 (enterApp에서 처리)
     (function () {
@@ -79,7 +79,7 @@
 <div class="page active" id="page-login">
   <div class="screen">
     <div class="login-hero">
-      <span data-mascot="happy" data-size="112"></span>
+      <img src="images/char/pair.png" class="hero-pair" alt="" width="260" height="183">
       <span class="wordmark lg"><span class="wm-text">kync</span></span>
       <p class="tagline">말하지 않아도<br>연결되는 가족</p>
     </div>
@@ -254,7 +254,7 @@
         <section class="card hidden mn-p-card" id="p-manual-card"></section>
         <section class="card hidden" id="p-journal-card"></section>
         <div class="q-card">
-          <div class="peek"><span data-mascot="default" data-size="76" data-noshadow></span></div>
+          <div class="peek"><img src="images/char/peek.png" alt="" width="124" height="70"></div>
           <div class="q-label">오늘의 질문</div>
           <p class="q-text" id="p-questionText"></p>
           <div class="q-lock"><span data-ic="lock" data-size="15"></span>자녀도 같은 질문을 받았어요</div>
@@ -341,7 +341,7 @@
         </button>
         <div id="c-journal-card" class="hidden"></div>
         <div class="q-card">
-          <div class="peek"><span data-mascot="default" data-size="76" data-noshadow></span></div>
+          <div class="peek"><img src="images/char/peek.png" alt="" width="124" height="70"></div>
           <div class="q-label">오늘의 질문</div>
           <p class="q-text" id="c-questionText"></p>
           <div class="q-lock"><span data-ic="lock" data-size="15"></span>부모님도 같은 질문을 받았어</div>
@@ -471,20 +471,20 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<script src="kync-ui.js?v=20261019-4"></script>
-<script src="kync-legal.js?v=20261019-4"></script>
-<script src="firebase-system.js?v=20261019-4"></script>
-<script src="kync-account.js?v=20261019-4"></script>
-<script src="kync-core.js?v=20261019-4"></script>
-<script src="kync-features.js?v=20261019-4"></script>
-<script src="kync-balance.js?v=20261019-4"></script>
-<script src="kync-diary.js?v=20261019-4"></script>
-<script src="kync-quests2.js?v=20261019-4"></script>
-<script src="kync-counsel.js?v=20261019-4"></script>
-<script src="kync-activity.js?v=20261019-4"></script>
-<script src="kync-inbox.js?v=20261019-4"></script>
-<script src="kync-manual.js?v=20261019-4"></script>
-<script src="kync-journal.js?v=20261019-4"></script>
+<script src="kync-ui.js?v=20261020-1"></script>
+<script src="kync-legal.js?v=20261020-1"></script>
+<script src="firebase-system.js?v=20261020-1"></script>
+<script src="kync-account.js?v=20261020-1"></script>
+<script src="kync-core.js?v=20261020-1"></script>
+<script src="kync-features.js?v=20261020-1"></script>
+<script src="kync-balance.js?v=20261020-1"></script>
+<script src="kync-diary.js?v=20261020-1"></script>
+<script src="kync-quests2.js?v=20261020-1"></script>
+<script src="kync-counsel.js?v=20261020-1"></script>
+<script src="kync-activity.js?v=20261020-1"></script>
+<script src="kync-inbox.js?v=20261020-1"></script>
+<script src="kync-manual.js?v=20261020-1"></script>
+<script src="kync-journal.js?v=20261020-1"></script>
 
 <script>
 // 탭 전환 (selectTab은 kync-ui.js에 있어요)
