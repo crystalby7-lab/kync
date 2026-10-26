@@ -132,7 +132,7 @@ const KyncJournal = {
     if (document.getElementById('jr-fonts')) return;
     const l = document.createElement('link');
     l.id = 'jr-fonts'; l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&display=swap';
+    l.href = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Jua&family=Nanum+Pen+Script&display=swap';
     document.head.appendChild(l);
   },
   _layer() { return document.getElementById('layer-journal'); },

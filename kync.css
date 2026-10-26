@@ -1079,7 +1079,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .jr-cover-band { position: absolute; left: 0; top: 0; bottom: 0; width: 18px; background: rgba(0, 0, 0, .18); box-shadow: 1px 0 0 rgba(255, 255, 255, .12); }
 .jr-cover-in { position: absolute; left: 38px; right: 96px; top: 26px; }
 .jr-cover-in small { font-size: 12px; font-weight: 700; opacity: .75; }
-.jr-cover-in b { display: block; font-family: 'Gowun Batang', var(--font); font-size: 25px; font-weight: 700; line-height: 1.25; margin: 4px 0 10px; letter-spacing: -0.02em; }
+.jr-cover-in b { display: block; font-family: 'Jua', var(--font); font-size: 30px; font-weight: 400; line-height: 1.2; margin: 4px 0 10px; letter-spacing: 0; text-shadow: 0 2px 0 rgba(0, 0, 0, .12); }
 .jr-cover-in span { display: inline-block; font-size: 12px; font-weight: 750; padding: 5px 10px; border-radius: 999px; background: rgba(255, 255, 255, .16); }
 .jr-cover-char { position: absolute; right: 14px; bottom: 6px; }
 .jr-cover-edit { position: absolute; right: 10px; top: 10px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: rgba(255, 255, 255, .16); z-index: 2; }
