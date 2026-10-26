@@ -6,7 +6,7 @@
   <title>Kync — 대화 유형 검사</title>
   <meta name="theme-color" content="#F4F1EC" />
   <link rel="icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="kync.css?v=20261026-2" />
+  <link rel="stylesheet" href="kync.css?v=20261026-3" />
 </head>
 <body>
 <div class="sub-app">
@@ -75,13 +75,13 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="kync-ui.js?v=20261026-2"></script>
-<script src="firebase-system.js?v=20261026-2"></script>
+<script src="kync-ui.js?v=20261026-3"></script>
+<script src="firebase-system.js?v=20261026-3"></script>
 <script>
 KyncAuth.onAuthChange(user => { if (!user) location.href = 'index.html'; });
 function goHome(){ Quiz.saveAndGoHome(); }
 document.addEventListener('DOMContentLoaded', () => { const hc = document.getElementById('qz-hero-char'); if (hc) hc.innerHTML = KyncBrand.pair(230, 'qz-pair'); const el = document.getElementById('intro-sub'); if (el) el.textContent = tone('20문항, 5분쯤 걸려요. 정답은 없으니 평소 모습에 가까운 걸 고르면 돼요.', '20문항, 5분쯤 걸려. 정답 없으니까 평소 나랑 가까운 걸 고르면 돼.'); });
 </script>
-<script src="quiz.js?v=20261026-2"></script>
+<script src="quiz.js?v=20261026-3"></script>
 </body>
 </html>
