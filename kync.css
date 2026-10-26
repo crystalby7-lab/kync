@@ -1133,12 +1133,10 @@ mark.hl-g { background: linear-gradient(transparent 38%, rgba(118, 210, 150, .55
 .jr-song b { display: block; font-size: 13px; font-weight: 800; }
 .jr-song small { font-size: 11px; opacity: .7; }
 .jr-place { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 750; color: var(--sub); padding: 6px 10px; border-radius: 999px; background: rgba(255, 255, 255, .7); }
-.jr-stk img { position: absolute; width: 58px; height: auto; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .12)); }
-.jr-stk .s0 { right: 12px; top: 16px; transform: rotate(8deg); }
-.jr-stk .s1 { right: 16px; bottom: -14px; transform: rotate(-8deg); }
-.jr-stk .s2 { right: 74px; bottom: -12px; transform: rotate(6deg); }
-.jr-page:has(.jr-stk .s1) { padding-bottom: 54px; }
-.jr-page:has(.jr-stk .s0) .jr-stamp em { margin-right: 54px; }
+.jr-stk { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.jr-stk img { position: absolute; width: 56px; height: auto; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .12)); transition: left .18s var(--ease), top .18s var(--ease); }
+#jr-page .jr-stk img { pointer-events: auto; cursor: grab; touch-action: none; }
+#jr-page .jr-stk img.dragging { cursor: grabbing; transition: none; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .25)); z-index: 4; }
 
 /* 쓰기 화면 */
 .jr-w { padding-bottom: 8px; }
@@ -1202,7 +1200,6 @@ mark.hl-g { background: linear-gradient(transparent 38%, rgba(118, 210, 150, .55
 .jr-mini .jr-photos { justify-content: flex-start; margin: 10px 0 0; }
 .jr-mini .jr-pol { width: 84px; padding: 4px 4px 14px; }
 .jr-mini .jr-pol.r1 { margin-top: 4px; }
-.jr-mini .jr-stk img { width: 40px; }
 .jr-mini .jr-stamp b { font-size: 24px; }
 .jr-mini-pill { position: absolute; right: 12px; bottom: 12px; z-index: 3; }
 .jr-mini.new .jr-page { animation: jrin .5s var(--ease); }

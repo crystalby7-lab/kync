@@ -268,7 +268,7 @@ const KyncJournal = {
       ${d.prompt ? `<div class="jr-pq">${this._esc(d.prompt)}</div>` : ''}
       ${body}
       <div class="jr-attach" id="${editable ? 'jr-attach' : ''}">${this._attachHtml(d, editable, opt)}</div>
-      <div class="jr-stk" id="${editable ? 'jr-stk' : ''}">${(d.stickers || []).map((n, i) => `<img class="s${i}" src="images/char/${n}.png" alt="">`).join('')}</div>`;
+      <div class="jr-stk" id="${editable ? 'jr-stk' : ''}">${this._stkHtml(d.stickers)}</div>`;
   },
   _attachHtml(d, editable, opt = {}) {
     const ph = opt.noPhotos ? [] : (d.photos || []);
@@ -282,6 +282,82 @@ const KyncJournal = {
     const keep = ['mini', 'p', 'flip'].filter(c => el.classList.contains(c)).join(' ');
     el.className = `jr-page paper-${d.paper || 'plain'} font-${d.font || 'base'} size-${d.size || 'm'} ${keep}`;
     el.style.setProperty('--mood', emo?.color || '#FFFFFF');
+    requestAnimationFrame(() => this._placeStickers(el, d));
+    document.fonts?.ready?.then(() => this._placeStickers(el, d));
+  },
+
+  /* ════════ 스티커: 끌어서 옮기기, 글씨는 안 가리게 ════════ */
+  STK_K: 0.16,      // 스티커 크기 = 종이 너비의 16%
+  _sn(x) { return typeof x === 'string' ? x : x?.n; },
+  _stkHtml(list = []) { return list.map((x, i) => `<img data-i="${i}" src="images/char/${this._sn(x)}.png" alt="" draggable="false">`).join(''); },
+  // 피해야 할 곳: 글씨, 질문, 날짜, 사진, 노래·장소
+  _obstacles(page) {
+    const pr = page.getBoundingClientRect(), out = [], pad = 4;
+    const add = r => { if (r.width && r.height) out.push({ l: r.left - pr.left - pad, t: r.top - pr.top - pad, r: r.right - pr.left + pad, b: r.bottom - pr.top + pad }); };
+    const ed = page.querySelector('.jr-ed');
+    if (ed && ed.textContent.trim()) { const rg = document.createRange(); rg.selectNodeContents(ed); [...rg.getClientRects()].forEach(add); }
+    page.querySelectorAll('.jr-pq, .jr-stamp > *, .jr-pol, .jr-song, .jr-place').forEach(n => add(n.getBoundingClientRect()));
+    return out;
+  },
+  _hit(x, y, sz, obs) { return obs.some(o => x < o.r && x + sz > o.l && y < o.b && y + sz > o.t); },
+  // 원하는 자리에서 가장 가까운 빈자리
+  _free(x, y, sz, W, H, obs) {
+    const minX = -sz * 0.2, maxX = W - sz * 0.8, minY = -sz * 0.25, maxY = Math.max(H - sz * 0.85, 0);
+    x = Math.min(Math.max(x, minX), maxX); y = Math.min(Math.max(y, minY), maxY);
+    if (!this._hit(x, y, sz, obs)) return [x, y];
+    let best = null, bd = Infinity;
+    for (let yy = minY; yy <= maxY + sz; yy += 8) for (let xx = minX; xx <= maxX; xx += 8) {
+      if (this._hit(xx, yy, sz, obs)) continue;
+      const dd = (xx - x) ** 2 + (yy - y) ** 2;
+      if (dd < bd) { bd = dd; best = [xx, yy]; }
+    }
+    return best || [maxX, maxY + sz * 0.4];
+  },
+  _placeStickers(page = document.getElementById('jr-page'), d = this._d) {
+    if (!page || !d) return;
+    const imgs = [...page.querySelectorAll('.jr-stk img')];
+    if (!imgs.length) return;
+    const W = page.clientWidth, H = page.clientHeight, sz = Math.round(W * this.STK_K);
+    if (!W) return;
+    const obs = this._obstacles(page);
+    const rot = [8, -7, 5];
+    const defaults = [[W - sz - 8, 10], [W - sz - 10, H - sz + 8], [W - sz * 2 - 14, H - sz + 6]];
+    imgs.forEach((img, i) => {
+      if (img.classList.contains('dragging')) return;
+      const st = d.stickers?.[i];
+      let x, y;
+      if (st && typeof st === 'object' && st.x != null) { x = st.x * W; y = st.y * W; } else [x, y] = defaults[i] || defaults[0];
+      [x, y] = this._free(x, y, sz, W, H, obs);
+      obs.push({ l: x, t: y, r: x + sz, b: y + sz });
+      Object.assign(img.style, { width: sz + 'px', left: x + 'px', top: y + 'px', transform: `rotate(${rot[i] || 0}deg)` });
+    });
+    if (page.id === 'jr-page') this._bindStickerDrag(page);
+  },
+  _bindStickerDrag(page) {
+    page.querySelectorAll('.jr-stk img').forEach(img => {
+      if (img._bound) return;
+      img._bound = true;
+      img.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        const i = +img.dataset.i, pr = page.getBoundingClientRect();
+        const ox = e.clientX - img.offsetLeft - pr.left, oy = e.clientY - img.offsetTop - pr.top;
+        img.setPointerCapture(e.pointerId);
+        img.classList.add('dragging');
+        const move = ev => { img.style.left = (ev.clientX - pr.left - ox) + 'px'; img.style.top = (ev.clientY - pr.top - oy) + 'px'; };
+        const up = () => {
+          img.removeEventListener('pointermove', move); img.removeEventListener('pointerup', up); img.removeEventListener('pointercancel', up);
+          img.classList.remove('dragging');
+          const W = page.clientWidth, sz = img.offsetWidth;
+          const others = [...page.querySelectorAll('.jr-stk img')].filter(o => o !== img).map(o => ({ l: o.offsetLeft, t: o.offsetTop, r: o.offsetLeft + sz, b: o.offsetTop + sz }));
+          const [x, y] = this._free(img.offsetLeft, img.offsetTop, sz, W, page.clientHeight, [...this._obstacles(page), ...others]);
+          img.style.left = x + 'px'; img.style.top = y + 'px';
+          const n = this._sn(this._d.stickers[i]);
+          this._d.stickers[i] = { n, x: +(x / W).toFixed(4), y: +(y / W).toFixed(4) };
+          this._writeDraft();
+        };
+        img.addEventListener('pointermove', move); img.addEventListener('pointerup', up); img.addEventListener('pointercancel', up);
+      });
+    });
   },
   _clip(t, n) { return t.length > n ? t.slice(0, n) + '…' : t; },
 
@@ -347,6 +423,7 @@ const KyncJournal = {
     if (text.length > this.MAX) { text = text.slice(0, this.MAX); marks = marks.filter(m => m.s < this.MAX).map(m => ({ ...m, e: Math.min(m.e, this.MAX) })); ed.innerHTML = this._markup(text, marks); toast(`${this.MAX}자까지 쓸 수 있어`, 'error'); }
     this._d.text = text; this._d.marks = marks;
     const c = document.getElementById('jr-count'); if (c) c.textContent = text.length;
+    clearTimeout(this._plT); this._plT = setTimeout(() => this._placeStickers(), 150);
     const st = document.getElementById('jr-saved'); if (st) st.classList.remove('on');
     clearTimeout(this._saveT); this._saveT = setTimeout(() => this._writeDraft(), 600);
   },
@@ -372,7 +449,7 @@ const KyncJournal = {
     page.querySelector('.jr-tape')?.remove();
     if (tape) page.insertAdjacentHTML('afterbegin', `<i class="jr-tape" style="--tc:${tape.c}"></i>`);
     document.getElementById('jr-attach').innerHTML = this._attachHtml(d, true);
-    document.getElementById('jr-stk').innerHTML = (d.stickers || []).map((n, i) => `<img class="s${i}" src="images/char/${n}.png" alt="">`).join('');
+    document.getElementById('jr-stk').innerHTML = this._stkHtml(d.stickers);
     this._applyPage();
   },
 
@@ -418,7 +495,7 @@ const KyncJournal = {
       </div>`;
     else inner = `
       <div class="jr-opt"><span>스티커 ${d.stickers.length}/${this.MAX_STICKERS}</span></div>
-      <div class="jr-stk-grid">${this.STICKERS.map(n => `<button class="${d.stickers.includes(n) ? 'on' : ''}" onclick="KyncJournal.toggleSticker('${n}')"><img src="images/char/${n}.png" alt=""></button>`).join('')}</div>
+      <div class="jr-stk-grid">${this.STICKERS.map(n => `<button class="${d.stickers.some(x => this._sn(x) === n) ? 'on' : ''}" onclick="KyncJournal.toggleSticker('${n}')"><img src="images/char/${n}.png" alt=""></button>`).join('')}</div>
       <div class="jr-opt"><span>마스킹테이프</span><div class="jr-chips">${this.TAPES.map(t => `<button class="jr-tape-chip ${d.tape === t.id ? 'on' : ''}" style="--tc:${t.c}" onclick="KyncJournal.set('tape','${t.id}')" aria-label="테이프"></button>`).join('')}</div></div>`;
     return `<div class="jr-tabs">${tabs.map(([id, icn, lb]) => `<button class="${T === id ? 'on' : ''}" onclick="KyncJournal.tab('${id}')">${ic(icn, 16)}<span>${lb}</span></button>`).join('')}</div><div class="jr-tray-body">${inner}</div>`;
   },
@@ -461,10 +538,10 @@ const KyncJournal = {
   setPlace(v) { this._d.place = v.trim(); document.getElementById('jr-attach').innerHTML = this._attachHtml(this._d, true); this._writeDraft(); },
   toggleSticker(n) {
     const s = this._d.stickers;
-    const i = s.indexOf(n);
+    const i = s.findIndex(x => this._sn(x) === n);
     if (i >= 0) s.splice(i, 1);
     else if (s.length >= this.MAX_STICKERS) { toast(`스티커는 ${this.MAX_STICKERS}개까지`, 'error'); return; }
-    else s.push(n);
+    else s.push({ n, x: null, y: null });
     this._refreshPage(); this._renderTray(); this._writeDraft();
   },
 
